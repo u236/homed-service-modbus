@@ -23,7 +23,7 @@ void Devices::RelayController::enqueueAction(quint8 endpointId, const QString &n
 {
     if (name == "invert")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_id, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
+        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
         m_fullPoll = true;
     }
     else if (name == "status" && endpointId)
@@ -44,7 +44,7 @@ void Devices::RelayController::enqueueAction(quint8 endpointId, const QString &n
             case 2: m_pending ^=  mask; break;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_id, Modbus::WriteSingleRegister, 0x0001,  m_pending));
+        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0001,  m_pending));
     }
 }
 
@@ -58,8 +58,8 @@ QByteArray Devices::RelayController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:  return Modbus::makeRequest(m_id, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1:  return Modbus::makeRequest(m_id, Modbus::ReadHoldingRegisters, 0x0001, 1);
+        case 0:  return Modbus::makeRequest(m_portId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+        case 1:  return Modbus::makeRequest(m_portId, Modbus::ReadHoldingRegisters, 0x0001, 1);
         default: return QByteArray();
     }
 }
@@ -72,7 +72,7 @@ void Devices::RelayController::parseReply(const QByteArray &reply)
     {
         case 0:
 
-            if (Modbus::parseReply(m_id, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (Modbus::parseReply(m_portId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
@@ -83,7 +83,7 @@ void Devices::RelayController::parseReply(const QByteArray &reply)
 
         case 1:
 
-            if (Modbus::parseReply(m_id, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
+            if (Modbus::parseReply(m_portId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
                 break;
 
             for (quint8 i = 0; i < 16; i++)
@@ -136,7 +136,7 @@ void Devices::SwitchController::enqueueAction(quint8, const QString &name, const
 {
     if (name == "invert")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_id, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
+        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
         m_fullPoll = true;
     }
 }
@@ -151,8 +151,8 @@ QByteArray Devices::SwitchController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:  return Modbus::makeRequest(m_id, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1:  return Modbus::makeRequest(m_id, Modbus::ReadInputRegisters, 0x0001, 1);
+        case 0:  return Modbus::makeRequest(m_portId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+        case 1:  return Modbus::makeRequest(m_portId, Modbus::ReadInputRegisters, 0x0001, 1);
         default: return QByteArray();
     }
 }
@@ -165,7 +165,7 @@ void Devices::SwitchController::parseReply(const QByteArray &reply)
     {
         case 0:
 
-            if (Modbus::parseReply(m_id, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (Modbus::parseReply(m_portId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
@@ -176,7 +176,7 @@ void Devices::SwitchController::parseReply(const QByteArray &reply)
 
         case 1:
 
-            if (Modbus::parseReply(m_id, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
+            if (Modbus::parseReply(m_portId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
                 break;
 
             for (quint8 i = 0; i < 16; i++)

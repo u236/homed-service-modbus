@@ -15,7 +15,7 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile)
         if (QRegExp("^port-\\d+/port$").exactMatch(key))
         {
             quint8 id = static_cast <quint8> (key.split('/').value(0).split('-').value(1).toInt());
-            Port port(new PortThread(id, getConfig()->value(key).toString()));
+            Port port(new PortThread(id, getConfig()->value(key).toString(), m_devices));
             connect(port.data(), &PortThread::updateAvailability, this, &Controller::updateAvailability);
             m_ports.insert(id, port);
 
@@ -25,17 +25,17 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile)
                 continue;
 
             {
-                Device device(new Devices::SwitchController(id, 11, 115200, 0, "Switch Controller"));
+                Device device(new Devices::SwitchController(1, 11, 115200, 0, "Switch Controller"));
                 connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
                 device->init(device);
-                m_ports.value(id)->devices().append(device);
+                m_devices.append(device);
             }
 
             {
-                Device device(new Devices::RelayController(id, 12, 115200, 5000, "Relay Controller"));
+                Device device(new Devices::RelayController(1, 12, 115200, 2000, "Relay Controller"));
                 connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
                 device->init(device);
-                m_ports.value(id)->devices().append(device);
+                m_devices.append(device);
             }
 
             //
@@ -45,17 +45,14 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile)
 
 Device Controller::findDevice(const QString &deviceName)
 {
-    for (auto it = m_ports.begin(); it != m_ports.end(); it++)
+    for (int i = 0; i < m_devices.count(); i++)
     {
-        for (int i = 0; i < it.value()->devices().count(); i++)
-        {
-            const Device &device = it.value()->devices().at(i);
+        const Device &device = m_devices.at(i);
 
-            if (device->name() != deviceName && device->address() != deviceName)
-                continue;
+        if (device->name() != deviceName && device->address() != deviceName)
+            continue;
 
-            return device;
-        }
+        return device;
     }
 
     return Device();
@@ -69,13 +66,10 @@ void Controller::mqttConnected(void)
     // if (getConfig()->value("homeassistant/enabled", false).toBool())
     //     mqttSubscribe(m_haStatus);
 
-    for (auto it = m_ports.begin(); it != m_ports.end(); it++)
+    for (int i = 0; i < m_devices.count(); i++)
     {
-        for (int i = 0; i < it.value()->devices().count(); i++)
-        {
-            const Device &device = it.value()->devices().at(i);
-            device->publishExposes(this, device->address(), QString(device->address()).replace('.', '_'));
-        }
+        const Device &device = m_devices.at(i);
+        device->publishExposes(this, device->address(), device->address().replace('.', '_'));
     }
 }
 

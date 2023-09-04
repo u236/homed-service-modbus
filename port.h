@@ -16,21 +16,19 @@ class PortThread : public QThread
 
 public:
 
-    PortThread(quint8 id, const QString &portName);
+    PortThread(quint8 portId, const QString &portName, QList <Device> &devices);
     ~PortThread(void);
-
-    inline QList <Device> &devices(void) { return m_devices; }
 
 private:
 
     QSerialPort *m_serial;
     QTimer *m_receiveTimer, *m_pollTimer;
 
-    quint8 m_id;
+    quint8 m_portId;
     QString m_portName;
 
     QByteArray m_replyData;
-    QList <Device> m_devices;
+    QList <Device> &m_devices;
 
     void sendRequest(const Device &device, const QByteArray &request);
 

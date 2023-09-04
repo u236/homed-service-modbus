@@ -28,8 +28,8 @@ class DeviceObject : public AbstractDeviceObject
 
 public:
 
-    DeviceObject(quint8 portId, quint8 id, quint32 baudRate, quint32 pollInterval, const QString &name) :
-        AbstractDeviceObject(name), m_address(QString("%1.%2").arg(portId).arg(id)), m_id(id), m_baudRate(baudRate), m_pollInterval(pollInterval), m_pollTime(0), m_sequence(0), m_fullPoll(true), m_firstPoll(true) {}
+    DeviceObject(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
+        AbstractDeviceObject(name), m_address(QString("%1.%2").arg(portId).arg(slaveId)), m_port(portId), m_portId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_pollTime(0), m_sequence(0), m_fullPoll(true), m_firstPoll(true) {}
 
     virtual void init(const Device &) {}
     virtual void enqueueAction(quint8, const QString &, const QVariant &) {}
@@ -40,7 +40,8 @@ public:
 
     inline QString address(void) { return m_address; }
 
-    inline quint8 id(void) { return m_id; }
+    inline quint8 portId(void) { return m_port; }
+    inline quint8 slaveId(void) { return m_portId; }
     inline quint32 baudRate(void) { return m_baudRate; }
     inline quint32 pollInterval(void) { return m_pollInterval; }
     inline qint64 pollTime(void) { return m_pollTime; }
@@ -51,7 +52,7 @@ protected:
 
     QString m_address;
 
-    quint8 m_id;
+    quint8 m_port, m_portId;
     quint32 m_baudRate, m_pollInterval;
 
     qint64 m_pollTime;

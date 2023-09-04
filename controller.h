@@ -20,6 +20,7 @@ private:
     QMap <quint8, Port> m_ports;
 
     Device findDevice(const QString &deviceName);
+    QList <Device> m_devices;
 
 private slots:
 
