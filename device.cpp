@@ -26,7 +26,7 @@ void Devices::RelayController::enqueueAction(quint8 endpointId, const QString &n
         m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
         m_fullPoll = true;
     }
-    else if (name == "status" && endpointId)
+    else if (name == "status" && endpointId && endpointId <= 16)
     {
         QList <QString> list = {"on", "off", "toggle"};
         quint16 mask = 1 << (endpointId - 1);
@@ -44,7 +44,7 @@ void Devices::RelayController::enqueueAction(quint8 endpointId, const QString &n
             case 2: m_pending ^=  mask; break;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0001,  m_pending));
+        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0001, m_pending));
     }
 }
 
@@ -128,6 +128,8 @@ void Devices::SwitchController::init(const Device &device)
     }
 
     memset(m_time, 0, sizeof(m_time));
+    memset(m_hold, 0, sizeof(m_hold));
+
     connect(m_timer, &QTimer::timeout, this, &SwitchController::update);
     m_timer->start(1);
 }
@@ -188,6 +190,13 @@ void Devices::SwitchController::parseReply(const QByteArray &reply)
                     continue;
 
                 m_time[i] = check ? QDateTime::currentMSecsSinceEpoch() : 0;
+
+                if (m_hold[i])
+                {
+                    m_hold[i] = false;
+                    continue;
+                }
+
                 it.value()->status().insert("action", check ? "press" : "release");
                 emit endpointUpdated(it.key());
             }
@@ -207,10 +216,12 @@ void Devices::SwitchController::update(void)
     {
         auto it = m_endpoints.find(i + 1);
 
-        if (!m_time[i] || m_time[i] + 1000 > QDateTime::currentMSecsSinceEpoch()) // TODO: configurable timeout?
+        if (!m_time[i] || m_time[i] + 1000 > QDateTime::currentMSecsSinceEpoch())
             continue;
 
         m_time[i] = 0;
+        m_hold[i] = true;
+
         it.value()->status().insert("action", "hold");
         emit endpointUpdated(it.key());
     }
