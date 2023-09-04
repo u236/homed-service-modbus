@@ -1,228 +1,134 @@
+
+#include "devices/common.h"
+#include "controller.h"
 #include "device.h"
-#include "expose.h"
-#include "modbus.h"
+#include "logger.h"
 
-void Devices::RelayController::init(const Device &device)
+DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent)
 {
-    m_description = "HOMEd Relay Controller";
-
-    for (quint8 i = 0; i <= 16; i++)
-    {
-        Expose expose = i ? Expose(new SwitchObject) : Expose(new BooleanObject("invert"));
-        Endpoint endpoint(new EndpointObject(i, device));
-
-        expose->setMultiple(i ? true : false);
-        expose->setParent(endpoint.data());
-
-        endpoint->exposes().append(expose);
-        m_endpoints.insert(i, endpoint);
-    }
+    m_file.setFileName(config->value("device/database", "/opt/homed-modbus/database.json").toString());
 }
 
-void Devices::RelayController::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+DeviceList::~DeviceList(void)
 {
-    if (name == "invert")
-    {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
-        m_fullPoll = true;
-    }
-    else if (name == "status" && endpointId && endpointId <= 16)
-    {
-        QList <QString> list = {"on", "off", "toggle"};
-        quint16 mask = 1 << (endpointId - 1);
-
-        if (!m_update)
-        {
-            m_pending = m_status;
-            m_update = true;
-        }
-
-        switch (list.indexOf(data.toString()))
-        {
-            case 0: m_pending |=  mask; break;
-            case 1: m_pending &= ~mask; break;
-            case 2: m_pending ^=  mask; break;
-        }
-
-        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0001, m_pending));
-    }
+//    store(true);
 }
 
-void Devices::RelayController::startPoll(void)
+Device DeviceList::byName(const QString &name, int *index)
 {
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
-    m_sequence = m_fullPoll ? 0 : 1;
-}
-
-QByteArray Devices::RelayController::pollRequest(void)
-{
-    switch (m_sequence)
+    for (int i = 0; i < count(); i++)
     {
-        case 0:  return Modbus::makeRequest(m_portId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1:  return Modbus::makeRequest(m_portId, Modbus::ReadHoldingRegisters, 0x0001, 1);
-        default: return QByteArray();
-    }
-}
-
-void Devices::RelayController::parseReply(const QByteArray &reply)
-{
-    quint16 value;
-
-    switch (m_sequence)
-    {
-        case 0:
-
-            if (Modbus::parseReply(m_portId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
-                break;
-
-            m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
-            emit endpointUpdated(0);
-
-            m_fullPoll = false;
-            break;
-
-        case 1:
-
-            if (Modbus::parseReply(m_portId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
-                break;
-
-            for (quint8 i = 0; i < 16; i++)
-            {
-                auto it = m_endpoints.find(i + 1);
-                quint16 check = value & 1 << i;
-
-                if (!m_firstPoll && (m_status & 1 << i) == check)
-                    continue;
-
-                it.value()->status().insert("status", check ? "on" : "off");
-                emit endpointUpdated(it.key());
-            }
-
-            m_firstPoll = false;
-            m_status = value;
-
-            if (m_pending == m_status)
-                m_update = false;
-
-            break;
-    }
-
-    m_sequence++;
-}
-
-void Devices::SwitchController::init(const Device &device)
-{
-    m_description = "HOMEd Switch Controller";
-    m_options.insert("action", QVariant(QList <QString> {"press", "release", "hold"}));
-
-    for (quint8 i = 0; i <= 16; i++)
-    {
-        Expose expose = i ? Expose(new Sensor::Action) : Expose(new BooleanObject("invert"));
-        Endpoint endpoint(new EndpointObject(i, device));
-
-        expose->setMultiple(i ? true : false);
-        expose->setParent(endpoint.data());
-
-        endpoint->exposes().append(expose);
-        m_endpoints.insert(i, endpoint);
-    }
-
-    memset(m_time, 0, sizeof(m_time));
-    memset(m_hold, 0, sizeof(m_hold));
-
-    connect(m_timer, &QTimer::timeout, this, &SwitchController::update);
-    m_timer->start(1);
-}
-
-void Devices::SwitchController::enqueueAction(quint8, const QString &name, const QVariant &data)
-{
-    if (name == "invert")
-    {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_portId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
-        m_fullPoll = true;
-    }
-}
-
-void Devices::SwitchController::startPoll(void)
-{
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
-    m_sequence = m_fullPoll ? 0 : 1;
-}
-
-QByteArray Devices::SwitchController::pollRequest(void)
-{
-    switch (m_sequence)
-    {
-        case 0:  return Modbus::makeRequest(m_portId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1:  return Modbus::makeRequest(m_portId, Modbus::ReadInputRegisters, 0x0001, 1);
-        default: return QByteArray();
-    }
-}
-
-void Devices::SwitchController::parseReply(const QByteArray &reply)
-{
-    quint16 value;
-
-    switch (m_sequence)
-    {
-        case 0:
-
-            if (Modbus::parseReply(m_portId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
-                break;
-
-            m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
-            emit endpointUpdated(0);
-
-            m_fullPoll = false;
-            break;
-
-        case 1:
-
-            if (Modbus::parseReply(m_portId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
-                break;
-
-            for (quint8 i = 0; i < 16; i++)
-            {
-                auto it = m_endpoints.find(i + 1);
-                quint16 check = value & 1 << i;
-
-                if (!m_firstPoll && (m_status & 1 << i) == check)
-                    continue;
-
-                m_time[i] = check ? QDateTime::currentMSecsSinceEpoch() : 0;
-
-                if (m_hold[i])
-                {
-                    m_hold[i] = false;
-                    continue;
-                }
-
-                it.value()->status().insert("action", check ? "press" : "release");
-                emit endpointUpdated(it.key());
-            }
-
-            m_firstPoll = false;
-            m_status = value;
-            break;
-
-    }
-
-    m_sequence++;
-}
-
-void Devices::SwitchController::update(void)
-{
-    for (quint8 i = 0; i < 16; i++)
-    {
-        auto it = m_endpoints.find(i + 1);
-
-        if (!m_time[i] || m_time[i] + 1000 > QDateTime::currentMSecsSinceEpoch())
+        if (at(i)->address() != name && at(i)->name() != name)
             continue;
 
-        m_time[i] = 0;
-        m_hold[i] = true;
+        if (index)
+            *index = i;
 
-        it.value()->status().insert("action", "hold");
-        emit endpointUpdated(it.key());
+        return at(i);
     }
+
+    return Device();
+}
+
+Device DeviceList::parse(const QJsonObject &json)
+{
+    QList <QString> list = json.value("address").toString().split('.');
+    QString type = json.value("type").toString(), name = json.value("name").toString();
+    quint8 portId = static_cast <quint8> (list.value(0).toInt()), slaveId = static_cast <quint8> (list.value(1).toInt());
+    quint32 baudRate = static_cast <quint32> (json.value("baudRate").toInt()), pollInterval = static_cast <quint32> (json.value("pollInterval").toInt());
+    Device device;
+
+    if (name.isEmpty() || !portId || !slaveId || !baudRate)
+        return device;
+
+    if (type == "homedRelayController")
+        device = Device(new Devices::RelayController(portId, slaveId, baudRate, pollInterval, name));
+    else if (type == "homedSwitchController")
+        device = Device(new Devices::SwitchController(portId, slaveId, baudRate, pollInterval, name));
+
+    if (!device.isNull())
+        device->init(device);
+
+    return device;
+}
+
+void DeviceList::init(void)
+{
+    QJsonObject json;
+
+    if (!m_file.open(QFile::ReadOnly))
+        return;
+
+    json = QJsonDocument::fromJson(m_file.readAll()).object();
+    unserialize(json.value("devices").toArray());
+    m_file.close();
+}
+
+void DeviceList::store(bool sync)
+{
+    QJsonObject json = {{"devices", serialize()}, {"timestamp", QDateTime::currentSecsSinceEpoch()}, {"version", SERVICE_VERSION}};
+    QByteArray data = QJsonDocument(json).toJson(QJsonDocument::Compact);
+    bool check = true;
+
+    emit statusUpdated(json);
+
+    if (!sync)
+        return;
+
+    if (!m_file.open(QFile::WriteOnly))
+    {
+        logWarning << "Database not stored, file" << m_file.fileName() << "open error:" << m_file.errorString();
+        return;
+    }
+
+    if (m_file.write(data) != data.length())
+    {
+        logWarning << "Database not stored, file" << m_file.fileName() << "open error:" << m_file.errorString();
+        check = false;
+    }
+
+    m_file.close();
+
+    if (!check)
+        return;
+
+    system("sync");
+}
+
+void DeviceList::unserialize(const QJsonArray &devices)
+{
+    quint16 count = 0;
+
+    for (auto it = devices.begin(); it != devices.end(); it++)
+    {
+        QJsonObject json = it->toObject();
+        Device device = byName(json.value("name").toString());
+
+        if (!device.isNull())
+            continue;
+
+        device = parse(json);
+
+        if (device.isNull())
+            continue;
+
+        append(device);
+        count++;
+    }
+
+    if (count)
+        logInfo << count << "devices loaded";
+}
+
+QJsonArray DeviceList::serialize(void)
+{
+    QJsonArray array;
+
+    for (int i = 0; i < count(); i++)
+    {
+        const Device &device = at(i);
+        array.append(QJsonObject {{"type", device->type()}, {"address", device->address()}, {"baudRate", QJsonValue::fromVariant(device->baudRate())}, {"pollInterval", QJsonValue::fromVariant(device->pollInterval())}, {"name", device->name()}});
+    }
+
+    return array;
 }

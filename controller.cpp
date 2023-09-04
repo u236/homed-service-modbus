@@ -2,7 +2,9 @@
 #include "device.h"
 #include "logger.h"
 
-Controller::Controller(const QString &configFile) : HOMEd(configFile)
+//#include "devices/common.h"
+
+Controller::Controller(const QString &configFile) : HOMEd(configFile), m_devices(new DeviceList(getConfig(), this))
 {
     QList <QString> keys = getConfig()->allKeys();
 
@@ -21,41 +23,33 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile)
 
             //
 
-            if (id != 1)
-                continue;
+//            if (id != 1)
+//                continue;
 
-            {
-                Device device(new Devices::SwitchController(1, 11, 115200, 0, "Switch Controller"));
-                connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
-                device->init(device);
-                m_devices.append(device);
-            }
+//            {
+//                Device device(new Devices::SwitchController(1, 11, 115200, 0, "Switch Controller"));
+//                device->init(device);
+//                m_devices->append(device);
+//            }
 
-            {
-                Device device(new Devices::RelayController(1, 12, 115200, 2000, "Relay Controller"));
-                connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
-                device->init(device);
-                m_devices.append(device);
-            }
+//            {
+//                Device device(new Devices::RelayController(1, 12, 115200, 2000, "Relay Controller"));
+//                device->init(device);
+//                m_devices->append(device);
+//            }
 
             //
         }
     }
-}
 
-Device Controller::findDevice(const QString &deviceName)
-{
-    for (int i = 0; i < m_devices.count(); i++)
+    connect(m_devices, &DeviceList::statusUpdated, this, &Controller::statusUpdated);
+    m_devices->init();
+
+    for (int i = 0; i < m_devices->count(); i++)
     {
-        const Device &device = m_devices.at(i);
-
-        if (device->name() != deviceName && device->address() != deviceName)
-            continue;
-
-        return device;
+        const Device &device = m_devices->at(i);
+        connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
     }
-
-    return Device();
 }
 
 void Controller::mqttConnected(void)
@@ -66,11 +60,13 @@ void Controller::mqttConnected(void)
     // if (getConfig()->value("homeassistant/enabled", false).toBool())
     //     mqttSubscribe(m_haStatus);
 
-    for (int i = 0; i < m_devices.count(); i++)
+    for (int i = 0; i < m_devices->count(); i++)
     {
-        const Device &device = m_devices.at(i);
+        const Device &device = m_devices->at(i);
         device->publishExposes(this, device->address(), device->address().replace('.', '_'));
     }
+
+    m_devices->store();
 }
 
 void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &topic)
@@ -81,7 +77,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
     if (subTopic.startsWith("td/modbus/"))
     {
         QList <QString> list = subTopic.split('/');
-        Device device = findDevice(list.value(2));
+        Device device = m_devices->byName(list.value(2));
 
         if (device.isNull())
             return;
@@ -113,4 +109,9 @@ void Controller::endpointUpdated(quint8 endpointId)
         topic.append(QString("/%1").arg(endpointId));
 
     mqttPublish(topic, QJsonObject::fromVariantMap(endpoint->status()));
+}
+
+void Controller::statusUpdated(const QJsonObject &json)
+{
+    mqttPublish(mqttTopic("status/modbus"), json, true);
 }

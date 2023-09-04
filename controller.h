@@ -17,10 +17,9 @@ public:
 private:
 
     bool m_names;
-    QMap <quint8, Port> m_ports;
 
-    Device findDevice(const QString &deviceName);
-    QList <Device> m_devices;
+    QMap <quint8, Port> m_ports;
+    DeviceList *m_devices;
 
 private slots:
 
@@ -29,6 +28,7 @@ private slots:
 
     void updateAvailability(DeviceObject *device);
     void endpointUpdated(quint8 endpointId);
+    void statusUpdated(const QJsonObject &json);
 
 };
 

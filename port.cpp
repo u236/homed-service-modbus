@@ -4,7 +4,7 @@
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, QList<Device> &devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -84,9 +84,9 @@ void PortThread::poll(void)
 {
     QByteArray request;
 
-    for (int i = 0; i < m_devices.count(); i++)
+    for (int i = 0; i < m_devices->count(); i++)
     {
-        const Device &device = m_devices.at(i);
+        const Device &device = m_devices->at(i);
         bool force = false;
 
         if (device->portId() != m_portId)

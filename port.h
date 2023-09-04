@@ -5,7 +5,7 @@
 #include <QSettings>
 #include <QThread>
 #include <QTimer>
-#include "endpoint.h"
+#include "device.h"
 
 class PortThread;
 typedef QSharedPointer <PortThread> Port;
@@ -16,7 +16,7 @@ class PortThread : public QThread
 
 public:
 
-    PortThread(quint8 portId, const QString &portName, QList <Device> &devices);
+    PortThread(quint8 portId, const QString &portName, DeviceList *devices);
     ~PortThread(void);
 
 private:
@@ -28,7 +28,7 @@ private:
     QString m_portName;
 
     QByteArray m_replyData;
-    QList <Device> &m_devices;
+    DeviceList *m_devices;
 
     void sendRequest(const Device &device, const QByteArray &request);
 

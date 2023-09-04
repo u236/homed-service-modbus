@@ -2,6 +2,7 @@
 #define DEVICE_H
 
 #include <QDateTime>
+#include <QFile>
 #include <QQueue>
 #include <QSharedPointer>
 #include <QTimer>
@@ -13,7 +14,6 @@ class EndpointObject : public AbstractEndpointObject
 public:
 
     EndpointObject(quint8 id, const Device &device) : AbstractEndpointObject(id, device) {}
-
     inline QMap <QString, QVariant> &status(void) { return m_status; }
 
 private:
@@ -29,7 +29,7 @@ class DeviceObject : public AbstractDeviceObject
 public:
 
     DeviceObject(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-        AbstractDeviceObject(name), m_address(QString("%1.%2").arg(portId).arg(slaveId)), m_port(portId), m_portId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_pollTime(0), m_sequence(0), m_fullPoll(true), m_firstPoll(true) {}
+        AbstractDeviceObject(name), m_portId(portId), m_slaveId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_pollTime(0), m_sequence(0), m_fullPoll(true), m_firstPoll(true) {}
 
     virtual void init(const Device &) {}
     virtual void enqueueAction(quint8, const QString &, const QVariant &) {}
@@ -38,10 +38,11 @@ public:
     virtual void parseReply(const QByteArray &) = 0;
     virtual void startPoll(void) = 0;
 
-    inline QString address(void) { return m_address; }
+    inline QString type(void) { return m_type; }
+    inline QString address(void) { return QString("%1.%2").arg(m_portId).arg(m_slaveId); }
 
-    inline quint8 portId(void) { return m_port; }
-    inline quint8 slaveId(void) { return m_portId; }
+    inline quint8 portId(void) { return m_portId; }
+    inline quint8 slaveId(void) { return m_slaveId; }
     inline quint32 baudRate(void) { return m_baudRate; }
     inline quint32 pollInterval(void) { return m_pollInterval; }
     inline qint64 pollTime(void) { return m_pollTime; }
@@ -50,9 +51,9 @@ public:
 
 protected:
 
-    QString m_address;
+    QString m_type, m_address;
 
-    quint8 m_port, m_portId;
+    quint8 m_portId, m_slaveId;
     quint32 m_baudRate, m_pollInterval;
 
     qint64 m_pollTime;
@@ -67,59 +68,32 @@ signals:
 
 };
 
-namespace Devices
+class DeviceList : public QObject, public QList <Device>
 {
-    class RelayController : public DeviceObject
-    {
+    Q_OBJECT
 
-    public:
+public:
 
-        RelayController(quint8 portId,quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, name), m_status(0), m_pending(0), m_update(false) {}
+    DeviceList(QSettings *config, QObject *parent);
+    ~DeviceList(void);
 
-        void init(const Device &device) override;
-        void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
-        void startPoll(void) override;
+    void init(void);
+    void store(bool sync = false);
 
-        QByteArray pollRequest(void) override;
-        void parseReply(const QByteArray &reply) override;
+    Device byName(const QString &name, int *index = nullptr);
+    Device parse(const QJsonObject &json);
 
-    private:
+private:
 
-        quint16 m_status, m_pending;
-        bool m_update;
+    QFile m_file;
 
-    };
+    void unserialize(const QJsonArray &devices);
+    QJsonArray serialize(void);
 
-    class SwitchController : public DeviceObject
-    {
-        Q_OBJECT
+signals:
 
-    public:
+    void statusUpdated(const QJsonObject &json);
 
-        SwitchController(quint8 portId,quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, name), m_timer(new QTimer(this)), m_status(0) {}
-
-        void init(const Device &device) override;
-        void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
-        void startPoll(void) override;
-
-        QByteArray pollRequest(void) override;
-        void parseReply(const QByteArray &reply) override;
-
-    private:
-
-        QTimer *m_timer;
-        quint16 m_status;
-
-        qint64 m_time[16];
-        bool m_hold[16];
-
-    private slots:
-
-        void update(void);
-
-    };
-}
+};
 
 #endif
