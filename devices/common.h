@@ -3,7 +3,7 @@
 
 #include "device.h"
 
-namespace Devices
+namespace Common
 {
     class RelayController : public DeviceObject
     {

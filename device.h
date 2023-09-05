@@ -1,11 +1,8 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include <QDateTime>
 #include <QFile>
 #include <QQueue>
-#include <QSharedPointer>
-#include <QTimer>
 #include "endpoint.h"
 
 class EndpointObject : public AbstractEndpointObject
@@ -43,8 +40,8 @@ public:
 
     inline quint8 portId(void) { return m_portId; }
     inline quint8 slaveId(void) { return m_slaveId; }
-    inline quint32 baudRate(void) { return m_baudRate; }
-    inline quint32 pollInterval(void) { return m_pollInterval; }
+    inline qint32 baudRate(void) { return m_baudRate; }
+    inline qint32 pollInterval(void) { return m_pollInterval; }
     inline qint64 pollTime(void) { return m_pollTime; }
 
     inline QQueue <QByteArray> &actionQueue(void) { return m_actionQueue; }
@@ -54,7 +51,7 @@ protected:
     QString m_type, m_address;
 
     quint8 m_portId, m_slaveId;
-    quint32 m_baudRate, m_pollInterval;
+    qint32 m_baudRate, m_pollInterval;
 
     qint64 m_pollTime;
     quint8 m_sequence;
@@ -64,7 +61,7 @@ protected:
 
 signals:
 
-    void endpointUpdated(quint8 endpointId);
+    void endpointUpdated(DeviceObject *device, quint8 endpointId);
 
 };
 
@@ -85,6 +82,7 @@ public:
 
 private:
 
+    QList <QString> m_types;
     QFile m_file;
 
     void unserialize(const QJsonArray &devices);

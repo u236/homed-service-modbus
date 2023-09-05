@@ -1,4 +1,3 @@
-
 #include "devices/common.h"
 #include "controller.h"
 #include "device.h"
@@ -6,12 +5,18 @@
 
 DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent)
 {
+    m_types =
+    {
+        "homedRelayController",
+        "homedSwitchController"
+    };
+
     m_file.setFileName(config->value("device/database", "/opt/homed-modbus/database.json").toString());
 }
 
 DeviceList::~DeviceList(void)
 {
-//    store(true);
+    store(true);
 }
 
 Device DeviceList::byName(const QString &name, int *index)
@@ -32,19 +37,19 @@ Device DeviceList::byName(const QString &name, int *index)
 
 Device DeviceList::parse(const QJsonObject &json)
 {
-    QList <QString> list = json.value("address").toString().split('.');
-    QString type = json.value("type").toString(), name = json.value("name").toString();
-    quint8 portId = static_cast <quint8> (list.value(0).toInt()), slaveId = static_cast <quint8> (list.value(1).toInt());
-    quint32 baudRate = static_cast <quint32> (json.value("baudRate").toInt()), pollInterval = static_cast <quint32> (json.value("pollInterval").toInt());
+    QString name = json.value("name").toString();
+    quint8 portId = static_cast <quint8> (json.value("portId").toInt()), slaveId = static_cast <quint8> (json.value("slaveId").toInt());
+    quint32 baudRate = json.value("baudRate").toInt(), pollInterval = json.value("pollInterval").toInt();
     Device device;
 
     if (name.isEmpty() || !portId || !slaveId || !baudRate)
         return device;
 
-    if (type == "homedRelayController")
-        device = Device(new Devices::RelayController(portId, slaveId, baudRate, pollInterval, name));
-    else if (type == "homedSwitchController")
-        device = Device(new Devices::SwitchController(portId, slaveId, baudRate, pollInterval, name));
+    switch (m_types.indexOf(json.value("type").toString()))
+    {
+        case 0: device = Device(new Common::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 1: device = Device(new Common::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
+    }
 
     if (!device.isNull())
         device->init(device);
@@ -127,7 +132,7 @@ QJsonArray DeviceList::serialize(void)
     for (int i = 0; i < count(); i++)
     {
         const Device &device = at(i);
-        array.append(QJsonObject {{"type", device->type()}, {"address", device->address()}, {"baudRate", QJsonValue::fromVariant(device->baudRate())}, {"pollInterval", QJsonValue::fromVariant(device->pollInterval())}, {"name", device->name()}});
+        array.append(QJsonObject {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"name", device->name()}});
     }
 
     return array;

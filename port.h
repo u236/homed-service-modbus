@@ -1,10 +1,8 @@
 #ifndef PORT_H
 #define PORT_H
 
-#include <QtSerialPort>
-#include <QSettings>
+#include <QSerialPort>
 #include <QThread>
-#include <QTimer>
 #include "device.h"
 
 class PortThread;

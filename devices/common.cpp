@@ -2,7 +2,7 @@
 #include "expose.h"
 #include "modbus.h"
 
-void Devices::RelayController::init(const Device &device)
+void Common::RelayController::init(const Device &device)
 {
     m_type = "homedRelayController";
     m_description = "HOMEd Relay Controller";
@@ -20,7 +20,7 @@ void Devices::RelayController::init(const Device &device)
     }
 }
 
-void Devices::RelayController::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+void Common::RelayController::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
     if (name == "invert")
     {
@@ -49,13 +49,13 @@ void Devices::RelayController::enqueueAction(quint8 endpointId, const QString &n
     }
 }
 
-void Devices::RelayController::startPoll(void)
+void Common::RelayController::startPoll(void)
 {
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_sequence = m_fullPoll ? 0 : 1;
 }
 
-QByteArray Devices::RelayController::pollRequest(void)
+QByteArray Common::RelayController::pollRequest(void)
 {
     switch (m_sequence)
     {
@@ -65,7 +65,7 @@ QByteArray Devices::RelayController::pollRequest(void)
     }
 }
 
-void Devices::RelayController::parseReply(const QByteArray &reply)
+void Common::RelayController::parseReply(const QByteArray &reply)
 {
     quint16 value;
 
@@ -77,7 +77,7 @@ void Devices::RelayController::parseReply(const QByteArray &reply)
                 break;
 
             m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
-            emit endpointUpdated(0);
+            emit endpointUpdated(this, 0);
 
             m_fullPoll = false;
             break;
@@ -96,7 +96,7 @@ void Devices::RelayController::parseReply(const QByteArray &reply)
                     continue;
 
                 it.value()->status().insert("status", check ? "on" : "off");
-                emit endpointUpdated(it.key());
+                emit endpointUpdated(this, it.key());
             }
 
             m_firstPoll = false;
@@ -111,7 +111,7 @@ void Devices::RelayController::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void Devices::SwitchController::init(const Device &device)
+void Common::SwitchController::init(const Device &device)
 {
     m_type = "homedSwitchController";
     m_description = "HOMEd Switch Controller";
@@ -136,7 +136,7 @@ void Devices::SwitchController::init(const Device &device)
     m_timer->start(1);
 }
 
-void Devices::SwitchController::enqueueAction(quint8, const QString &name, const QVariant &data)
+void Common::SwitchController::enqueueAction(quint8, const QString &name, const QVariant &data)
 {
     if (name == "invert")
     {
@@ -145,13 +145,13 @@ void Devices::SwitchController::enqueueAction(quint8, const QString &name, const
     }
 }
 
-void Devices::SwitchController::startPoll(void)
+void Common::SwitchController::startPoll(void)
 {
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_sequence = m_fullPoll ? 0 : 1;
 }
 
-QByteArray Devices::SwitchController::pollRequest(void)
+QByteArray Common::SwitchController::pollRequest(void)
 {
     switch (m_sequence)
     {
@@ -161,7 +161,7 @@ QByteArray Devices::SwitchController::pollRequest(void)
     }
 }
 
-void Devices::SwitchController::parseReply(const QByteArray &reply)
+void Common::SwitchController::parseReply(const QByteArray &reply)
 {
     quint16 value;
 
@@ -173,7 +173,7 @@ void Devices::SwitchController::parseReply(const QByteArray &reply)
                 break;
 
             m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
-            emit endpointUpdated(0);
+            emit endpointUpdated(this, 0);
 
             m_fullPoll = false;
             break;
@@ -200,7 +200,7 @@ void Devices::SwitchController::parseReply(const QByteArray &reply)
                 }
 
                 it.value()->status().insert("action", check ? "press" : "release");
-                emit endpointUpdated(it.key());
+                emit endpointUpdated(this, it.key());
             }
 
             m_firstPoll = false;
@@ -212,7 +212,7 @@ void Devices::SwitchController::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void Devices::SwitchController::update(void)
+void Common::SwitchController::update(void)
 {
     for (quint8 i = 0; i < 16; i++)
     {
@@ -225,6 +225,6 @@ void Devices::SwitchController::update(void)
         m_hold[i] = true;
 
         it.value()->status().insert("action", "hold");
-        emit endpointUpdated(it.key());
+        emit endpointUpdated(this, it.key());
     }
 }

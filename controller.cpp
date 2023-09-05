@@ -2,13 +2,23 @@
 #include "device.h"
 #include "logger.h"
 
-//#include "devices/common.h"
-
-Controller::Controller(const QString &configFile) : HOMEd(configFile), m_devices(new DeviceList(getConfig(), this))
+Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_events(QMetaEnum::fromType <Event> ())
 {
     QList <QString> keys = getConfig()->allKeys();
 
-    m_names = getConfig()->value("mqtt/names", false).toBool();
+    logInfo << "Starting version" << SERVICE_VERSION;
+    logInfo << "Configuration file is" << getConfig()->fileName();
+
+    connect(m_timer, &QTimer::timeout, this, &Controller::updateProperties);
+    connect(m_devices, &DeviceList::statusUpdated, this, &Controller::statusUpdated);
+
+    m_devices->init();
+
+    for (int i = 0; i < m_devices->count(); i++)
+    {
+        const Device &device = m_devices->at(i);
+        connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
+    }
 
     for (int i = 0; i < keys.count(); i++)
     {
@@ -20,51 +30,68 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile), m_devices
             Port port(new PortThread(id, getConfig()->value(key).toString(), m_devices));
             connect(port.data(), &PortThread::updateAvailability, this, &Controller::updateAvailability);
             m_ports.insert(id, port);
-
-            //
-
-//            if (id != 1)
-//                continue;
-
-//            {
-//                Device device(new Devices::SwitchController(1, 11, 115200, 0, "Switch Controller"));
-//                device->init(device);
-//                m_devices->append(device);
-//            }
-
-//            {
-//                Device device(new Devices::RelayController(1, 12, 115200, 2000, "Relay Controller"));
-//                device->init(device);
-//                m_devices->append(device);
-//            }
-
-            //
         }
     }
 
-    connect(m_devices, &DeviceList::statusUpdated, this, &Controller::statusUpdated);
-    m_devices->init();
+    m_names = getConfig()->value("mqtt/names", false).toBool();
+    m_haStatus = getConfig()->value("homeassistant/status", "homeassistant/status").toString();
+}
 
-    for (int i = 0; i < m_devices->count(); i++)
+void Controller::publishExposes(DeviceObject *device, bool remove)
+{
+    device->publishExposes(this, device->address(), device->address().replace('.', '_'), remove);
+
+    if (remove)
+        return;
+
+    m_timer->start(UPDATE_PROPERTIES_DELAY);
+}
+
+void Controller::deviceEvent(DeviceObject *device, Event event)
+{
+    bool check = true, remove = false;
+    switch (event)
     {
-        const Device &device = m_devices->at(i);
-        connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
+        case Event::aboutToRename:
+        case Event::removed:
+            mqttPublish(mqttTopic("device/modbus/%1").arg(m_names ? device->name() : device->address()), QJsonObject(), true);
+            remove = true;
+            break;
+
+        case Event::added:
+        case Event::updated:
+
+            if (device->availability() != Availability::Unknown)
+                mqttPublish(mqttTopic("device/zigbee/%1").arg(m_names ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
+
+            break;
+
+        default:
+            check = false;
+            break;
     }
+
+    if (check)
+    {
+        logInfo << "here" << remove;
+        publishExposes(device, remove);
+    }
+
+    mqttPublish(mqttTopic("event/modbus"), {{"device", device->name()}, {"event", m_events.valueToKey(static_cast <int> (event))}});
 }
 
 void Controller::mqttConnected(void)
 {
     logInfo << "MQTT connected";
-    mqttSubscribe("homed/td/modbus/#");
 
-    // if (getConfig()->value("homeassistant/enabled", false).toBool())
-    //     mqttSubscribe(m_haStatus);
+    mqttSubscribe(mqttTopic("command/modbus"));
+    mqttSubscribe(mqttTopic("td/modbus/#"));
+
+    if (getConfig()->value("homeassistant/enabled", false).toBool())
+        mqttSubscribe(m_haStatus);
 
     for (int i = 0; i < m_devices->count(); i++)
-    {
-        const Device &device = m_devices->at(i);
-        device->publishExposes(this, device->address(), device->address().replace('.', '_'));
-    }
+        publishExposes(m_devices->at(i).data());
 
     m_devices->store();
 }
@@ -74,7 +101,67 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
     QString subTopic = topic.name().replace(mqttTopic(), QString());
     QJsonObject json = QJsonDocument::fromJson(message).object();
 
-    if (subTopic.startsWith("td/modbus/"))
+    if (subTopic == "command/modbus")
+    {
+        QString action = json.value("action").toString();
+
+        if (action == "updateDevice")
+        {
+            int index = -1;
+            QJsonObject data = json.value("data").toObject();
+            QString name = data.value("name").toString();
+            Device device = m_devices->byName(json.value("device").toString(), &index), other = m_devices->byName(name);
+
+            if (device != other && !other.isNull())
+            {
+                logWarning << "Device" << name << "update failed, name already in use";
+                deviceEvent(device.data(), Event::nameDuplicate);
+                return;
+            }
+
+            if (!device.isNull())
+                deviceEvent(device.data(), Event::aboutToRename);
+
+            device = m_devices->parse(data);
+
+            if (device.isNull())
+            {
+                logWarning << "Device" << name << "update failed, data is incomplete";
+                deviceEvent(device.data(), Event::incompleteData);
+                return;
+            }
+
+            if (index < 0)
+            {
+                m_devices->append(device);
+                logInfo << "Device" << device->name() << "successfully added";
+                deviceEvent(device.data(), Event::added);
+            }
+            else
+            {
+                m_devices->replace(index, device);
+                logInfo << "Device" << device->name() << "successfully updated";
+                deviceEvent(device.data(), Event::updated);
+            }
+        }
+        else if (action == "removeDevice")
+        {
+            int index = -1;
+            const Device &device = m_devices->byName(json.value("device").toString(), &index);
+
+            if (index < 0)
+                return;
+
+            m_devices->removeAt(index);
+            logInfo << "Device" << device->name() << "removed";
+            deviceEvent(device.data(), Event::removed);
+        }
+        else
+            return;
+
+        m_devices->store(true);
+    }
+    else if (subTopic.startsWith("td/modbus/"))
     {
         QList <QString> list = subTopic.split('/');
         Device device = m_devices->byName(list.value(2));
@@ -90,6 +177,13 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             device->enqueueAction(static_cast <quint8> (list.value(3).toInt()), it.key(), it.value().toVariant());
         }
     }
+    else if (topic.name() == m_haStatus)
+    {
+        if (message != "online")
+            return;
+
+        m_timer->start(UPDATE_PROPERTIES_DELAY);
+    }
 }
 
 void Controller::updateAvailability(DeviceObject *device)
@@ -99,9 +193,19 @@ void Controller::updateAvailability(DeviceObject *device)
     logInfo << "Device" << device->name() << "is" << status;
 }
 
-void Controller::endpointUpdated(quint8 endpointId)
+void Controller::updateProperties(void)
 {
-    DeviceObject *device = reinterpret_cast <DeviceObject*> (sender());
+    for (int i = 0; i < m_devices->count(); i++)
+    {
+        const Device &device = m_devices->at(i);
+
+        for (auto it = device->endpoints().begin(); it != device->endpoints().end(); it++)
+            endpointUpdated(device.data(), it.key());
+    }
+}
+
+void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)
+{
     Endpoint endpoint = device->endpoints().value(endpointId);
     QString topic = mqttTopic("fd/modbus/%1").arg(m_names ? device->name() : device->address());
 
