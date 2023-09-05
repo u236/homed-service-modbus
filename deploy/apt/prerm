@@ -1,0 +1,6 @@
+#!/bin/bash
+
+systemctl stop homed-modbus.service
+systemctl disable homed-modbus.service
+
+exit 0

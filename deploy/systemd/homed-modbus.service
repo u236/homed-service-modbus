@@ -1,0 +1,10 @@
+[Unit]
+Description=HOMEd Modbus Service
+
+[Service]
+ExecStart=/usr/bin/homed-modbus
+KillSignal=SIGTERM
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

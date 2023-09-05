@@ -1,0 +1,16 @@
+{
+  "luci-app-homed-modbus":
+  {
+    "description": "Grant access to /etc/homed/homed-modbus.conf",
+    "read":
+    {
+      "file": {"/etc/homed/homed-modbus.conf": ["read"]},
+      "ubus": {"file": ["read"]}
+    },
+    "write":
+    {
+      "file": {"/etc/homed/homed-modbus.conf": ["write"]},
+      "ubus": {"file": ["write"]}
+    }
+  }
+}

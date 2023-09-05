@@ -62,7 +62,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
         case Event::updated:
 
             if (device->availability() != Availability::Unknown)
-                mqttPublish(mqttTopic("device/zigbee/%1").arg(m_names ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
+                mqttPublish(mqttTopic("device/modbus/%1").arg(m_names ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
 
             break;
 

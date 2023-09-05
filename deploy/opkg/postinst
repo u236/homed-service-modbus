@@ -1,0 +1,6 @@
+#!/bin/sh
+
+/etc/init.d/homed-modbus enable
+/etc/init.d/homed-modbus start
+
+exit 0
