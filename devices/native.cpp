@@ -1,8 +1,8 @@
-#include "common.h"
+#include "native.h"
 #include "expose.h"
 #include "modbus.h"
 
-void Common::RelayController::init(const Device &device)
+void Native::RelayController::init(const Device &device)
 {
     m_type = "homedRelayController";
     m_description = "HOMEd Relay Controller";
@@ -20,7 +20,7 @@ void Common::RelayController::init(const Device &device)
     }
 }
 
-void Common::RelayController::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+void Native::RelayController::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
     if (name == "invert")
     {
@@ -49,13 +49,13 @@ void Common::RelayController::enqueueAction(quint8 endpointId, const QString &na
     }
 }
 
-void Common::RelayController::startPoll(void)
+void Native::RelayController::startPoll(void)
 {
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_sequence = m_fullPoll ? 0 : 1;
 }
 
-QByteArray Common::RelayController::pollRequest(void)
+QByteArray Native::RelayController::pollRequest(void)
 {
     switch (m_sequence)
     {
@@ -65,7 +65,7 @@ QByteArray Common::RelayController::pollRequest(void)
     }
 }
 
-void Common::RelayController::parseReply(const QByteArray &reply)
+void Native::RelayController::parseReply(const QByteArray &reply)
 {
     quint16 value;
 
@@ -111,7 +111,7 @@ void Common::RelayController::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void Common::SwitchController::init(const Device &device)
+void Native::SwitchController::init(const Device &device)
 {
     m_type = "homedSwitchController";
     m_description = "HOMEd Switch Controller";
@@ -136,7 +136,7 @@ void Common::SwitchController::init(const Device &device)
     m_timer->start(1);
 }
 
-void Common::SwitchController::enqueueAction(quint8, const QString &name, const QVariant &data)
+void Native::SwitchController::enqueueAction(quint8, const QString &name, const QVariant &data)
 {
     if (name == "invert")
     {
@@ -145,13 +145,13 @@ void Common::SwitchController::enqueueAction(quint8, const QString &name, const 
     }
 }
 
-void Common::SwitchController::startPoll(void)
+void Native::SwitchController::startPoll(void)
 {
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_sequence = m_fullPoll ? 0 : 1;
 }
 
-QByteArray Common::SwitchController::pollRequest(void)
+QByteArray Native::SwitchController::pollRequest(void)
 {
     switch (m_sequence)
     {
@@ -161,7 +161,7 @@ QByteArray Common::SwitchController::pollRequest(void)
     }
 }
 
-void Common::SwitchController::parseReply(const QByteArray &reply)
+void Native::SwitchController::parseReply(const QByteArray &reply)
 {
     quint16 value;
 
@@ -212,7 +212,7 @@ void Common::SwitchController::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void Common::SwitchController::update(void)
+void Native::SwitchController::update(void)
 {
     for (quint8 i = 0; i < 16; i++)
     {

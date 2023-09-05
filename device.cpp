@@ -1,4 +1,4 @@
-#include "devices/common.h"
+#include "devices/native.h"
 #include "controller.h"
 #include "device.h"
 #include "logger.h"
@@ -47,8 +47,8 @@ Device DeviceList::parse(const QJsonObject &json)
 
     switch (m_types.indexOf(json.value("type").toString()))
     {
-        case 0: device = Device(new Common::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 1: device = Device(new Common::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 0: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 1: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
     }
 
     if (!device.isNull())

@@ -2,16 +2,16 @@ include(../homed-common/homed-common.pri)
 include(../homed-common/homed-endpoint.pri)
 
 HEADERS += \
-    devices/common.h \
     controller.h \
     device.h \
+    devices/native.h \
     modbus.h \
     port.h
 
 SOURCES += \
-    devices/common.cpp \
     controller.cpp \
     device.cpp \
+    devices/native.cpp \
     modbus.cpp \
     port.cpp
 

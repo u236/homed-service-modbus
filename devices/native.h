@@ -1,9 +1,9 @@
-#ifndef DEVICES_COMMON_H
-#define DEVICES_COMMON_H
+#ifndef DEVICES_NATIVE_H
+#define DEVICES_NATIVE_H
 
 #include "device.h"
 
-namespace Common
+namespace Native
 {
     class RelayController : public DeviceObject
     {
