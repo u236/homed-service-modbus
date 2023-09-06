@@ -11,11 +11,13 @@ class EndpointObject : public AbstractEndpointObject
 public:
 
     EndpointObject(quint8 id, const Device &device) : AbstractEndpointObject(id, device) {}
+
     inline QMap <QString, QVariant> &status(void) { return m_status; }
+    inline QMap <QString, QVariant> &buffer(void) { return m_buffer; }
 
 private:
 
-    QMap <QString, QVariant> m_status;
+    QMap <QString, QVariant> m_status, m_buffer;
 
 };
 
@@ -26,7 +28,7 @@ class DeviceObject : public AbstractDeviceObject
 public:
 
     DeviceObject(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-        AbstractDeviceObject(name), m_portId(portId), m_slaveId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_pollTime(0), m_sequence(0), m_fullPoll(true), m_firstPoll(true) {}
+        AbstractDeviceObject(name), m_portId(portId), m_slaveId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_pollTime(0), m_sequence(0), m_errorCount(0), m_fullPoll(true) {}
 
     virtual void init(const Device &) {}
     virtual void enqueueAction(quint8, const QString &, const QVariant &) {}
@@ -44,6 +46,10 @@ public:
     inline qint32 pollInterval(void) { return m_pollInterval; }
     inline qint64 pollTime(void) { return m_pollTime; }
 
+    inline quint32 errorCount(void) { return m_errorCount; }
+    inline void increaseErrorCount(void) { m_errorCount++; }
+    inline void resetErrorCount(void) { m_errorCount = 0; }
+
     inline QQueue <QByteArray> &actionQueue(void) { return m_actionQueue; }
 
 protected:
@@ -55,9 +61,12 @@ protected:
 
     qint64 m_pollTime;
     quint8 m_sequence;
-    bool m_fullPoll, m_firstPoll;
 
+    quint32 m_errorCount;
+    bool m_fullPoll;
     QQueue <QByteArray> m_actionQueue;
+
+    void updateEndpoints(void);
 
 signals:
 

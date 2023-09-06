@@ -9,6 +9,8 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(n
     logInfo << "Starting version" << SERVICE_VERSION;
     logInfo << "Configuration file is" << getConfig()->fileName();
 
+    m_timer->setSingleShot(true);
+
     connect(m_timer, &QTimer::timeout, this, &Controller::updateProperties);
     connect(m_devices, &DeviceList::statusUpdated, this, &Controller::statusUpdated);
 
@@ -72,10 +74,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
     }
 
     if (check)
-    {
-        logInfo << "here" << remove;
         publishExposes(device, remove);
-    }
 
     mqttPublish(mqttTopic("event/modbus"), {{"device", device->name()}, {"event", m_events.valueToKey(static_cast <int> (event))}});
 }

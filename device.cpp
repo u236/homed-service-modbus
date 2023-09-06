@@ -3,6 +3,19 @@
 #include "device.h"
 #include "logger.h"
 
+void DeviceObject::updateEndpoints(void)
+{
+    for (int i = 0; i < m_endpoints.count(); i++)
+    {
+        auto it = m_endpoints.find(i);
+
+        if (it.value()->status() == it.value()->buffer())
+            continue;
+
+        it.value()->status() = it.value()->buffer();
+        emit endpointUpdated(this, it.key());
+    }
+}
 DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent)
 {
     m_types =

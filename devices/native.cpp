@@ -7,7 +7,7 @@ void Native::RelayController::init(const Device &device)
     m_type = "homedRelayController";
     m_description = "HOMEd Relay Controller";
 
-    for (quint8 i = 0; i <= 16; i++)
+    for (quint8 i = 0; i < 17; i++)
     {
         Expose expose = i ? Expose(new SwitchObject) : Expose(new BooleanObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));
@@ -68,6 +68,7 @@ QByteArray Native::RelayController::pollRequest(void)
 void Native::RelayController::parseReply(const QByteArray &reply)
 {
     quint16 value;
+    bool check = false;
 
     switch (m_sequence)
     {
@@ -76,15 +77,13 @@ void Native::RelayController::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
-            emit endpointUpdated(this, 0);
-
+            m_endpoints.find(0).value()->buffer().insert("invert", value ? true : false);
             m_fullPoll = false;
             break;
 
         case 1:
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 16; i++)
@@ -92,21 +91,23 @@ void Native::RelayController::parseReply(const QByteArray &reply)
                 auto it = m_endpoints.find(i + 1);
                 quint16 check = value & 1 << i;
 
-                if (!m_firstPoll && (m_status & 1 << i) == check)
+                if (it.value()->buffer().contains("status") && (m_status & 1 << i) == check)
                     continue;
 
-                it.value()->status().insert("status", check ? "on" : "off");
-                emit endpointUpdated(this, it.key());
+                it.value()->buffer().insert("status", check ? "on" : "off");
             }
 
-            m_firstPoll = false;
             m_status = value;
 
             if (m_pending == m_status)
                 m_update = false;
 
+            check = true;
             break;
     }
+
+    if (check)
+        updateEndpoints();
 
     m_sequence++;
 }
@@ -117,7 +118,7 @@ void Native::SwitchController::init(const Device &device)
     m_description = "HOMEd Switch Controller";
     m_options.insert("action", QVariant(QList <QString> {"press", "release", "hold"}));
 
-    for (quint8 i = 0; i <= 16; i++)
+    for (quint8 i = 0; i < 17; i++)
     {
         Expose expose = i ? Expose(new Sensor::Action) : Expose(new BooleanObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));
@@ -164,6 +165,7 @@ QByteArray Native::SwitchController::pollRequest(void)
 void Native::SwitchController::parseReply(const QByteArray &reply)
 {
     quint16 value;
+    bool check = false;
 
     switch (m_sequence)
     {
@@ -172,15 +174,13 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->status().insert("invert", value ? true : false);
-            emit endpointUpdated(this, 0);
-
+            m_endpoints.find(0).value()->buffer().insert("invert", value ? true : false);
             m_fullPoll = false;
             break;
 
         case 1:
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || (m_status == value && !m_firstPoll))
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || m_status == value)
                 break;
 
             for (quint8 i = 0; i < 16; i++)
@@ -188,7 +188,7 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
                 auto it = m_endpoints.find(i + 1);
                 quint16 check = value & 1 << i;
 
-                if (!m_firstPoll && (m_status & 1 << i) == check)
+                if (it.value()->buffer().contains("action") && (m_status & 1 << i) == check)
                     continue;
 
                 m_time[i] = check ? QDateTime::currentMSecsSinceEpoch() : 0;
@@ -199,15 +199,17 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
                     continue;
                 }
 
-                it.value()->status().insert("action", check ? "press" : "release");
-                emit endpointUpdated(this, it.key());
+                it.value()->buffer().insert("action", check ? "press" : "release");
             }
 
-            m_firstPoll = false;
             m_status = value;
+            check = true;
             break;
 
     }
+
+    if (check)
+        updateEndpoints();
 
     m_sequence++;
 }
@@ -224,7 +226,7 @@ void Native::SwitchController::update(void)
         m_time[i] = 0;
         m_hold[i] = true;
 
-        it.value()->status().insert("action", "hold");
-        emit endpointUpdated(this, it.key());
+        it.value()->buffer().insert("action", "hold");
+        updateEndpoints();
     }
 }

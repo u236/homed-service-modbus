@@ -35,7 +35,12 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     timer.start(100); // TODO: use config here?
     loop.exec();
 
-    device->setAvailability(timer.isActive() ? Availability::Online : Availability::Offline);
+    if (!timer.isActive())
+        device->increaseErrorCount();
+    else
+        device->resetErrorCount();
+
+    device->setAvailability(device->errorCount() > 2 ? Availability::Offline : Availability::Online);
 
     if (availability == device->availability())
         return;
@@ -107,7 +112,7 @@ void PortThread::poll(void)
         {
             sendRequest(device, request);
 
-            if (device->availability() == Availability::Offline)
+            if (device->errorCount())
                 break;
 
             device->parseReply(m_replyData);
