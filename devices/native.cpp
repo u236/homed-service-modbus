@@ -116,6 +116,7 @@ void Native::SwitchController::init(const Device &device)
 {
     m_type = "homedSwitchController";
     m_description = "HOMEd Switch Controller";
+
     m_options.insert("action", QVariant(QList <QString> {"press", "release", "hold"}));
 
     for (quint8 i = 0; i < 17; i++)

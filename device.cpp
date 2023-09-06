@@ -1,4 +1,5 @@
 #include "devices/native.h"
+#include "devices/wirenboard.h"
 #include "controller.h"
 #include "device.h"
 #include "logger.h"
@@ -21,7 +22,8 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent)
     m_types =
     {
         "homedRelayController",
-        "homedSwitchController"
+        "homedSwitchController",
+        "wbMap3e"
     };
 
     m_file.setFileName(config->value("device/database", "/opt/homed-modbus/database.json").toString());
@@ -62,6 +64,7 @@ Device DeviceList::parse(const QJsonObject &json)
     {
         case 0: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
         case 1: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 2: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, name)); break;
     }
 
     if (!device.isNull())
