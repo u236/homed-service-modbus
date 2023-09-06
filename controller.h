@@ -19,7 +19,7 @@ public:
     enum class Event
     {
         nameDuplicate,
-        incompleteData,
+        incorrectData,
         aboutToRename,
         added,
         updated,
@@ -40,6 +40,7 @@ private:
     QString m_haStatus;
 
     void publishExposes(DeviceObject *device, bool remove = false);
+    void publishEvent(const QString &name, Event event);
     void deviceEvent(DeviceObject *device, Event event);
 
 private slots:

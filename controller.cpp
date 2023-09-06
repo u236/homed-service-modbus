@@ -49,9 +49,15 @@ void Controller::publishExposes(DeviceObject *device, bool remove)
     m_timer->start(UPDATE_PROPERTIES_DELAY);
 }
 
+void Controller::publishEvent(const QString &name, Event event)
+{
+    mqttPublish(mqttTopic("event/modbus"), {{"device", name}, {"event", m_events.valueToKey(static_cast <int> (event))}});
+}
+
 void Controller::deviceEvent(DeviceObject *device, Event event)
 {
     bool check = true, remove = false;
+
     switch (event)
     {
         case Event::aboutToRename:
@@ -76,7 +82,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
     if (check)
         publishExposes(device, remove);
 
-    mqttPublish(mqttTopic("event/modbus"), {{"device", device->name()}, {"event", m_events.valueToKey(static_cast <int> (event))}});
+    publishEvent(device->name(), event);
 }
 
 void Controller::mqttConnected(void)
@@ -114,7 +120,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             if (device != other && !other.isNull())
             {
                 logWarning << "Device" << name << "update failed, name already in use";
-                deviceEvent(device.data(), Event::nameDuplicate);
+                publishEvent(name, Event::nameDuplicate);
                 return;
             }
 
@@ -126,7 +132,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             if (device.isNull())
             {
                 logWarning << "Device" << name << "update failed, data is incomplete";
-                deviceEvent(device.data(), Event::incompleteData);
+                publishEvent(name, Event::incorrectData);
                 return;
             }
 
