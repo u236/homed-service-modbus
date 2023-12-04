@@ -8,8 +8,13 @@ void WirenBoard::WBMap3e::init(const Device &device)
     m_type = "wbMap3e";
     m_description = "Wiren Board WB-MAP3E energy meter";
 
-    m_options.insert("ratio", QJsonObject {{"min", 0}, {"max", 65535}, {"icon", "mdi:cog"}});
-    m_options.insert("delay", QJsonObject {{"min", -32768}, {"max", 32767}, {"icon", "mdi:cog"}});
+    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
+    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "kWh"}, {"round", 2}});
 
     for (quint8 i = 0; i < 4; i++)
     {
@@ -17,15 +22,15 @@ void WirenBoard::WBMap3e::init(const Device &device)
 
         if (i)
         {
-            Expose ratio = Expose(new NumberObject("ratio")), delay = Expose(new NumberObject("delay")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
+            Expose ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
 
             ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
             endpoint->exposes().append(ratio);
 
-            delay->setMultiple(true);
-            delay->setParent(endpoint.data());
-            endpoint->exposes().append(delay);
+            delta->setMultiple(true);
+            delta->setParent(endpoint.data());
+            endpoint->exposes().append(delta);
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -70,7 +75,7 @@ void WirenBoard::WBMap3e::enqueueAction(quint8 endpointId, const QString &name, 
 
     if (name == "ratio")
         registerAddress = WBMAP_COIL_REGISTER_ADDRESS + endpointId - 1;
-    else if (name == "delay")
+    else if (name == "delta")
         registerAddress = WBMAP_COIL_REGISTER_ADDRESS + endpointId + 2;
     else
         return;
@@ -129,7 +134,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
             {
                 auto it = m_endpoints.find(i + 1);
                 it.value()->buffer().insert("ratio", data[i]);
-                it.value()->buffer().insert("delay", static_cast <qint16> (data[i + 3]));
+                it.value()->buffer().insert("delta", static_cast <qint16> (data[i + 3]));
             }
 
             m_fullPoll = false;
@@ -210,10 +215,15 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
 void WirenBoard::WBMap12h::init(const Device &device)
 {
     m_type = "wbMap12h";
-    m_description = "Wiren Board WB-MAP3E energy meter";
+    m_description = "Wiren Board WB-MAP12H energy meter";
 
-    m_options.insert("ratio", QJsonObject {{"min", 0}, {"max", 65535}, {"icon", "mdi:cog"}});
-    m_options.insert("delay", QJsonObject {{"min", -32768}, {"max", 32767}, {"icon", "mdi:cog"}});
+    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
+    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "kWh"}, {"round", 2}});
 
     for (quint8 i = 0; i < 13; i++)
     {
@@ -221,15 +231,15 @@ void WirenBoard::WBMap12h::init(const Device &device)
 
         if (i)
         {
-            Expose ratio = Expose(new NumberObject("ratio")), delay = Expose(new NumberObject("delay")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
+            Expose ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
 
             ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
             endpoint->exposes().append(ratio);
 
-            delay->setMultiple(true);
-            delay->setParent(endpoint.data());
-            endpoint->exposes().append(delay);
+            delta->setMultiple(true);
+            delta->setParent(endpoint.data());
+            endpoint->exposes().append(delta);
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -276,7 +286,7 @@ void WirenBoard::WBMap12h::enqueueAction(quint8 endpointId, const QString &name,
 
     if (name == "ratio")
         registerAddress = WBMAP_COIL_REGISTER_ADDRESS + offset;
-    else if (name == "delay")
+    else if (name == "delta")
         registerAddress = WBMAP_COIL_REGISTER_ADDRESS + offset + 3;
     else
         return;
@@ -337,7 +347,7 @@ void WirenBoard::WBMap12h::parseReply(const QByteArray &reply)
             {
                 auto it = m_endpoints.find(m_sequence * 3 + i + 1);
                 it.value()->buffer().insert("ratio", data[i]);
-                it.value()->buffer().insert("delay", static_cast <qint16> (data[i + 3]));
+                it.value()->buffer().insert("delta", static_cast <qint16> (data[i + 3]));
             }
 
             m_fullPoll = false;
