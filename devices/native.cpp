@@ -9,7 +9,7 @@ void Native::RelayController::init(const Device &device)
 
     for (quint8 i = 0; i < 17; i++)
     {
-        Expose expose = i ? Expose(new SwitchObject) : Expose(new BooleanObject("invert"));
+        Expose expose = i ? Expose(new SwitchObject) : Expose(new ToggleObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));
 
         expose->setMultiple(i ? true : false);
@@ -121,7 +121,7 @@ void Native::SwitchController::init(const Device &device)
 
     for (quint8 i = 0; i < 17; i++)
     {
-        Expose expose = i ? Expose(new Sensor::Action) : Expose(new BooleanObject("invert"));
+        Expose expose = i ? Expose(new SensorObject("action")) : Expose(new ToggleObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));
 
         expose->setMultiple(i ? true : false);

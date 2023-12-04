@@ -15,22 +15,9 @@ void WirenBoard::WBMap3e::init(const Device &device)
     {
         Endpoint endpoint(new EndpointObject(i, device));
 
-        if (!i)
+        if (i)
         {
-            Expose frequency = Expose(new Sensor::Frequency), power = Expose(new Sensor::Power), energy = Expose(new Sensor::Energy);
-
-            frequency->setParent(endpoint.data());
-            endpoint->exposes().append(frequency);
-
-            power->setParent(endpoint.data());
-            endpoint->exposes().append(power);
-
-            energy->setParent(endpoint.data());
-            endpoint->exposes().append(energy);
-        }
-        else
-        {
-            Expose ratio = Expose(new NumberObject("ratio")), delay = Expose(new NumberObject("delay")), voltage = Expose(new Sensor::Voltage), current = Expose(new Sensor::Current), power = Expose(new Sensor::Power), energy = Expose(new Sensor::Energy);
+            Expose ratio = Expose(new NumberObject("ratio")), delay = Expose(new NumberObject("delay")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
 
             ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
@@ -53,6 +40,19 @@ void WirenBoard::WBMap3e::init(const Device &device)
             endpoint->exposes().append(power);
 
             energy->setMultiple(true);
+            energy->setParent(endpoint.data());
+            endpoint->exposes().append(energy);
+        }
+        else
+        {
+            Expose frequency = Expose(new SensorObject("frequency")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
+
+            frequency->setParent(endpoint.data());
+            endpoint->exposes().append(frequency);
+
+            power->setParent(endpoint.data());
+            endpoint->exposes().append(power);
+
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
         }
