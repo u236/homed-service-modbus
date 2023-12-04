@@ -59,9 +59,14 @@ QByteArray Native::RelayController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:  return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1:  return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
-        default: return QByteArray();
+        case 0:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+
+        case 1:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
+
+        default:
+            return QByteArray();
     }
 }
 
@@ -157,9 +162,14 @@ QByteArray Native::SwitchController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:  return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1:  return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0001, 1);
-        default: return QByteArray();
+        case 0:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+
+        case 1:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0001, 1);
+
+        default:
+            return QByteArray();
     }
 }
 

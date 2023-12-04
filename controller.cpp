@@ -148,6 +148,8 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                 logInfo << "Device" << device->name() << "successfully updated";
                 deviceEvent(device.data(), Event::updated);
             }
+
+            connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
         }
         else if (action == "removeDevice")
         {
