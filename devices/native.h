@@ -47,9 +47,7 @@ namespace Native
 
         QTimer *m_timer;
         quint16 m_status;
-
         qint64 m_time[16];
-        bool m_hold[16];
 
     private slots:
 

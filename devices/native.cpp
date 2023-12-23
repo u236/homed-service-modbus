@@ -140,8 +140,6 @@ void Native::SwitchController::init(const Device &device)
     }
 
     memset(m_time, 0, sizeof(m_time));
-    memset(m_hold, 0, sizeof(m_hold));
-
     connect(m_timer, &QTimer::timeout, this, &SwitchController::update);
     m_timer->start(1);
 }
@@ -206,13 +204,6 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
                     continue;
 
                 m_time[i] = check ? QDateTime::currentMSecsSinceEpoch() : 0;
-
-                if (m_hold[i])
-                {
-                    m_hold[i] = false;
-                    continue;
-                }
-
                 it.value()->buffer().insert("action", check ? "press" : "release");
             }
 
@@ -238,8 +229,6 @@ void Native::SwitchController::update(void)
             continue;
 
         m_time[i] = 0;
-        m_hold[i] = true;
-
         it.value()->buffer().insert("action", "hold");
         updateEndpoints();
     }
