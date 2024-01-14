@@ -114,7 +114,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
         {
             int index = -1;
             QJsonObject data = json.value("data").toObject();
-            QString name = data.value("name").toString();
+            QString name = data.value("name").toString().trimmed();
             Device device = m_devices->byName(json.value("device").toString(), &index), other = m_devices->byName(name);
 
             if (device != other && !other.isNull())
