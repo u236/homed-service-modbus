@@ -10,11 +10,11 @@ void WirenBoard::WBMap3e::init(const Device &device)
 
     m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
     m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
-    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
 
     for (quint8 i = 0; i < 4; i++)
     {
@@ -219,11 +219,11 @@ void WirenBoard::WBMap12h::init(const Device &device)
 
     m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
     m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
-    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
 
     for (quint8 i = 0; i < 13; i++)
     {
