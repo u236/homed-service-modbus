@@ -41,7 +41,7 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(n
 
 void Controller::publishExposes(DeviceObject *device, bool remove)
 {
-    device->publishExposes(this, device->address(), device->address().replace('.', '_'), remove);
+    device->publishExposes(this, device->address(), device->address().replace('.', '_'), remove); // TODO: custom unique id
 
     if (remove)
         return;
@@ -124,7 +124,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                 return;
             }
 
-            if (!device.isNull())
+            if (!device.isNull() && device->name() != name)
                 deviceEvent(device.data(), Event::aboutToRename);
 
             device = m_devices->parse(data);
@@ -132,7 +132,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             if (device.isNull())
             {
                 logWarning << "Device" << name << "update failed, data is incomplete";
-                publishEvent(name, Event::incorrectData);
+                publishEvent(name, Event::incompleteData);
                 return;
             }
 

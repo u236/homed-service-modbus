@@ -19,7 +19,7 @@ public:
     enum class Event
     {
         nameDuplicate,
-        incorrectData,
+        incompleteData,
         aboutToRename,
         added,
         updated,
