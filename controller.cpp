@@ -2,7 +2,7 @@
 #include "device.h"
 #include "logger.h"
 
-Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_events(QMetaEnum::fromType <Event> ())
+Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
 {
     QList <QString> keys = getConfig()->allKeys();
 
@@ -49,6 +49,12 @@ void Controller::publishExposes(DeviceObject *device, bool remove)
         return;
 
     m_timer->start(UPDATE_PROPERTIES_DELAY);
+}
+
+void Controller::publishProperties(const Device &device)
+{
+    for (auto it = device->endpoints().begin(); it != device->endpoints().end(); it++)
+        endpointUpdated(device.data(), it.key());
 }
 
 void Controller::publishEvent(const QString &name, Event event)
@@ -112,65 +118,86 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 
     if (subTopic == "command/modbus")
     {
-        QString action = json.value("action").toString();
-
-        if (action == "updateDevice")
+        switch (static_cast <Command> (m_commands.keyToValue(json.value("action").toString().toUtf8().constData())))
         {
-            int index = -1;
-            QJsonObject data = json.value("data").toObject();
-            QString name = data.value("name").toString().trimmed();
-            Device device = m_devices->byName(json.value("device").toString(), &index), other = m_devices->byName(name);
-
-            if (device != other && !other.isNull())
+            case Command::restartService:
             {
-                logWarning << "Device" << name << "update failed, name already in use";
-                publishEvent(name, Event::nameDuplicate);
-                return;
+                logWarning << "Restart request received...";
+                mqttPublish(mqttTopic("command/custom"), QJsonObject(), true);
+                QCoreApplication::exit(EXIT_RESTART);
+                break;
             }
 
-            if (!device.isNull() && device->name() != name)
-                deviceEvent(device.data(), Event::aboutToRename);
-
-            device = m_devices->parse(data);
-
-            if (device.isNull())
+            case Command::updateDevice:
             {
-                logWarning << "Device" << name << "update failed, data is incomplete";
-                publishEvent(name, Event::incompleteData);
-                return;
+                int index = -1;
+                QJsonObject data = json.value("data").toObject();
+                QString name = data.value("name").toString().trimmed();
+                Device device = m_devices->byName(json.value("device").toString(), &index), other = m_devices->byName(name);
+
+                if (device != other && !other.isNull())
+                {
+                    logWarning << "Device" << name << "update failed, name already in use";
+                    publishEvent(name, Event::nameDuplicate);
+                    break;
+                }
+
+                if (!device.isNull() && device->name() != name)
+                    deviceEvent(device.data(), Event::aboutToRename);
+
+                device = m_devices->parse(data);
+
+                if (device.isNull())
+                {
+                    logWarning << "Device" << name << "update failed, data is incomplete";
+                    publishEvent(name, Event::incompleteData);
+                    break;
+                }
+
+                if (index >= 0)
+                {
+                    m_devices->replace(index, device);
+                    logInfo << "Device" << device->name() << "successfully updated";
+                    deviceEvent(device.data(), Event::updated);
+                }
+                else
+                {
+                    m_devices->append(device);
+                    logInfo << "Device" << device->name() << "successfully added";
+                    deviceEvent(device.data(), Event::added);
+                }
+
+                connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
+                m_devices->store(true);
+                break;
             }
 
-            if (index < 0)
+            case Command::removeDevice:
             {
-                m_devices->append(device);
-                logInfo << "Device" << device->name() << "successfully added";
-                deviceEvent(device.data(), Event::added);
-            }
-            else
-            {
-                m_devices->replace(index, device);
-                logInfo << "Device" << device->name() << "successfully updated";
-                deviceEvent(device.data(), Event::updated);
+                int index = -1;
+                const Device &device = m_devices->byName(json.value("device").toString(), &index);
+
+                if (index >= 0)
+                {
+                    m_devices->removeAt(index);
+                    logInfo << "Device" << device->name() << "removed";
+                    deviceEvent(device.data(), Event::removed);
+                    m_devices->store(true);
+                }
+
+                break;
             }
 
-            connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
+            case Command::getProperties:
+            {
+                Device device = m_devices->byName(json.value("device").toString());
+
+                if (!device.isNull())
+                    publishProperties(device);
+
+                break;
+            }
         }
-        else if (action == "removeDevice")
-        {
-            int index = -1;
-            const Device &device = m_devices->byName(json.value("device").toString(), &index);
-
-            if (index < 0)
-                return;
-
-            m_devices->removeAt(index);
-            logInfo << "Device" << device->name() << "removed";
-            deviceEvent(device.data(), Event::removed);
-        }
-        else
-            return;
-
-        m_devices->store(true);
     }
     else if (subTopic.startsWith("td/modbus/"))
     {
@@ -207,12 +234,7 @@ void Controller::updateAvailability(DeviceObject *device)
 void Controller::updateProperties(void)
 {
     for (int i = 0; i < m_devices->count(); i++)
-    {
-        const Device &device = m_devices->at(i);
-
-        for (auto it = device->endpoints().begin(); it != device->endpoints().end(); it++)
-            endpointUpdated(device.data(), it.key());
-    }
+        publishProperties(m_devices->at(i));
 }
 
 void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)
