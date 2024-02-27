@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#define SERVICE_VERSION             "1.0.2"
+#define SERVICE_VERSION             "1.0.3"
 #define UPDATE_PROPERTIES_DELAY     1000
 
 #include <QMetaEnum>
@@ -35,9 +35,8 @@ private:
     QMap <quint8, Port> m_ports;
 
     QMetaEnum m_events;
-
-    bool m_names;
-    QString m_haStatus;
+    QString m_haPrefix, m_haStatus;
+    bool m_haEnabled;
 
     void publishExposes(DeviceObject *device, bool remove = false);
     void publishEvent(const QString &name, Event event);

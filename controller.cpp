@@ -9,11 +9,16 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(n
     logInfo << "Starting version" << SERVICE_VERSION;
     logInfo << "Configuration file is" << getConfig()->fileName();
 
-    m_timer->setSingleShot(true);
+    m_haPrefix = getConfig()->value("homeassistant/prefix", "homeassistant").toString();
+    m_haStatus = getConfig()->value("homeassistant/status", "homeassistant/status").toString();
+    m_haEnabled = getConfig()->value("homeassistant/enabled", false).toBool();
 
     connect(m_timer, &QTimer::timeout, this, &Controller::updateProperties);
     connect(m_devices, &DeviceList::statusUpdated, this, &Controller::statusUpdated);
 
+    m_timer->setSingleShot(true);
+
+    m_devices->setNames(getConfig()->value("mqtt/names", false).toBool());
     m_devices->init();
 
     for (int i = 0; i < m_devices->count(); i++)
@@ -34,14 +39,11 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(n
             m_ports.insert(id, port);
         }
     }
-
-    m_names = getConfig()->value("mqtt/names", false).toBool();
-    m_haStatus = getConfig()->value("homeassistant/status", "homeassistant/status").toString();
 }
 
 void Controller::publishExposes(DeviceObject *device, bool remove)
 {
-    device->publishExposes(this, device->address(), device->address().replace('.', '_'), remove); // TODO: custom unique id
+    device->publishExposes(this, device->address(), QString("%1_%2").arg(uniqueId(), device->address().replace('.', '_')), m_haPrefix, m_haEnabled, m_devices->names(), remove);
 
     if (remove)
         return;
@@ -62,7 +64,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
     {
         case Event::aboutToRename:
         case Event::removed:
-            mqttPublish(mqttTopic("device/modbus/%1").arg(m_names ? device->name() : device->address()), QJsonObject(), true);
+            mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), QJsonObject(), true);
             remove = true;
             break;
 
@@ -70,7 +72,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
         case Event::updated:
 
             if (device->availability() != Availability::Unknown)
-                mqttPublish(mqttTopic("device/modbus/%1").arg(m_names ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
+                mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
 
             break;
 
@@ -87,14 +89,17 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
 
 void Controller::mqttConnected(void)
 {
-    if (getConfig()->value("homeassistant/enabled", false).toBool())
-        mqttSubscribe(m_haStatus);
-
     mqttSubscribe(mqttTopic("command/modbus"));
     mqttSubscribe(mqttTopic("td/modbus/#"));
 
     for (int i = 0; i < m_devices->count(); i++)
         publishExposes(m_devices->at(i).data());
+
+    if (m_haEnabled)
+    {
+        mqttPublishDiscovery("Modbus", SERVICE_VERSION, m_haPrefix);
+        mqttSubscribe(m_haStatus);
+    }
 
     m_devices->store();
     mqttPublishStatus();
@@ -195,7 +200,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 void Controller::updateAvailability(DeviceObject *device)
 {
     QString status = device->availability() == Availability::Online ? "online" : "offline";
-    mqttPublish(mqttTopic("device/modbus/%1").arg(m_names ? device->name() : device->address()), {{"status", status}}, true);
+    mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), {{"status", status}}, true);
     logInfo << "Device" << device->name() << "is" << status;
 }
 
@@ -213,7 +218,7 @@ void Controller::updateProperties(void)
 void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)
 {
     Endpoint endpoint = device->endpoints().value(endpointId);
-    QString topic = mqttTopic("fd/modbus/%1").arg(m_names ? device->name() : device->address());
+    QString topic = mqttTopic("fd/modbus/%1").arg(m_devices->names() ? device->name() : device->address());
 
     if (endpointId)
         topic.append(QString("/%1").arg(endpointId));

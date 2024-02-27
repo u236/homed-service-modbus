@@ -1,6 +1,8 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#define STORE_DATABASE_DELAY    20
+
 #include <QFile>
 #include <QQueue>
 #include "endpoint.h"
@@ -83,6 +85,9 @@ public:
     DeviceList(QSettings *config, QObject *parent);
     ~DeviceList(void);
 
+    inline bool names(void) { return m_names; }
+    inline void setNames(bool value) { m_names = value; }
+
     void init(void);
     void store(bool sync = false);
 
@@ -91,11 +96,18 @@ public:
 
 private:
 
+    QTimer *m_timer;
+
     QList <QString> m_types;
     QFile m_file;
+    bool m_names, m_sync;
 
     void unserialize(const QJsonArray &devices);
     QJsonArray serialize(void);
+
+private slots:
+
+    void writeDatabase(void);
 
 signals:
 
