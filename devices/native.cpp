@@ -96,12 +96,12 @@ void Native::RelayController::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 16; i++)
             {
                 auto it = m_endpoints.find(i + 1);
-                quint16 check = value & 1 << i;
+                quint16 status = value & 1 << i;
 
-                if (it.value()->buffer().contains("status") && (m_status & 1 << i) == check)
+                if (it.value()->buffer().contains("status") && (m_status & 1 << i) == status)
                     continue;
 
-                it.value()->buffer().insert("status", check ? "on" : "off");
+                it.value()->buffer().insert("status", status ? "on" : "off");
             }
 
             m_status = value;
@@ -188,29 +188,39 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
 
             m_endpoints.find(0).value()->buffer().insert("invert", value ? true : false);
             m_fullPoll = false;
+            m_firstPoll = true;
             break;
 
         case 1:
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || m_status == value)
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
+
+            if (m_firstPoll)
+            {
+                m_firstPoll = false;
+                m_status = value;
+                break;
+            }
 
             for (quint8 i = 0; i < 16; i++)
             {
                 auto it = m_endpoints.find(i + 1);
-                quint16 check = value & 1 << i;
+                quint16 status = value & 1 << i;
 
-                if (it.value()->buffer().contains("action") && (m_status & 1 << i) == check)
+                if ((m_status & 1 << i) == status)
+                {
+                    it.value()->buffer().clear();
                     continue;
+                }
 
-                m_time[i] = check ? QDateTime::currentMSecsSinceEpoch() : 0;
-                it.value()->buffer().insert("action", check ? "press" : "release");
+                m_time[i] = status ? QDateTime::currentMSecsSinceEpoch() : 0;
+                it.value()->buffer().insert("action", status ? "press" : "release");
             }
 
             m_status = value;
             check = true;
             break;
-
     }
 
     if (check)

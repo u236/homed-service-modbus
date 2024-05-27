@@ -4,4 +4,4 @@ RUN     mkdir /etc/homed
 RUN     ln -s /data/homed-modbus.conf /etc/homed/homed-modbus.conf
 RUN     ln -s /data/homed.log /var/log/homed.log
 COPY    homed-modbus-$TARGETARCH /usr/bin/homed-modbus
-CMD     ["/usr/bin/homed-modbus"]
+CMD     /usr/bin/homed-modbus

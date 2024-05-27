@@ -3,7 +3,7 @@ Description=HOMEd Modbus Service
 
 [Service]
 ExecStart=/usr/bin/homed-modbus
-Environment=LD_LIBRARY_PATH=/lib
+Environment=LD_LIBRARY_PATH=/usr/lib
 KillSignal=SIGTERM
 Restart=on-failure
 

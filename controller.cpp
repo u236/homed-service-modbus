@@ -240,12 +240,16 @@ void Controller::updateProperties(void)
 void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)
 {
     Endpoint endpoint = device->endpoints().value(endpointId);
-    QString topic = mqttTopic("fd/modbus/%1").arg(m_devices->names() ? device->name() : device->address());
 
-    if (endpointId)
-        topic.append(QString("/%1").arg(endpointId));
+    if (!endpoint->status().isEmpty())
+    {
+        QString topic = mqttTopic("fd/modbus/%1").arg(m_devices->names() ? device->name() : device->address());
 
-    mqttPublish(topic, QJsonObject::fromVariantMap(endpoint->status()));
+        if (endpointId)
+            topic.append(QString("/%1").arg(endpointId));
+
+        mqttPublish(topic, QJsonObject::fromVariantMap(endpoint->status()));
+    }
 }
 
 void Controller::statusUpdated(const QJsonObject &json)

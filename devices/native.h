@@ -34,7 +34,7 @@ namespace Native
     public:
 
         SwitchController(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, name), m_timer(new QTimer(this)), m_status(0) {}
+            DeviceObject(portId, slaveId, baudRate, pollInterval, name), m_timer(new QTimer(this)), m_firstPoll(true), m_status(0) {}
 
         void init(const Device &device) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
@@ -46,6 +46,8 @@ namespace Native
     private:
 
         QTimer *m_timer;
+
+        bool m_firstPoll;
         quint16 m_status;
         qint64 m_time[16];
 
