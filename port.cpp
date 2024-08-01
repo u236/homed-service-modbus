@@ -79,9 +79,13 @@ void PortThread::startTimer(void)
     m_receiveTimer->start(20); // TODO: use timeout from device settings?
 }
 
+#include "logger.h"
+
 void PortThread::readyRead(void)
 {
     m_replyData = m_serial->readAll();
+
+    logInfo << m_replyData.toHex(':');
     emit replyReceived();
 }
 
