@@ -92,30 +92,31 @@ void PortThread::poll(void)
     for (int i = 0; i < m_devices->count(); i++)
     {
         const Device &device = m_devices->at(i);
-        bool force = false;
 
         if (device->portId() != m_portId)
             continue;
 
-        while (!device->actionQueue().isEmpty())
+        if (!device->actionQueue().isEmpty())
         {
             sendRequest(device, device->actionQueue().dequeue());
-            force = true;
+            device->resetPollTime();
+            continue;
         }
 
-        if (!force && device->pollTime() + device->pollInterval() > QDateTime::currentMSecsSinceEpoch())
+        if (device->pollTime() + device->pollInterval() > QDateTime::currentMSecsSinceEpoch())
             continue;
 
         device->startPoll();
+        request = device->pollRequest();
 
-        while (!(request = device->pollRequest()).isEmpty())
-        {
-            sendRequest(device, request);
+        if (request.isEmpty())
+            continue;
 
-            if (device->errorCount())
-                break;
+        sendRequest(device, request);
 
-            device->parseReply(m_replyData);
-        }
+        if (device->errorCount())
+            continue;
+
+        device->parseReply(m_replyData);
     }
 }

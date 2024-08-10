@@ -53,8 +53,11 @@ void Native::RelayController::enqueueAction(quint8 endpointId, const QString &na
 
 void Native::RelayController::startPoll(void)
 {
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    if (m_polling)
+        return;
+
     m_sequence = m_fullPoll ? 0 : 1;
+    m_polling = true;
 }
 
 QByteArray Native::RelayController::pollRequest(void)
@@ -68,6 +71,8 @@ QByteArray Native::RelayController::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
 
         default:
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
             return QByteArray();
     }
 }
@@ -155,8 +160,11 @@ void Native::SwitchController::enqueueAction(quint8, const QString &name, const 
 
 void Native::SwitchController::startPoll(void)
 {
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    if (m_polling)
+        return;
+
     m_sequence = m_fullPoll ? 0 : 1;
+    m_polling = true;
 }
 
 QByteArray Native::SwitchController::pollRequest(void)
@@ -170,6 +178,8 @@ QByteArray Native::SwitchController::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0001, 1);
 
         default:
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
             return QByteArray();
     }
 }
