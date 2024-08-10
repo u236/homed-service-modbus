@@ -86,8 +86,11 @@ void WirenBoard::WBMap3e::enqueueAction(quint8 endpointId, const QString &name, 
 
 void WirenBoard::WBMap3e::startPoll(void)
 {
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    if (m_polling)
+        return;
+
     m_sequence = m_fullPoll ? 0 : 1;
+    m_polling = true;
 }
 
 QByteArray WirenBoard::WBMap3e::pollRequest(void)
@@ -113,6 +116,8 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS, WBMAP_ENERGY_REGISTER_COUNT);
 
         default:
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
             return QByteArray();
     }
 }
@@ -297,8 +302,12 @@ void WirenBoard::WBMap12h::enqueueAction(quint8 endpointId, const QString &name,
 
 void WirenBoard::WBMap12h::startPoll(void)
 {
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    if (m_polling)
+        return;
+
     m_sequence = m_fullPoll ? 0 : 4;
+    m_polling = true;
+
     m_totalPower = 0;
     m_totalEnergy = 0;
 }
@@ -326,6 +335,8 @@ QByteArray WirenBoard::WBMap12h::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS + (m_sequence - 14) * 0x1000, WBMAP_ENERGY_REGISTER_COUNT);
 
         default:
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
             return QByteArray();
     }
 }
