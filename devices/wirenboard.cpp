@@ -8,13 +8,13 @@ void WirenBoard::WBMap3e::init(const Device &device)
     m_type = "wbMap3e";
     m_description = "Wiren Board WB-MAP3E energy meter";
 
-    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
     m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
     m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
     m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
     m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
     m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 4; i++)
     {
@@ -22,15 +22,7 @@ void WirenBoard::WBMap3e::init(const Device &device)
 
         if (i)
         {
-            Expose ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
-
-            ratio->setMultiple(true);
-            ratio->setParent(endpoint.data());
-            endpoint->exposes().append(ratio);
-
-            delta->setMultiple(true);
-            delta->setParent(endpoint.data());
-            endpoint->exposes().append(delta);
+            Expose voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy")), ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta"));
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -47,6 +39,14 @@ void WirenBoard::WBMap3e::init(const Device &device)
             energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
+
+            ratio->setMultiple(true);
+            ratio->setParent(endpoint.data());
+            endpoint->exposes().append(ratio);
+
+            delta->setMultiple(true);
+            delta->setParent(endpoint.data());
+            endpoint->exposes().append(delta);
         }
         else
         {
@@ -222,13 +222,13 @@ void WirenBoard::WBMap12h::init(const Device &device)
     m_type = "wbMap12h";
     m_description = "Wiren Board WB-MAP12H energy meter";
 
-    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
     m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
     m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
     m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
     m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
     m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 13; i++)
     {
@@ -236,15 +236,7 @@ void WirenBoard::WBMap12h::init(const Device &device)
 
         if (i)
         {
-            Expose ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
-
-            ratio->setMultiple(true);
-            ratio->setParent(endpoint.data());
-            endpoint->exposes().append(ratio);
-
-            delta->setMultiple(true);
-            delta->setParent(endpoint.data());
-            endpoint->exposes().append(delta);
+            Expose voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy")), ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta"));
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -261,6 +253,14 @@ void WirenBoard::WBMap12h::init(const Device &device)
             energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
+
+            ratio->setMultiple(true);
+            ratio->setParent(endpoint.data());
+            endpoint->exposes().append(ratio);
+
+            delta->setMultiple(true);
+            delta->setParent(endpoint.data());
+            endpoint->exposes().append(delta);
         }
         else
         {
