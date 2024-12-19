@@ -93,7 +93,19 @@ Device DeviceList::parse(const QJsonObject &json)
     }
 
     if (!device.isNull())
+    {
+        if (json.contains("active"))
+            device->setActive(json.value("active").toBool());
+
+        if (json.contains("discovery"))
+            device->setDiscovery(json.value("discovery").toBool());
+
+        if (json.contains("cloud"))
+            device->setCloud(json.value("cloud").toBool());
+
+        device->setNote(json.value("note").toString());
         device->init(device);
+    }
 
     return device;
 }
@@ -130,7 +142,12 @@ QJsonArray DeviceList::serialize(void)
     for (int i = 0; i < count(); i++)
     {
         const Device &device = at(i);
-        array.append(QJsonObject {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"name", device->name()}});
+        QJsonObject json = {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"name", device->name()}, {"active", device->active()}, {"cloud", device->cloud()}, {"discovery", device->discovery()}};
+
+        if (!device->note().isEmpty())
+            json.insert("note", device->note());
+
+        array.append(json);
     }
 
     return array;

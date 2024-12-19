@@ -204,7 +204,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
         QList <QString> list = subTopic.split('/');
         Device device = m_devices->byName(list.value(2));
 
-        if (device.isNull())
+        if (device.isNull() || !device->active())
             return;
 
         for (auto it = json.begin(); it != json.end(); it++)

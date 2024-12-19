@@ -93,7 +93,7 @@ void PortThread::poll(void)
     {
         const Device &device = m_devices->at(i);
 
-        if (device->portId() != m_portId)
+        if (device->portId() != m_portId || !device->active())
             continue;
 
         if (!device->actionQueue().isEmpty())
