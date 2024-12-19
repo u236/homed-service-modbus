@@ -117,4 +117,6 @@ signals:
 
 };
 
+inline QDebug operator << (QDebug debug, const Device &device) { return debug << "device" << device->name(); }
+
 #endif

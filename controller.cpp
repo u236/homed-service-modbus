@@ -137,7 +137,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 
                 if (device != other && !other.isNull())
                 {
-                    logWarning << "Device" << name << "update failed, name already in use";
+                    logWarning << device << "update failed, name already in use";
                     publishEvent(name, Event::nameDuplicate);
                     break;
                 }
@@ -149,7 +149,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 
                 if (device.isNull())
                 {
-                    logWarning << "Device" << name << "update failed, data is incomplete";
+                    logWarning << device << "update failed, data is incomplete";
                     publishEvent(name, Event::incompleteData);
                     break;
                 }
@@ -157,13 +157,13 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                 if (index >= 0)
                 {
                     m_devices->replace(index, device);
-                    logInfo << "Device" << device->name() << "successfully updated";
+                    logInfo << device << "successfully updated";
                     deviceEvent(device.data(), Event::updated);
                 }
                 else
                 {
                     m_devices->append(device);
-                    logInfo << "Device" << device->name() << "successfully added";
+                    logInfo << device << "successfully added";
                     deviceEvent(device.data(), Event::added);
                 }
 
@@ -180,7 +180,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                 if (index >= 0)
                 {
                     m_devices->removeAt(index);
-                    logInfo << "Device" << device->name() << "removed";
+                    logInfo << device << "removed";
                     deviceEvent(device.data(), Event::removed);
                     m_devices->store(true);
                 }
@@ -228,7 +228,7 @@ void Controller::updateAvailability(DeviceObject *device)
 {
     QString status = device->availability() == Availability::Online ? "online" : "offline";
     mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), {{"status", status}}, true);
-    logInfo << "Device" << device->name() << "is" << status;
+    logInfo << device << "is" << status;
 }
 
 void Controller::updateProperties(void)
