@@ -228,7 +228,7 @@ void Controller::updateAvailability(DeviceObject *device)
 {
     QString status = device->availability() == Availability::Online ? "online" : "offline";
     mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), {{"status", status}}, true);
-    logInfo << device << "is" << status;
+    logInfo << "Device" << device->name() << "is" << status;
 }
 
 void Controller::updateProperties(void)
