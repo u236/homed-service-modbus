@@ -4,7 +4,7 @@
 
 Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
 {
-    QList <QString> keys = getConfig()->allKeys();
+    QList <QString> keys = getConfig()->allKeys(); // TODO: use childGroups
 
     logInfo << "Starting version" << SERVICE_VERSION;
     logInfo << "Configuration file is" << getConfig()->fileName();
@@ -137,7 +137,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 
                 if (device != other && !other.isNull())
                 {
-                    logWarning << device << "update failed, name already in use";
+                    logWarning << "Device" << name << "update failed, name already in use";
                     publishEvent(name, Event::nameDuplicate);
                     break;
                 }
@@ -149,7 +149,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 
                 if (device.isNull())
                 {
-                    logWarning << device << "update failed, data is incomplete";
+                    logWarning << "Device" << name << "update failed, data is incomplete";
                     publishEvent(name, Event::incompleteData);
                     break;
                 }
