@@ -130,7 +130,7 @@ void Native::SwitchController::init(const Device &device)
     m_description = "HOMEd Switch Controller";
 
     m_options.insert("invert", QJsonObject {{"type", "toggle"}, {"icon", "mdi:swap-horizontal-bold"}});
-    m_options.insert("action", QJsonObject {{"type", "sensor"}, {"icon", "mdi:gesture-double-tap"}, {"trigger", QJsonArray {"press", "release", "hold"}}});
+    m_options.insert("action", QJsonObject {{"type", "sensor"}, {"icon", "mdi:gesture-double-tap"}, {"trigger", QJsonArray {"singleClock", "doubleClick", "hold", "release"}}});
 
     for (quint8 i = 0; i < 17; i++)
     {
@@ -145,6 +145,9 @@ void Native::SwitchController::init(const Device &device)
     }
 
     memset(m_time, 0, sizeof(m_time));
+    memset(m_count, 0, sizeof(m_count));
+    memset(m_hold, 0, sizeof(m_hold));
+
     connect(m_timer, &QTimer::timeout, this, &SwitchController::update);
     m_timer->start(1);
 }
@@ -187,7 +190,6 @@ QByteArray Native::SwitchController::pollRequest(void)
 void Native::SwitchController::parseReply(const QByteArray &reply)
 {
     quint16 value;
-    bool check = false;
 
     switch (m_sequence)
     {
@@ -215,26 +217,22 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 16; i++)
             {
-                auto it = m_endpoints.find(i + 1);
                 quint16 status = value & 1 << i;
 
                 if ((m_status & 1 << i) == status)
-                {
-                    it.value()->buffer().clear();
                     continue;
-                }
 
-                m_time[i] = status ? QDateTime::currentMSecsSinceEpoch() : 0;
-                it.value()->buffer().insert("action", status ? "press" : "release");
+                m_time[i] = QDateTime::currentMSecsSinceEpoch();
+
+                if (status)
+                    continue;
+
+                m_count[i]++;
             }
 
             m_status = value;
-            check = true;
             break;
     }
-
-    if (check)
-        updateEndpoints();
 
     m_sequence++;
 }
@@ -245,11 +243,26 @@ void Native::SwitchController::update(void)
     {
         auto it = m_endpoints.find(i + 1);
 
-        if (!m_time[i] || m_time[i] + 1000 > QDateTime::currentMSecsSinceEpoch())
+        if (!m_time[i] || m_time[i] + 200 > QDateTime::currentMSecsSinceEpoch())
             continue;
 
+        if (!(m_status & 1 << i))
+        {
+            it.value()->buffer().insert("action", m_count[i] < 2 ? m_hold[i] ? "release" : "singleClick" : "doubleClick");
+            m_hold[i] = false;
+        }
+        else if (m_time[i] + 1000 <= QDateTime::currentMSecsSinceEpoch())
+        {
+            it.value()->buffer().insert("action", "hold");
+            m_hold[i] = true;
+        }
+        else
+            continue;
+
+        m_count[i] = 0;
         m_time[i] = 0;
-        it.value()->buffer().insert("action", "hold");
+
         updateEndpoints();
+        it.value()->buffer().clear();
     }
 }

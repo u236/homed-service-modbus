@@ -49,7 +49,10 @@ namespace Native
 
         bool m_firstPoll;
         quint16 m_status;
+
         qint64 m_time[16];
+        quint8 m_count[16];
+        bool m_hold[16];
 
     private slots:
 
