@@ -4,6 +4,7 @@ include(../homed-common/homed-endpoint.pri)
 HEADERS += \
     controller.h \
     device.h \
+    devices/custom.h \
     devices/native.h \
     devices/wirenboard.h \
     modbus.h \
@@ -12,6 +13,7 @@ HEADERS += \
 SOURCES += \
     controller.cpp \
     device.cpp \
+    devices/custom.cpp \
     devices/native.cpp \
     devices/wirenboard.cpp \
     modbus.cpp \

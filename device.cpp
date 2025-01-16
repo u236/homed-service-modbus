@@ -1,3 +1,4 @@
+#include "devices/custom.h"
 #include "devices/native.h"
 #include "devices/wirenboard.h"
 #include "controller.h"
@@ -22,6 +23,7 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
 {
     m_types =
     {
+        "customController",
         "homedRelayController",
         "homedSwitchController",
         "wbMap3e",
@@ -86,10 +88,11 @@ Device DeviceList::parse(const QJsonObject &json)
 
     switch (m_types.indexOf(json.value("type").toString()))
     {
-        case 0: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 1: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 2: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 3: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 0: device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, name, json.value("items").toArray(), json.value("options").toObject())); break;
+        case 1: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 2: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 3: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 4: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, name)); break;
     }
 
     if (!device.isNull())
@@ -143,6 +146,17 @@ QJsonArray DeviceList::serialize(void)
     {
         const Device &device = at(i);
         QJsonObject json = {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"name", device->name()}, {"active", device->active()}, {"cloud", device->cloud()}, {"discovery", device->discovery()}};
+
+        if (device->type() == "customController")
+        {
+            Custom::Controller* controller = reinterpret_cast <Custom::Controller*> (device.data());
+
+            if (!controller->items().isEmpty())
+                json.insert("items", controller->items());
+
+            if (!controller->options().isEmpty())
+                json.insert("options", controller->options());
+        }
 
         if (!device->note().isEmpty())
             json.insert("note", device->note());
