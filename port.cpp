@@ -4,7 +4,7 @@
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_debug(debug), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -60,7 +60,7 @@ void PortThread::threadStarted(void)
 
     if (!m_serial->open(QIODevice::ReadWrite))
     {
-        logWarning << "Can't open" << m_portName;
+        logWarning << "Port" << m_portId << "can't open" << m_portName;
         return;
     }
 
@@ -82,6 +82,7 @@ void PortThread::startTimer(void)
 void PortThread::readyRead(void)
 {
     m_replyData = m_serial->readAll();
+    logDebug(m_debug) << "Port" << m_portId << "serial data received:" << m_replyData.toHex(':');
     emit replyReceived();
 }
 
@@ -112,6 +113,7 @@ void PortThread::poll(void)
         if (request.isEmpty())
             continue;
 
+        logDebug(m_debug) << "Port" << m_portId << "serial data sent:" << request.toHex(':');
         sendRequest(device, request);
 
         if (device->errorCount())

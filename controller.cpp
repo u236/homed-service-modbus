@@ -4,7 +4,7 @@
 
 Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
 {
-    QList <QString> keys = getConfig()->allKeys();
+    QList <QString> keys = getConfig()->childGroups();
 
     logInfo << "Starting version" << SERVICE_VERSION;
     logInfo << "Configuration file is" << getConfig()->fileName();
@@ -31,10 +31,10 @@ Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(n
     {
         const QString &key = keys.at(i);
 
-        if (QRegExp("^port-\\d+/port$").exactMatch(key))
+        if (QRegExp("^port-\\d+$").exactMatch(key))
         {
-            quint8 id = static_cast <quint8> (key.split('/').value(0).split('-').value(1).toInt());
-            Port port(new PortThread(id, getConfig()->value(key).toString(), m_devices));
+            quint8 id = static_cast <quint8> (key.split('-').value(1).toInt());
+            Port port(new PortThread(id, getConfig()->value(QString("%1/port").arg(key)).toString(), getConfig()->value(QString("%1/debug").arg(key), false).toBool(), m_devices));
             connect(port.data(), &PortThread::updateAvailability, this, &Controller::updateAvailability);
             m_ports.insert(id, port);
         }

@@ -14,7 +14,7 @@ class PortThread : public QThread
 
 public:
 
-    PortThread(quint8 portId, const QString &portName, DeviceList *devices);
+    PortThread(quint8 portId, const QString &portName, bool debug, DeviceList *devices);
     ~PortThread(void);
 
 private:
@@ -24,6 +24,7 @@ private:
 
     quint8 m_portId;
     QString m_portName;
+    bool m_debug;
 
     QByteArray m_replyData;
     DeviceList *m_devices;
