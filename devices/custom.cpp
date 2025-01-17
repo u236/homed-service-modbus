@@ -37,25 +37,51 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
         quint16 count = item->count(), buffer[4], payload[4];
         QVariant value;
 
+        if (item->expose() != name || item->registerType() != RegisterType::holding)
+            continue;
+
         switch (m_types.indexOf(item->type()))
         {
             case 0: value = data.toBool() ? 0x01 : 0x00; break; // bool
             case 1: value = data.toDouble() * item->divider(); break; // value
 
-            // case 2: // enum
-            // {
-            //     int index = enumIndex(m_name, data.toString());
-            //
-            //     if (index < 0)
-            //         return QByteArray();
-            //
-            //     value = index;
-            //     break;
-            // }
-        }
+            case 2: // enum
+            {
+                QVariant option = m_options.value(item->expose()).toMap().value("enum");
+                int index = -1;
 
-        if (item->expose() != name || item->registerType() != RegisterType::holding)
-            continue;
+                switch (option.type())
+                {
+                    case QVariant::Map:
+                    {
+                        QMap <QString, QVariant> map = option.toMap();
+
+                        for (auto it = map.begin(); it != map.end(); it++)
+                        {
+                            if (it.value() != data.toString())
+                                continue;
+
+                            index = it.key().toInt();
+                            break;
+                        }
+
+                        break;
+                    }
+
+                    case QVariant::List: index = option.toList().indexOf(data.toString()); break;
+                    default: break;
+                }
+
+
+                logInfo << "here" << data << index;
+
+                if (index < 0)
+                    return;
+
+                value = index;
+                break;
+            }
+        }
 
         switch (item->dataType())
         {
@@ -151,9 +177,22 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
     switch (m_types.indexOf(item->type()))
     {
-        case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break;       // bool
+        case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
         case 1: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
-        // case 2: m_endpoints.find(0).value()->buffer().insert(item->expose(), enumValue(m_name, value.toInt()); break;   // enum
+
+        case 2: // enum
+        {
+            QVariant option = m_options.value(item->expose()).toMap().value("enum");
+
+            switch (option.type())
+            {
+                case QVariant::Map:  m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
+                case QVariant::List: m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
+                default: break;
+            }
+
+            break;
+        }
     }
 
     m_sequence++;

@@ -4,7 +4,7 @@
 
 Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
 {
-    QList <QString> keys = getConfig()->allKeys(); // TODO: use childGroups
+    QList <QString> keys = getConfig()->allKeys();
 
     logInfo << "Starting version" << SERVICE_VERSION;
     logInfo << "Configuration file is" << getConfig()->fileName();
