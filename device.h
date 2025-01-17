@@ -1,6 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#define DEFAULT_ENDPOINT        0
 #define STORE_DATABASE_DELAY    20
 
 #include <QFile>
@@ -105,7 +106,8 @@ private:
     QFile m_file;
     bool m_names, m_sync;
 
-    QList <QString> m_types;
+    QMap <QString, QVariant> m_exposeOptions;
+    QList <QString> m_types, m_specialExposes;
 
     void unserialize(const QJsonArray &devices);
     QJsonArray serialize(void);

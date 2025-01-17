@@ -22,12 +22,11 @@ quint16 Custom::ItemObject::count(void)
     }
 }
 
-void Custom::Controller::init(const Device &device)
+void Custom::Controller::init(const Device &)
 {
     m_type = "customController";
     m_description = "HOMEd Modbus Custom Controller";
     m_types = {"bool", "value", "enum"};
-    m_endpoints.insert(0, Endpoint(new EndpointObject(0, device)));
 }
 
 void Custom::Controller::enqueueAction(quint8, const QString &name, const QVariant &data)

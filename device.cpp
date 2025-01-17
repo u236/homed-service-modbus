@@ -22,8 +22,20 @@ void DeviceObject::updateEndpoints(void)
 
 DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_timer(new QTimer(this)), m_registerTypes(QMetaEnum::fromType <Custom::RegisterType> ()), m_dataTypes(QMetaEnum::fromType <Custom::DataType> ()), m_byteOrders(QMetaEnum::fromType <Custom::ByteOrder> ()), m_sync(false)
 {
+    QFile file(config->value("device/expose", "/usr/share/homed-common/expose.json").toString());
+
+    ExposeObject::registerMetaTypes();
+
     m_file.setFileName(config->value("device/database", "/opt/homed-modbus/database.json").toString());
+
+    if (file.open(QFile::ReadOnly))
+    {
+        m_exposeOptions = QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
+        file.close();
+    }
+
     m_types = {"customController", "homedRelayController", "homedSwitchController", "wbMap3e", "wbMap12h"};
+    m_specialExposes = {"light", "switch", "cover", "lock", "thermostat"};
 
     connect(m_timer, &QTimer::timeout, this, &DeviceList::writeDatabase);
     m_timer->setSingleShot(true);
@@ -106,25 +118,39 @@ Device DeviceList::parse(const QJsonObject &json)
         {
             QJsonArray items = json.value("items").toArray();
             Custom::Controller* controller = reinterpret_cast <Custom::Controller*> (device.data());
-            const Endpoint endpoint = controller->endpoints().value(0);
+            Endpoint endpoint(new EndpointObject(DEFAULT_ENDPOINT, device));
+
+            controller->options() = json.value("options").toObject().toVariantMap();
+            controller->endpoints().insert(endpoint->id(), endpoint);
 
             for (auto it = items.begin(); it != items.end(); it++)
             {
                 QJsonObject item = it->toObject();
-                QString exposeName = item.value("expose").toString();
-                Expose expose(new SensorObject(exposeName));
+                QString exposeName = item.value("expose").toString(), itemName = exposeName.split('_').value(0);
+                QMap <QString, QVariant> option = m_exposeOptions.value(itemName).toMap();
+                Expose expose;
+                int type;
 
                 if (exposeName.isEmpty())
                     continue;
 
+                if (controller->options().contains(exposeName))
+                    option.insert(controller->options().value(exposeName).toMap());
+
+                if (!option.isEmpty())
+                    controller->options().insert(exposeName, option);
+
+                type = QMetaType::type(QString(m_specialExposes.contains(itemName) ? itemName : option.value("type").toString()).append("Expose").toUtf8());
+
+                expose = Expose(type ? reinterpret_cast <ExposeObject*> (QMetaType::create(type)) : new ExposeObject(exposeName));
+                expose->setName(exposeName);
                 expose->setParent(endpoint.data());
-                endpoint->exposes().append(expose);
 
                 controller->items().append(Custom::Item(new Custom::ItemObject(exposeName, item.value("type").toString(), static_cast <quint16> (item.value("address").toInt()), static_cast <Custom::RegisterType> (m_registerTypes.keyToValue(item.value("registerType").toString().toUtf8().constData())), static_cast <Custom::DataType> (m_dataTypes.keyToValue(item.value("dataType").toString().toUtf8().constData())), static_cast <Custom::ByteOrder> (m_byteOrders.keyToValue(item.value("byteOrder").toString().toUtf8().constData())), item.value("divider").toDouble())));
+                endpoint->exposes().append(expose);
             }
         }
     }
-
 
     return device;
 }
@@ -167,6 +193,7 @@ QJsonArray DeviceList::serialize(void)
         {
             Custom::Controller* controller = reinterpret_cast <Custom::Controller*> (device.data());
             QJsonArray items;
+            QJsonObject options;
 
             for (int i = 0; i < controller->items().count(); i++)
             {
@@ -174,8 +201,35 @@ QJsonArray DeviceList::serialize(void)
                 items.append(QJsonObject {{"expose", item->expose()}, {"type", item->type()}, {"address", item->address()}, {"registerType", m_registerTypes.valueToKey(static_cast <int> (item->registerType()))}, {"dataType", m_dataTypes.valueToKey(static_cast <int> (item->dataType()))}, {"byteOrder", m_byteOrders.valueToKey(static_cast <int> (item->byteOrder()))}, {"divider", item->divider()}});
             }
 
+            for (auto it = controller->options().begin(); it != controller->options().end(); it++)
+            {
+                QString expose = it.key().split('_').value(0);
+                QMap <QString, QVariant> option, map;
+
+                if (it.value().type() != QVariant::Map)
+                {
+                    options.insert(it.key(), QJsonValue::fromVariant(it.value()));
+                    continue;
+                }
+
+                option = m_exposeOptions.value(expose).toMap();
+                map = it.value().toMap();
+
+                for (auto it = option.begin(); it != option.end(); it++)
+                    if (map.value(it.key()) == it.value())
+                        map.remove(it.key());
+
+                if (map.isEmpty())
+                    continue;
+
+                options.insert(it.key(), QJsonObject::fromVariantMap(map));
+            }
+
             if (!items.isEmpty())
                 json.insert("items", items);
+
+            if (!options.isEmpty())
+                json.insert("options", options);
         }
 
         if (!device->note().isEmpty())
