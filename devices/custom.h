@@ -1,7 +1,6 @@
 #ifndef CUSTOM_H
 #define CUSTOM_H
 
-#include <QMetaEnum>
 #include "device.h"
 
 namespace Custom
@@ -41,10 +40,10 @@ namespace Custom
 
     public:
 
-        ItemObject(const QString &name, const QString &type, quint16 address, RegisterType registerType, DataType dataType, ByteOrder order, double divider) :
-            m_name(name), m_type(type), m_address(address), m_registerType(registerType), m_dataType(dataType), m_order(order), m_divider(divider > 0 ? divider : 1) {}
+        ItemObject(const QString &expose, const QString &type, quint16 address, RegisterType registerType, DataType dataType, ByteOrder order, double divider) :
+            m_expose(expose), m_type(type), m_address(address), m_registerType(registerType), m_dataType(dataType), m_order(order), m_divider(divider > 0 ? divider : 1) {}
 
-        inline QString name(void) { return m_name; };
+        inline QString expose(void) { return m_expose; };
         inline QString type(void) { return m_type; };
         inline quint16 address(void) { return m_address; };
         inline RegisterType registerType(void) { return m_registerType; };
@@ -56,7 +55,7 @@ namespace Custom
 
     private:
 
-        QString m_name, m_type;
+        QString m_expose, m_type;
         quint16 m_address;
         RegisterType m_registerType;
         DataType m_dataType;
@@ -70,10 +69,10 @@ namespace Custom
 
     public:
 
-        Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name, const QJsonArray &items, const QJsonObject &options);
+        Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, name) {}
 
-        inline QJsonObject options(void) { return m_options; }
-        QJsonArray items(void);
+        inline QList <Item> &items(void) { return m_items; }
 
         void init(const Device &device) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
@@ -83,9 +82,6 @@ namespace Custom
         void parseReply(const QByteArray &reply) override;
 
     private:
-
-        QMetaEnum m_registerTypes, m_dataTypes, m_byteOrders;
-        QJsonObject m_options;
 
         QList <QString> m_types;
         QList <Item> m_items;

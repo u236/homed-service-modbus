@@ -3,6 +3,7 @@
 #include "devices/wirenboard.h"
 #include "controller.h"
 #include "device.h"
+#include "expose.h"
 #include "logger.h"
 
 void DeviceObject::updateEndpoints(void)
@@ -19,18 +20,10 @@ void DeviceObject::updateEndpoints(void)
     }
 }
 
-DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_timer(new QTimer(this)), m_sync(false)
+DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_timer(new QTimer(this)), m_registerTypes(QMetaEnum::fromType <Custom::RegisterType> ()), m_dataTypes(QMetaEnum::fromType <Custom::DataType> ()), m_byteOrders(QMetaEnum::fromType <Custom::ByteOrder> ()), m_sync(false)
 {
-    m_types =
-    {
-        "customController",
-        "homedRelayController",
-        "homedSwitchController",
-        "wbMap3e",
-        "wbMap12h"
-    };
-
     m_file.setFileName(config->value("device/database", "/opt/homed-modbus/database.json").toString());
+    m_types = {"customController", "homedRelayController", "homedSwitchController", "wbMap3e", "wbMap12h"};
 
     connect(m_timer, &QTimer::timeout, this, &DeviceList::writeDatabase);
     m_timer->setSingleShot(true);
@@ -88,7 +81,7 @@ Device DeviceList::parse(const QJsonObject &json)
 
     switch (m_types.indexOf(json.value("type").toString()))
     {
-        case 0: device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, name, json.value("items").toArray(), json.value("options").toObject())); break;
+        case 0: device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, name)); break;
         case 1: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
         case 2: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
         case 3: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, name)); break;
@@ -108,7 +101,30 @@ Device DeviceList::parse(const QJsonObject &json)
 
         device->setNote(json.value("note").toString());
         device->init(device);
+
+        if (device->type() == "customController")
+        {
+            QJsonArray items = json.value("items").toArray();
+            Custom::Controller* controller = reinterpret_cast <Custom::Controller*> (device.data());
+            const Endpoint endpoint = controller->endpoints().value(0);
+
+            for (auto it = items.begin(); it != items.end(); it++)
+            {
+                QJsonObject item = it->toObject();
+                QString exposeName = item.value("expose").toString();
+                Expose expose(new SensorObject(exposeName));
+
+                if (exposeName.isEmpty())
+                    continue;
+
+                expose->setParent(endpoint.data());
+                endpoint->exposes().append(expose);
+
+                controller->items().append(Custom::Item(new Custom::ItemObject(exposeName, item.value("type").toString(), static_cast <quint16> (item.value("address").toInt()), static_cast <Custom::RegisterType> (m_registerTypes.keyToValue(item.value("registerType").toString().toUtf8().constData())), static_cast <Custom::DataType> (m_dataTypes.keyToValue(item.value("dataType").toString().toUtf8().constData())), static_cast <Custom::ByteOrder> (m_byteOrders.keyToValue(item.value("byteOrder").toString().toUtf8().constData())), item.value("divider").toDouble())));
+            }
+        }
     }
+
 
     return device;
 }
@@ -150,12 +166,16 @@ QJsonArray DeviceList::serialize(void)
         if (device->type() == "customController")
         {
             Custom::Controller* controller = reinterpret_cast <Custom::Controller*> (device.data());
+            QJsonArray items;
 
-            if (!controller->items().isEmpty())
-                json.insert("items", controller->items());
+            for (int i = 0; i < controller->items().count(); i++)
+            {
+                const Custom::Item &item = controller->items().at(i);
+                items.append(QJsonObject {{"expose", item->expose()}, {"type", item->type()}, {"address", item->address()}, {"registerType", m_registerTypes.valueToKey(static_cast <int> (item->registerType()))}, {"dataType", m_dataTypes.valueToKey(static_cast <int> (item->dataType()))}, {"byteOrder", m_byteOrders.valueToKey(static_cast <int> (item->byteOrder()))}, {"divider", item->divider()}});
+            }
 
-            if (!controller->options().isEmpty())
-                json.insert("options", controller->options());
+            if (!items.isEmpty())
+                json.insert("items", items);
         }
 
         if (!device->note().isEmpty())

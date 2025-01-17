@@ -4,6 +4,7 @@
 #define STORE_DATABASE_DELAY    20
 
 #include <QFile>
+#include <QMetaEnum>
 #include <QQueue>
 #include "endpoint.h"
 
@@ -100,9 +101,11 @@ private:
 
     QTimer *m_timer;
 
-    QList <QString> m_types;
+    QMetaEnum m_registerTypes, m_dataTypes, m_byteOrders;
     QFile m_file;
     bool m_names, m_sync;
+
+    QList <QString> m_types;
 
     void unserialize(const QJsonArray &devices);
     QJsonArray serialize(void);

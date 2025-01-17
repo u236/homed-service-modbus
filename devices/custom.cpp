@@ -1,6 +1,5 @@
 #include <QtEndian>
 #include "custom.h"
-#include "expose.h"
 #include "modbus.h"
 #include "logger.h" // TODO: remove me
 
@@ -23,50 +22,12 @@ quint16 Custom::ItemObject::count(void)
     }
 }
 
-Custom::Controller::Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name, const QJsonArray &items, const QJsonObject &options) : DeviceObject(portId, slaveId, baudRate, pollInterval, name), m_registerTypes(QMetaEnum::fromType <RegisterType> ()), m_dataTypes(QMetaEnum::fromType <DataType> ()), m_byteOrders(QMetaEnum::fromType <ByteOrder> ()), m_options(options)
-{
-    m_types = {"bool", "value", "enum"};
-
-    for (auto it = items.begin(); it != items.end(); it++)
-    {
-        QJsonObject item = it->toObject();
-        QString name = item.value("name").toString(), type = item.value("type").toString();
-
-        if (name.isEmpty() || !m_types.contains(type))
-            continue;
-
-        m_items.append(Item(new ItemObject(name, type, static_cast <quint16> (item.value("address").toInt()), static_cast <RegisterType> (m_registerTypes.keyToValue(item.value("registerType").toString().toUtf8().constData())), static_cast <DataType> (m_dataTypes.keyToValue(item.value("dataType").toString().toUtf8().constData())), static_cast <ByteOrder> (m_byteOrders.keyToValue(item.value("byteOrder").toString().toUtf8().constData())), item.value("divider").toDouble())));
-    }
-}
-
-QJsonArray Custom::Controller::items(void)
-{
-    QJsonArray array;
-
-    for (int i = 0; i < m_items.count(); i++)
-    {
-        const Item  &item = m_items.at(i);
-        array.append(QJsonObject {{"name", item->name()}, {"type", item->type()}, {"address", item->address()}, {"registerType", m_registerTypes.valueToKey(static_cast <int> (item->registerType()))}, {"dataType", m_dataTypes.valueToKey(static_cast <int> (item->dataType()))}, {"byteOrder", m_byteOrders.valueToKey(static_cast <int> (item->byteOrder()))}, {"divider", item->divider()}});
-    }
-
-    return array;
-}
-
 void Custom::Controller::init(const Device &device)
 {
-    Endpoint endpoint(new EndpointObject(0, device));
-
     m_type = "customController";
     m_description = "HOMEd Modbus Custom Controller";
-
-    for (int i = 0; i < m_items.count(); i++)
-    {
-        Expose expose(new SensorObject(m_items.at(i)->name()));
-        expose->setParent(endpoint.data());
-        endpoint->exposes().append(expose);
-    }
-
-    m_endpoints.insert(0, endpoint);
+    m_types = {"bool", "value", "enum"};
+    m_endpoints.insert(0, Endpoint(new EndpointObject(0, device)));
 }
 
 void Custom::Controller::enqueueAction(quint8, const QString &name, const QVariant &data)
@@ -94,7 +55,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
             // }
         }
 
-        if (item->name() != name || item->registerType() != RegisterType::holding)
+        if (item->expose() != name || item->registerType() != RegisterType::holding)
             continue;
 
         switch (item->dataType())
@@ -191,9 +152,9 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
     switch (m_types.indexOf(item->type()))
     {
-        case 0: m_endpoints.find(0).value()->buffer().insert(item->name(), value.toInt() ? true : false); break;       // bool
-        case 1: m_endpoints.find(0).value()->buffer().insert(item->name(), value.toDouble() / item->divider()); break; // value
-        // case 2: m_endpoints.find(0).value()->buffer().insert(item->name(), enumValue(m_name, value.toInt()); break;   // enum
+        case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break;       // bool
+        case 1: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+        // case 2: m_endpoints.find(0).value()->buffer().insert(item->expose(), enumValue(m_name, value.toInt()); break;   // enum
     }
 
     m_sequence++;
