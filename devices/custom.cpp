@@ -150,48 +150,48 @@ void Custom::Controller::parseReply(const QByteArray &reply)
     quint16 count = item->count(), buffer[4], payload[4];
     QVariant value;
 
-    if (Modbus::parseReply(m_slaveId, item->registerType() == RegisterType::holding ? Modbus::ReadHoldingRegisters : Modbus::ReadInputRegisters, reply, buffer) != Modbus::ReplyStatus::Ok)
-        return;
-
-    for (int i = 0; i < count; i++)
+    if (Modbus::parseReply(m_slaveId, item->registerType() == RegisterType::holding ? Modbus::ReadHoldingRegisters : Modbus::ReadInputRegisters, reply, buffer) == Modbus::ReplyStatus::Ok)
     {
-        switch (item->byteOrder())
+        for (int i = 0; i < count; i++)
         {
-            case ByteOrder::be:    payload[i] = qToBigEndian(buffer[i]); break;
-            case ByteOrder::le:    payload[i] = qToLittleEndian(buffer[count - i - 1]); break;
-            case ByteOrder::mixed: payload[i] = qToBigEndian(buffer[count - i - 1]); break;
-        }
-    }
-
-    switch (item->dataType())
-    {
-        case DataType::i16: value = qFromBigEndian <qint16>  (*(reinterpret_cast <qint16*>  (payload))); break;
-        case DataType::u16: value = qFromBigEndian <quint16> (*(reinterpret_cast <quint16*> (payload))); break;
-        case DataType::i32: value = qFromBigEndian <qint32>  (*(reinterpret_cast <qint32*>  (payload))); break;
-        case DataType::u32: value = qFromBigEndian <quint32> (*(reinterpret_cast <quint32*> (payload))); break;
-        case DataType::i64: value = qFromBigEndian <qint64>  (*(reinterpret_cast <qint64*>  (payload))); break;
-        case DataType::u64: value = qFromBigEndian <quint64> (*(reinterpret_cast <quint64*> (payload))); break;
-        case DataType::f32: value = qFromBigEndian <float>   (*(reinterpret_cast <float*>   (payload))); break;
-        case DataType::f64: value = qFromBigEndian <double>  (*(reinterpret_cast <double*>  (payload))); break;
-    }
-
-    switch (m_types.indexOf(item->type()))
-    {
-        case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
-        case 1: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
-
-        case 2: // enum
-        {
-            QVariant option = m_options.value(item->expose()).toMap().value("enum");
-
-            switch (option.type())
+            switch (item->byteOrder())
             {
-                case QVariant::Map:  m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
-                case QVariant::List: m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
-                default: break;
+                case ByteOrder::be:    payload[i] = qToBigEndian(buffer[i]); break;
+                case ByteOrder::le:    payload[i] = qToLittleEndian(buffer[count - i - 1]); break;
+                case ByteOrder::mixed: payload[i] = qToBigEndian(buffer[count - i - 1]); break;
             }
+        }
 
-            break;
+        switch (item->dataType())
+        {
+            case DataType::i16: value = qFromBigEndian <qint16>  (*(reinterpret_cast <qint16*>  (payload))); break;
+            case DataType::u16: value = qFromBigEndian <quint16> (*(reinterpret_cast <quint16*> (payload))); break;
+            case DataType::i32: value = qFromBigEndian <qint32>  (*(reinterpret_cast <qint32*>  (payload))); break;
+            case DataType::u32: value = qFromBigEndian <quint32> (*(reinterpret_cast <quint32*> (payload))); break;
+            case DataType::i64: value = qFromBigEndian <qint64>  (*(reinterpret_cast <qint64*>  (payload))); break;
+            case DataType::u64: value = qFromBigEndian <quint64> (*(reinterpret_cast <quint64*> (payload))); break;
+            case DataType::f32: value = qFromBigEndian <float>   (*(reinterpret_cast <float*>   (payload))); break;
+            case DataType::f64: value = qFromBigEndian <double>  (*(reinterpret_cast <double*>  (payload))); break;
+        }
+
+        switch (m_types.indexOf(item->type()))
+        {
+            case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
+            case 1: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+
+            case 2: // enum
+            {
+                QVariant option = m_options.value(item->expose()).toMap().value("enum");
+
+                switch (option.type())
+                {
+                    case QVariant::Map:  m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
+                    case QVariant::List: m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
+                    default: break;
+                }
+
+                break;
+            }
         }
     }
 

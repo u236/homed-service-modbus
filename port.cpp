@@ -32,7 +32,7 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     m_serial->write(request);
 
     timer.setSingleShot(true);
-    timer.start(100); // TODO: use config here?
+    timer.start(1000); // TODO: use config here?
     loop.exec();
 
     if (!timer.isActive())
