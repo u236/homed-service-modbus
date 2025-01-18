@@ -113,6 +113,9 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
             }
         }
 
+        if (!item->read())
+            m_endpoints.find(0).value()->buffer().insert(name, data);
+
         m_actionQueue.enqueue(count > 1 ? Modbus::makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, item->address(), count, payload) : Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, item->address(), payload[0]));
         return;
     }
@@ -138,10 +141,9 @@ QByteArray Custom::Controller::pollRequest(void)
         return Modbus::makeRequest(m_slaveId, item->registerType() == RegisterType::holding ? Modbus::ReadHoldingRegisters : Modbus::ReadInputRegisters, item->address(), item->count());
     }
 
+    updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
-
-    updateEndpoints();
     return QByteArray();
 }
 

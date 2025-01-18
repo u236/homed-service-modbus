@@ -116,6 +116,7 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS, WBMAP_ENERGY_REGISTER_COUNT);
 
         default:
+            updateEndpoints();
             m_pollTime = QDateTime::currentMSecsSinceEpoch();
             m_polling = false;
             return QByteArray();
@@ -124,8 +125,6 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
 
 void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
 {
-    bool check = false;
-
     switch (m_sequence)
     {
         case 0:
@@ -206,13 +205,9 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 4; i++)
                m_endpoints.find(i).value()->buffer().insert("energy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPILER) / 1000.0);
 
-            check = true;
             break;
         }
     }
-
-    if (check)
-        updateEndpoints();
 
     m_sequence++;
 }
@@ -335,16 +330,22 @@ QByteArray WirenBoard::WBMap12h::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS + (m_sequence - 14) * 0x1000, WBMAP_ENERGY_REGISTER_COUNT);
 
         default:
+        {
+            auto it = m_endpoints.find(0);
+
+            it.value()->buffer().insert("power", m_totalPower);
+            it.value()->buffer().insert("energy", m_totalEnergy);
+
+            updateEndpoints();
             m_pollTime = QDateTime::currentMSecsSinceEpoch();
             m_polling = false;
             return QByteArray();
+        }
     }
 }
 
 void WirenBoard::WBMap12h::parseReply(const QByteArray &reply)
 {
-    bool check = false;
-
     switch (m_sequence)
     {
         case 0 ... 3:
@@ -442,19 +443,8 @@ void WirenBoard::WBMap12h::parseReply(const QByteArray &reply)
                     m_totalEnergy += value;
             }
 
-            if (m_sequence == 17)
-                check = true;
-
             break;
         }
-    }
-
-    if (check)
-    {
-        auto it = m_endpoints.find(0);
-        it.value()->buffer().insert("power", m_totalPower);
-        it.value()->buffer().insert("energy", m_totalEnergy);
-        updateEndpoints();
     }
 
     m_sequence++;

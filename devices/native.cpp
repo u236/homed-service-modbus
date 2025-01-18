@@ -71,6 +71,7 @@ QByteArray Native::RelayController::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
 
         default:
+            updateEndpoints();
             m_pollTime = QDateTime::currentMSecsSinceEpoch();
             m_polling = false;
             return QByteArray();
@@ -80,7 +81,6 @@ QByteArray Native::RelayController::pollRequest(void)
 void Native::RelayController::parseReply(const QByteArray &reply)
 {
     quint16 value;
-    bool check = false;
 
     switch (m_sequence)
     {
@@ -114,12 +114,8 @@ void Native::RelayController::parseReply(const QByteArray &reply)
             if (m_pending == m_status)
                 m_update = false;
 
-            check = true;
             break;
     }
-
-    if (check)
-        updateEndpoints();
 
     m_sequence++;
 }
