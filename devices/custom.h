@@ -40,8 +40,8 @@ namespace Custom
 
     public:
 
-        ItemObject(const QString &expose, const QString &type, quint16 address, RegisterType registerType, DataType dataType, ByteOrder order, double divider) :
-            m_expose(expose), m_type(type), m_address(address), m_registerType(registerType), m_dataType(dataType), m_order(order), m_divider(divider > 0 ? divider : 1) {}
+        ItemObject(const QString &expose, const QString &type, quint16 address, RegisterType registerType, DataType dataType, ByteOrder order, double divider, bool read) :
+            m_expose(expose), m_type(type), m_address(address), m_registerType(registerType), m_dataType(dataType), m_order(order), m_divider(divider > 0 ? divider : 1), m_read(read) {}
 
         inline QString expose(void) { return m_expose; };
         inline QString type(void) { return m_type; };
@@ -50,6 +50,7 @@ namespace Custom
         inline DataType dataType(void) { return m_dataType; };
         inline ByteOrder byteOrder(void) { return m_order; };
         inline double divider(void) { return m_divider; };
+        inline bool read(void) { return m_read; }
 
         quint16 count(void);
 
@@ -61,6 +62,7 @@ namespace Custom
         DataType m_dataType;
         ByteOrder m_order;
         double m_divider;
+        bool m_read;
 
     };
 

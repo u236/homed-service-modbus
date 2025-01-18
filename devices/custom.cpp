@@ -1,7 +1,6 @@
 #include <QtEndian>
 #include "custom.h"
 #include "modbus.h"
-#include "logger.h" // TODO: remove me
 
 quint16 Custom::ItemObject::count(void)
 {
@@ -72,9 +71,6 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
                     default: break;
                 }
 
-
-                logInfo << "here" << data << index;
-
                 if (index < 0)
                     return;
 
@@ -117,7 +113,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
             }
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, item->address(), count, payload));
+        m_actionQueue.enqueue(count > 1 ? Modbus::makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, item->address(), count, payload) : Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, item->address(), payload[0]));
         return;
     }
 }
@@ -133,6 +129,9 @@ void Custom::Controller::startPoll(void)
 
 QByteArray Custom::Controller::pollRequest(void)
 {
+    while (m_sequence < m_items.count() && !m_items.at(m_sequence)->read())
+        m_sequence++;
+
     if (m_sequence < m_items.count())
     {
         const Item &item = m_items.at(m_sequence);
@@ -141,6 +140,8 @@ QByteArray Custom::Controller::pollRequest(void)
 
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+
+    updateEndpoints();
     return QByteArray();
 }
 
@@ -196,9 +197,4 @@ void Custom::Controller::parseReply(const QByteArray &reply)
     }
 
     m_sequence++;
-
-    if (m_sequence < m_items.count())
-        return;
-
-    updateEndpoints();
 }
