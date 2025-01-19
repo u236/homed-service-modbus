@@ -10,8 +10,8 @@ namespace Native
 
     public:
 
-        RelayController(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, name), m_status(0), m_pending(0), m_update(false) {}
+        RelayController(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_status(0), m_pending(0), m_update(false) {}
 
         void init(const Device &device) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
@@ -33,8 +33,8 @@ namespace Native
 
     public:
 
-        SwitchController(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, name), m_timer(new QTimer(this)), m_firstPoll(true), m_status(0) {}
+        SwitchController(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_timer(new QTimer(this)), m_firstPoll(true), m_status(0) {}
 
         void init(const Device &device) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;

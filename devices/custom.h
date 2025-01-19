@@ -71,8 +71,8 @@ namespace Custom
 
     public:
 
-        Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, name) {}
+        Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
 
         inline QList <Item> &items(void) { return m_items; }
 

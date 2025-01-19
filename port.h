@@ -27,6 +27,8 @@ private:
     bool m_debug;
 
     QByteArray m_replyData;
+    quint32 m_replyTimeout;
+
     DeviceList *m_devices;
 
     void sendRequest(const Device &device, const QByteArray &request);

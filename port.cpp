@@ -32,7 +32,9 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     m_serial->write(request);
 
     timer.setSingleShot(true);
-    timer.start(1000); // TODO: use config here?
+    timer.start(device->requestTimeout());
+
+    m_replyTimeout = device->replyTimeout();
     loop.exec();
 
     if (!timer.isActive())
@@ -76,7 +78,7 @@ void PortThread::threadFinished(void)
 
 void PortThread::startTimer(void)
 {
-    m_receiveTimer->start(20); // TODO: use timeout from device settings?
+    m_receiveTimer->start(m_replyTimeout);
 }
 
 void PortThread::readyRead(void)

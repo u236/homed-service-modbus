@@ -85,7 +85,7 @@ Device DeviceList::parse(const QJsonObject &json)
 {
     QString name = json.value("name").toString();
     quint8 portId = static_cast <quint8> (json.value("portId").toInt()), slaveId = static_cast <quint8> (json.value("slaveId").toInt());
-    quint32 baudRate = json.value("baudRate").toInt(), pollInterval = json.value("pollInterval").toInt();
+    quint32 baudRate = json.value("baudRate").toInt(), pollInterval = json.value("pollInterval").toInt(), requestTimeout = json.value("requestTimeout").toInt(1000), replyTimeout = json.value("replyTimeout").toInt(20);
     Device device;
 
     if (name.isEmpty() || !portId || !slaveId || !baudRate)
@@ -93,11 +93,11 @@ Device DeviceList::parse(const QJsonObject &json)
 
     switch (m_types.indexOf(json.value("type").toString()))
     {
-        case 0: device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 1: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 2: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 3: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, name)); break;
-        case 4: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, name)); break;
+        case 0: device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 1: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 2: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 3: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 4: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
     }
 
     if (!device.isNull())
@@ -187,7 +187,7 @@ QJsonArray DeviceList::serialize(void)
     for (int i = 0; i < count(); i++)
     {
         const Device &device = at(i);
-        QJsonObject json = {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"name", device->name()}, {"active", device->active()}, {"cloud", device->cloud()}, {"discovery", device->discovery()}};
+        QJsonObject json = {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"requestTimeout", device->requestTimeout()}, {"replyTimeout", device->replyTimeout()}, {"name", device->name()}, {"active", device->active()}, {"cloud", device->cloud()}, {"discovery", device->discovery()}};
 
         if (device->type() == "customController")
         {
