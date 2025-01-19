@@ -28,13 +28,17 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     connect(this, &PortThread::replyReceived, &loop, &QEventLoop::quit);
     connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
 
+    m_replyData.clear();
+    m_replyTimeout = device->replyTimeout();
+
     m_serial->setBaudRate(device->baudRate());
     m_serial->write(request);
+
+    logDebug(m_debug) << "Port" << m_portId << "serial data sent:" << request.toHex(':');
 
     timer.setSingleShot(true);
     timer.start(device->requestTimeout());
 
-    m_replyTimeout = device->replyTimeout();
     loop.exec();
 
     if (!timer.isActive())
@@ -62,10 +66,11 @@ void PortThread::threadStarted(void)
 
     if (!m_serial->open(QIODevice::ReadWrite))
     {
-        logWarning << "Port" << m_portId << "can't open" << m_portName;
+        logWarning << "Port" << m_portId << "can't open" << m_serial->portName();
         return;
     }
 
+    logInfo << "Port" << m_portId << "successfully opened" << m_serial->portName();
     m_receiveTimer->setSingleShot(true);
     m_pollTimer->start(1);
 }
@@ -78,12 +83,12 @@ void PortThread::threadFinished(void)
 
 void PortThread::startTimer(void)
 {
+    m_replyData.append(m_serial->readAll());
     m_receiveTimer->start(m_replyTimeout);
 }
 
 void PortThread::readyRead(void)
 {
-    m_replyData = m_serial->readAll();
     logDebug(m_debug) << "Port" << m_portId << "serial data received:" << m_replyData.toHex(':');
     emit replyReceived();
 }
@@ -101,7 +106,18 @@ void PortThread::poll(void)
 
         if (!device->actionQueue().isEmpty())
         {
-            sendRequest(device, device->actionQueue().dequeue());
+            QByteArray request = device->actionQueue().dequeue();
+
+            while (device->availability() != Availability::Offline)
+            {
+                sendRequest(device, request);
+
+                if (device->errorCount())
+                    continue;
+
+                break;
+            }
+
             device->resetPollTime();
             continue;
         }
@@ -115,7 +131,6 @@ void PortThread::poll(void)
         if (request.isEmpty())
             continue;
 
-        logDebug(m_debug) << "Port" << m_portId << "serial data sent:" << request.toHex(':');
         sendRequest(device, request);
 
         if (device->errorCount())
