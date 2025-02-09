@@ -83,7 +83,7 @@ Device DeviceList::byName(const QString &name, int *index)
 
 Device DeviceList::parse(const QJsonObject &json)
 {
-    QString name = json.value("name").toString();
+    QString name = mqttSafe(json.value("name").toString());
     quint8 portId = static_cast <quint8> (json.value("portId").toInt()), slaveId = static_cast <quint8> (json.value("slaveId").toInt());
     quint32 baudRate = json.value("baudRate").toInt(), pollInterval = json.value("pollInterval").toInt(), requestTimeout = json.value("requestTimeout").toInt(1000), replyTimeout = json.value("replyTimeout").toInt(20);
     Device device;
