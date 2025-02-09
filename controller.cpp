@@ -98,14 +98,14 @@ void Controller::mqttConnected(void)
     mqttSubscribe(mqttTopic("command/modbus"));
     mqttSubscribe(mqttTopic("td/modbus/#"));
 
-    for (int i = 0; i < m_devices->count(); i++)
-        publishExposes(m_devices->at(i).data());
-
     if (m_haEnabled)
     {
         mqttPublishDiscovery("Modbus", SERVICE_VERSION, m_haPrefix);
         mqttSubscribe(m_haStatus);
     }
+
+    for (int i = 0; i < m_devices->count(); i++)
+        publishExposes(m_devices->at(i).data());
 
     m_devices->store();
     mqttPublishStatus();
