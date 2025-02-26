@@ -2,7 +2,7 @@
 #include "device.h"
 #include "logger.h"
 
-Controller::Controller(const QString &configFile) : HOMEd(configFile), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
+Controller::Controller(const QString &configFile) : HOMEd(configFile, true), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
 {
     QList <QString> keys = getConfig()->childGroups();
 
@@ -59,7 +59,7 @@ void Controller::publishProperties(const Device &device)
 
 void Controller::publishEvent(const QString &name, Event event)
 {
-    mqttPublish(mqttTopic("event/modbus"), {{"device", name}, {"event", m_events.valueToKey(static_cast <int> (event))}});
+    mqttPublish(mqttTopic("event/%1").arg(serviceTopic()), {{"device", name}, {"event", m_events.valueToKey(static_cast <int> (event))}});
 }
 
 void Controller::deviceEvent(DeviceObject *device, Event event)
@@ -70,7 +70,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
     {
         case Event::aboutToRename:
         case Event::removed:
-            mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), QJsonObject(), true);
+            mqttPublish(mqttTopic("device/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address()), QJsonObject(), true);
             remove = true;
             break;
 
@@ -78,7 +78,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
         case Event::updated:
 
             if (device->availability() != Availability::Unknown)
-                mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
+                mqttPublish(mqttTopic("device/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
 
             break;
 
@@ -95,8 +95,8 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
 
 void Controller::mqttConnected(void)
 {
-    mqttSubscribe(mqttTopic("command/modbus"));
-    mqttSubscribe(mqttTopic("td/modbus/#"));
+    mqttSubscribe(mqttTopic("command/%1").arg(serviceTopic()));
+    mqttSubscribe(mqttTopic("td/%1/#").arg(serviceTopic()));
 
     for (int i = 0; i < m_devices->count(); i++)
         publishExposes(m_devices->at(i).data());
@@ -116,14 +116,14 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
     QString subTopic = topic.name().replace(mqttTopic(), QString());
     QJsonObject json = QJsonDocument::fromJson(message).object();
 
-    if (subTopic == "command/modbus")
+    if (subTopic == QString("command/%1").arg(serviceTopic()))
     {
         switch (static_cast <Command> (m_commands.keyToValue(json.value("action").toString().toUtf8().constData())))
         {
             case Command::restartService:
             {
                 logWarning << "Restart request received...";
-                mqttPublish(mqttTopic("command/custom"), QJsonObject(), true);
+                mqttPublish(topic.name(), QJsonObject(), true);
                 QCoreApplication::exit(EXIT_RESTART);
                 break;
             }
@@ -199,10 +199,10 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             }
         }
     }
-    else if (subTopic.startsWith("td/modbus/"))
+    else if (subTopic.startsWith(QString("td/%1/").arg(serviceTopic())))
     {
-        QList <QString> list = subTopic.split('/');
-        Device device = m_devices->byName(list.value(2));
+        QList <QString> list = subTopic.remove(QString("td/%1/").arg(serviceTopic())).split('/');
+        Device device = m_devices->byName(list.value(0));
 
         if (device.isNull() || !device->active())
             return;
@@ -212,7 +212,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             if (!it.value().toVariant().isValid())
                 continue;
 
-            device->enqueueAction(static_cast <quint8> (list.value(3).toInt()), it.key(), it.value().toVariant());
+            device->enqueueAction(static_cast <quint8> (list.value(1).toInt()), it.key(), it.value().toVariant());
         }
     }
     else if (topic.name() == m_haStatus)
@@ -227,7 +227,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 void Controller::updateAvailability(DeviceObject *device)
 {
     QString status = device->availability() == Availability::Online ? "online" : "offline";
-    mqttPublish(mqttTopic("device/modbus/%1").arg(m_devices->names() ? device->name() : device->address()), {{"status", status}}, true);
+    mqttPublish(mqttTopic("device/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address()), {{"status", status}}, true);
     logInfo << "Device" << device->name() << "is" << status;
 }
 
@@ -243,7 +243,7 @@ void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)
 
     if (!endpoint->status().isEmpty())
     {
-        QString topic = mqttTopic("fd/modbus/%1").arg(m_devices->names() ? device->name() : device->address());
+        QString topic = mqttTopic("fd/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address());
 
         if (endpointId)
             topic.append(QString("/%1").arg(endpointId));
@@ -254,5 +254,5 @@ void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)
 
 void Controller::statusUpdated(const QJsonObject &json)
 {
-    mqttPublish(mqttTopic("status/modbus"), json, true);
+    mqttPublish(mqttTopic("status/%1").arg(serviceTopic()), json, true);
 }
