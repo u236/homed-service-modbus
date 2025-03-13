@@ -57,8 +57,8 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
 void PortThread::threadStarted(void)
 {
     m_serial = new QSerialPort(m_portName, this);
-    m_receiveTimer = new QTimer;
-    m_pollTimer = new QTimer;
+    m_receiveTimer = new QTimer(this);
+    m_pollTimer = new QTimer(this);
 
     connect(m_serial, &QSerialPort::readyRead, this, &PortThread::startTimer);
     connect(m_receiveTimer, &QTimer::timeout, this, &PortThread::readyRead);
