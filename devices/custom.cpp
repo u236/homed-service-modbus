@@ -36,7 +36,16 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
         quint16 count = item->count(), buffer[4], payload[4];
         QVariant value;
 
-        if (item->expose() != name || item->registerType() != RegisterType::holding)
+        if (item->expose() != name)
+            continue;
+
+        if (item->registerType() == RegisterType::coil)
+        {
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, item->address(), data.toBool() ? 0xFF00 : 0x0000));
+            return;
+        }
+
+        if (item->registerType() != RegisterType::holding)
             continue;
 
         switch (m_types.indexOf(item->type()))
@@ -138,7 +147,14 @@ QByteArray Custom::Controller::pollRequest(void)
     if (m_sequence < m_items.count())
     {
         const Item &item = m_items.at(m_sequence);
-        return Modbus::makeRequest(m_slaveId, item->registerType() == RegisterType::holding ? Modbus::ReadHoldingRegisters : Modbus::ReadInputRegisters, item->address(), item->count());
+
+        switch (item->registerType())
+        {
+            case RegisterType::coil:    return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       item->address(), 1);
+            case RegisterType::status:  return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      item->address(), 1);
+            case RegisterType::input:   return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
+            case RegisterType::holding: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, item->address(), item->count());
+        }
     }
 
     updateEndpoints();
@@ -149,9 +165,17 @@ QByteArray Custom::Controller::pollRequest(void)
 
 void Custom::Controller::parseReply(const QByteArray &reply)
 {
-    const Item &item = m_items.at(m_sequence);
+    const Item &item = m_items.at(m_sequence++);
     quint16 count = item->count(), buffer[4], payload[4];
     QVariant value;
+
+    if (item->registerType() == RegisterType::coil || item->registerType() == RegisterType::status)
+    {
+        if (Modbus::parseReply(m_slaveId, item->registerType() == RegisterType::coil ? Modbus::ReadCoilStatus : Modbus::ReadInputStatus, reply, buffer) == Modbus::ReplyStatus::Ok)
+            m_endpoints.find(0).value()->buffer().insert(item->expose(), buffer[0] ? true : false);
+
+        return;
+    }
 
     if (Modbus::parseReply(m_slaveId, item->registerType() == RegisterType::holding ? Modbus::ReadHoldingRegisters : Modbus::ReadInputRegisters, reply, buffer) == Modbus::ReplyStatus::Ok)
     {
@@ -197,6 +221,4 @@ void Custom::Controller::parseReply(const QByteArray &reply)
             }
         }
     }
-
-    m_sequence++;
 }

@@ -9,8 +9,10 @@ namespace Custom
 
     enum class RegisterType
     {
-        input,
-        holding
+        coil,
+        status,
+        holding,
+        input
     };
 
     enum class DataType

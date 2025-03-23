@@ -10,6 +10,8 @@ public:
 
     enum FunctionCode
     {
+        ReadCoilStatus          = 0x01,
+        ReadInputStatus         = 0x02,
         ReadHoldingRegisters    = 0x03,
         ReadInputRegisters      = 0x04,
         WriteSingleCoil         = 0x05,
