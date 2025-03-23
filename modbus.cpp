@@ -99,7 +99,7 @@ Modbus::ReplyStatus Modbus::parseReply(quint8 slaveAddress, FunctionCode functio
         {
             bool check = functionCode == ReadCoilStatus || functionCode == ReadInputStatus ? true : false;
 
-            for (int i = 0; i < check ? data.length() * 8 : data.length() / 2; i++)
+            for (int i = 0; i < (check ? data.length() * 8 : data.length() / 2); i++)
                 registerData[i] = check ? data.at(i / 8) & 1 << i % 8 ? 1 : 0 : qFromBigEndian <quint16> (*(reinterpret_cast <const quint16*> (data.constData() + i * 2)));
         }
         else

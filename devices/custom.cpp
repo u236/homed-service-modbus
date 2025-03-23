@@ -36,17 +36,17 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
         quint16 count = item->count(), buffer[4], payload[4];
         QVariant value;
 
-        if (item->expose() != name)
+        if (item->expose() != name || (item->registerType() != RegisterType::coil && item->registerType() != RegisterType::holding))
             continue;
+
+        if (!item->read())
+            m_endpoints.find(0).value()->buffer().insert(name, data);
 
         if (item->registerType() == RegisterType::coil)
         {
             m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, item->address(), data.toBool() ? 0xFF00 : 0x0000));
             return;
         }
-
-        if (item->registerType() != RegisterType::holding)
-            continue;
 
         switch (m_types.indexOf(item->type()))
         {
@@ -122,9 +122,6 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
             }
         }
 
-        if (!item->read())
-            m_endpoints.find(0).value()->buffer().insert(name, data);
-
         m_actionQueue.enqueue(count > 1 ? Modbus::makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, item->address(), count, payload) : Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, item->address(), payload[0]));
         return;
     }
@@ -166,7 +163,7 @@ QByteArray Custom::Controller::pollRequest(void)
 void Custom::Controller::parseReply(const QByteArray &reply)
 {
     const Item &item = m_items.at(m_sequence++);
-    quint16 count = item->count(), buffer[4], payload[4];
+    quint16 count = item->count(), buffer[8], payload[4];
     QVariant value;
 
     if (item->registerType() == RegisterType::coil || item->registerType() == RegisterType::status)

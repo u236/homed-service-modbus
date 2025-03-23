@@ -148,7 +148,7 @@ Device DeviceList::parse(const QJsonObject &json)
                 expose->setName(exposeName);
                 expose->setParent(endpoint.data());
 
-                controller->items().append(Custom::Item(new Custom::ItemObject(exposeName, item.value("type").toString(), static_cast <quint16> (item.value("address").toInt()), static_cast <Custom::RegisterType> (m_registerTypes.keyToValue(item.value("registerType").toString().toUtf8().constData())), static_cast <Custom::DataType> (m_dataTypes.keyToValue(item.value("dataType").toString().toUtf8().constData())), static_cast <Custom::ByteOrder> (m_byteOrders.keyToValue(item.value("byteOrder").toString().toUtf8().constData())), item.value("divider").toDouble(), item.value("read").toBool(true))));
+                controller->items().append(Custom::Item(new Custom::ItemObject(exposeName, item.value("type").toString("value"), static_cast <quint16> (item.value("address").toInt()), static_cast <Custom::RegisterType> (m_registerTypes.keyToValue(item.value("registerType").toString("input").toUtf8().constData())), static_cast <Custom::DataType> (m_dataTypes.keyToValue(item.value("dataType").toString("u16").toUtf8().constData())), static_cast <Custom::ByteOrder> (m_byteOrders.keyToValue(item.value("byteOrder").toString("be").toUtf8().constData())), item.value("divider").toDouble(1), item.value("read").toBool(true))));
                 endpoint->exposes().append(expose);
             }
         }
@@ -200,7 +200,17 @@ QJsonArray DeviceList::serialize(void)
             for (int i = 0; i < controller->items().count(); i++)
             {
                 const Custom::Item &item = controller->items().at(i);
-                items.append(QJsonObject {{"expose", item->expose()}, {"type", item->type()}, {"address", item->address()}, {"registerType", m_registerTypes.valueToKey(static_cast <int> (item->registerType()))}, {"dataType", m_dataTypes.valueToKey(static_cast <int> (item->dataType()))}, {"byteOrder", m_byteOrders.valueToKey(static_cast <int> (item->byteOrder()))}, {"divider", item->divider()}, {"read", item->read()}});
+                QJsonObject json = {{"expose", item->expose()}, {"address", item->address()}, {"registerType", m_registerTypes.valueToKey(static_cast <int> (item->registerType()))}, {"read", item->read()}};
+
+                if (item->registerType() == Custom::RegisterType::holding || item->registerType() == Custom::RegisterType::input)
+                {
+                    json.insert("type", item->type());
+                    json.insert("dataType", m_dataTypes.valueToKey(static_cast <int> (item->dataType())));
+                    json.insert("byteOrder", m_byteOrders.valueToKey(static_cast <int> (item->byteOrder())));
+                    json.insert("divider", item->divider());
+                }
+
+                items.append(json);
             }
 
             for (auto it = controller->options().begin(); it != controller->options().end(); it++)
