@@ -42,12 +42,6 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
         if (!item->read())
             m_endpoints.find(0).value()->buffer().insert(name, data);
 
-        if (item->registerType() == RegisterType::coil)
-        {
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, item->address(), data.toBool() ? 0xFF00 : 0x0000));
-            return;
-        }
-
         switch (m_types.indexOf(item->type()))
         {
             case 0: value = data.toBool() ? 0x01 : 0x00; break; // bool
@@ -55,8 +49,12 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
 
             case 2: // enum
             {
+                QString action = data.toString();
                 QVariant option = m_options.value(item->expose()).toMap().value("enum");
                 int index = -1;
+
+                if (name.split('_').value(0) == "status" && action == "toggle")
+                    action = m_endpoints.find(0).value()->buffer().value(name).toString() == "on" ? "off" : "on";
 
                 switch (option.type())
                 {
@@ -66,7 +64,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
 
                         for (auto it = map.begin(); it != map.end(); it++)
                         {
-                            if (it.value() != data.toString())
+                            if (it.value() != action)
                                 continue;
 
                             index = it.key().toInt();
@@ -76,7 +74,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
                         break;
                     }
 
-                    case QVariant::List: index = option.toList().indexOf(data.toString()); break;
+                    case QVariant::List: index = option.toList().indexOf(action); break;
                     default: break;
                 }
 
@@ -86,6 +84,12 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
                 value = index;
                 break;
             }
+        }
+
+        if (item->registerType() == RegisterType::coil)
+        {
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, item->address(), value.toInt() ? 0xFF00 : 0x0000));
+            return;
         }
 
         switch (item->dataType())
@@ -149,8 +153,8 @@ QByteArray Custom::Controller::pollRequest(void)
         {
             case RegisterType::coil:    return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       item->address(), 1);
             case RegisterType::status:  return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      item->address(), 1);
-            case RegisterType::input:   return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
             case RegisterType::holding: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, item->address(), item->count());
+            case RegisterType::input:   return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
         }
     }
 
@@ -163,18 +167,22 @@ QByteArray Custom::Controller::pollRequest(void)
 void Custom::Controller::parseReply(const QByteArray &reply)
 {
     const Item &item = m_items.at(m_sequence++);
+    Modbus::FunctionCode function;
     quint16 count = item->count(), buffer[8], payload[4];
     QVariant value;
 
-    if (item->registerType() == RegisterType::coil || item->registerType() == RegisterType::status)
+    switch (item->registerType())
     {
-        if (Modbus::parseReply(m_slaveId, item->registerType() == RegisterType::coil ? Modbus::ReadCoilStatus : Modbus::ReadInputStatus, reply, buffer) == Modbus::ReplyStatus::Ok)
-            m_endpoints.find(0).value()->buffer().insert(item->expose(), buffer[0] ? true : false);
-
-        return;
+        case RegisterType::coil:    function = Modbus::ReadCoilStatus; break;
+        case RegisterType::status:  function = Modbus::ReadInputStatus; break;
+        case RegisterType::holding: function = Modbus::ReadHoldingRegisters; break;
+        case RegisterType::input:   function = Modbus::ReadInputRegisters; break;
     }
 
-    if (Modbus::parseReply(m_slaveId, item->registerType() == RegisterType::holding ? Modbus::ReadHoldingRegisters : Modbus::ReadInputRegisters, reply, buffer) == Modbus::ReplyStatus::Ok)
+    if (Modbus::parseReply(m_slaveId, function, reply, buffer) != Modbus::ReplyStatus::Ok)
+        return;
+
+    if (item->registerType() == RegisterType::holding || item->registerType() == RegisterType::input)
     {
         for (int i = 0; i < count; i++)
         {
@@ -197,25 +205,30 @@ void Custom::Controller::parseReply(const QByteArray &reply)
             case DataType::f32: value = qFromBigEndian <float>   (*(reinterpret_cast <float*>   (payload))); break;
             case DataType::f64: value = qFromBigEndian <double>  (*(reinterpret_cast <double*>  (payload))); break;
         }
+    }
+    else
+        value = buffer[0];
 
-        switch (m_types.indexOf(item->type()))
+    if (!value.isValid())
+        return;
+
+    switch (m_types.indexOf(item->type()))
+    {
+        case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
+        case 1: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+
+        case 2: // enum
         {
-            case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
-            case 1: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+            QVariant option = m_options.value(item->expose()).toMap().value("enum");
 
-            case 2: // enum
+            switch (option.type())
             {
-                QVariant option = m_options.value(item->expose()).toMap().value("enum");
-
-                switch (option.type())
-                {
-                    case QVariant::Map:  m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
-                    case QVariant::List: m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
-                    default: break;
-                }
-
-                break;
+                case QVariant::Map:  m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
+                case QVariant::List: m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
+                default: break;
             }
+
+            break;
         }
     }
 }

@@ -200,11 +200,10 @@ QJsonArray DeviceList::serialize(void)
             for (int i = 0; i < controller->items().count(); i++)
             {
                 const Custom::Item &item = controller->items().at(i);
-                QJsonObject json = {{"expose", item->expose()}, {"address", item->address()}, {"registerType", m_registerTypes.valueToKey(static_cast <int> (item->registerType()))}, {"read", item->read()}};
+                QJsonObject json = {{"expose", item->expose()}, {"type", item->type()}, {"address", item->address()}, {"registerType", m_registerTypes.valueToKey(static_cast <int> (item->registerType()))}, {"read", item->read()}};
 
                 if (item->registerType() == Custom::RegisterType::holding || item->registerType() == Custom::RegisterType::input)
                 {
-                    json.insert("type", item->type());
                     json.insert("dataType", m_dataTypes.valueToKey(static_cast <int> (item->dataType())));
                     json.insert("byteOrder", m_byteOrders.valueToKey(static_cast <int> (item->byteOrder())));
                     json.insert("divider", item->divider());
