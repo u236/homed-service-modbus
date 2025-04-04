@@ -1,6 +1,6 @@
-#include "native.h"
 #include "expose.h"
 #include "modbus.h"
+#include "native.h"
 
 void Native::RelayController::init(const Device &device)
 {
@@ -126,7 +126,7 @@ void Native::SwitchController::init(const Device &device)
     m_description = "HOMEd Switch Controller";
 
     m_options.insert("invert", QJsonObject {{"type", "toggle"}, {"icon", "mdi:swap-horizontal-bold"}});
-    m_options.insert("action", QJsonObject {{"type", "sensor"}, {"icon", "mdi:gesture-double-tap"}, {"trigger", QJsonArray {"singleClock", "doubleClick", "hold", "release"}}});
+    m_options.insert("action", QJsonObject {{"type", "sensor"}, {"trigger", QJsonArray {"singleClock", "doubleClick", "hold", "release"}}, {"icon", "mdi:gesture-double-tap"}});
 
     for (quint8 i = 0; i < 17; i++)
     {

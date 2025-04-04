@@ -1,5 +1,6 @@
 #include "devices/custom.h"
 #include "devices/native.h"
+#include "devices/r4pin08.h"
 #include "devices/wirenboard.h"
 #include "controller.h"
 #include "device.h"
@@ -8,10 +9,8 @@
 
 void DeviceObject::updateEndpoints(void)
 {
-    for (int i = 0; i < m_endpoints.count(); i++)
+    for (auto it = m_endpoints.begin(); it != m_endpoints.end(); it++)
     {
-        auto it = m_endpoints.find(i);
-
         if (it.value()->status() == it.value()->buffer())
             continue;
 
@@ -34,7 +33,7 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
         file.close();
     }
 
-    m_types = {"customController", "homedRelayController", "homedSwitchController", "wbMap3e", "wbMap12h"};
+    m_types = {"customController", "homedRelayController", "homedSwitchController", "r4pin08di8", "wbMap3e", "wbMap12h"};
     m_specialExposes = {"light", "switch", "cover", "lock", "thermostat"};
 
     connect(m_timer, &QTimer::timeout, this, &DeviceList::writeDatabase);
@@ -96,8 +95,9 @@ Device DeviceList::parse(const QJsonObject &json)
         case 0: device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 1: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 2: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 3: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 4: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 3: device = Device(new R4PIN08::DI8(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 4: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 5: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
     }
 
     if (!device.isNull())
