@@ -26,7 +26,7 @@ void Native::RelayController::enqueueAction(quint8 endpointId, const QString &na
 {
     if (name == "invert")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
+        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
     else if (name == "status" && endpointId && endpointId <= 16)
@@ -152,7 +152,7 @@ void Native::SwitchController::enqueueAction(quint8, const QString &name, const 
 {
     if (name == "invert")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 1 : 0));
+        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
 }
