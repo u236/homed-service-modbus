@@ -1,6 +1,6 @@
-#include "r4pin08.h"
 #include "expose.h"
 #include "modbus.h"
+#include "r4pin08.h"
 
 void R4PIN08::Controller::init(const Device &device)
 {
@@ -47,8 +47,8 @@ void R4PIN08::Controller::init(const Device &device)
 
     if (m_inputs)
     {
-        m_options.insert("inputMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
-        m_options.insert("input", QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
+        m_options.insert("inputMode",  QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
+        m_options.insert("input",      QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
     }
 
     if (m_outputs)
@@ -96,15 +96,12 @@ void R4PIN08::Controller::enqueueAction(quint8 endpointId, const QString &name, 
         m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x00F5, data.toString() == "high" ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
-    else if (!m_outputs)
-        return;
-
-    if (name == "outputMode")
+    else if (m_outputs && name == "outputMode")
     {
         m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x00F6, data.toString() == "high" ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
-    else if (name == "status" && endpointId > m_inputs && endpointId <= m_inputs + m_outputs)
+    else if (m_outputs && name == "status" && endpointId > m_inputs && endpointId <= m_inputs + m_outputs)
     {
         QList <QString> list = {"on", "off", "toggle"};
         quint16 value;
