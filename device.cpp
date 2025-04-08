@@ -1,5 +1,6 @@
 #include "devices/custom.h"
 #include "devices/native.h"
+#include "devices/other.h"
 #include "devices/r4pin08.h"
 #include "devices/wirenboard.h"
 #include "controller.h"
@@ -44,7 +45,8 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
         "r4pin08m3",
         "r4pin08m4",
         "wbMap3e",
-        "wbMap12h"
+        "wbMap12h",
+        "t13"
     };
 
     m_specialExposes =
@@ -112,16 +114,17 @@ Device DeviceList::parse(const QJsonObject &json)
 
     switch (m_types.indexOf(json.value("type").toString()))
     {
-        case 0: device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 1: device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 2: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 3: device = Device(new R4PIN08::M0(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 4: device = Device(new R4PIN08::M1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 5: device = Device(new R4PIN08::M2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 6: device = Device(new R4PIN08::M3(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 7: device = Device(new R4PIN08::M4(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 8: device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 9: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 0:  device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 1:  device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 2:  device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 3:  device = Device(new R4PIN08::M0(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 4:  device = Device(new R4PIN08::M1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 5:  device = Device(new R4PIN08::M2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 6:  device = Device(new R4PIN08::M3(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 7:  device = Device(new R4PIN08::M4(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 8:  device = Device(new WirenBoard::WBMap3e(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 9:  device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 10: device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
     }
 
     if (!device.isNull())
