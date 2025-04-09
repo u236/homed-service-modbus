@@ -6,7 +6,7 @@
 void WirenBoard::WBMap3e::init(const Device &device)
 {
     m_type = "wbMap3e";
-    m_description = "Wiren Board WB-MAP3E energy meter";
+    m_description = "Wiren Board WB-MAP3E Energy Meter";
 
     m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
     m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
@@ -215,7 +215,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
 void WirenBoard::WBMap6s::init(const Device &device)
 {
     m_type = "wbMap6s";
-    m_description = "Wiren Board WB-MAP6S energy meter";
+    m_description = "Wiren Board WB-MAP6S Energy Meter";
 
     m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
     m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
@@ -442,7 +442,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
 void WirenBoard::WBMap12h::init(const Device &device)
 {
     m_type = "wbMap12h";
-    m_description = "Wiren Board WB-MAP12H energy meter";
+    m_description = "Wiren Board WB-MAP12H Energy Meter";
 
     m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
     m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});

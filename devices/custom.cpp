@@ -24,7 +24,7 @@ quint16 Custom::ItemObject::count(void)
 void Custom::Controller::init(const Device &)
 {
     m_type = "customController";
-    m_description = "HOMEd Modbus Custom Controller";
+    m_description = "Custom Modbus Controller";
     m_types = {"bool", "value", "enum"};
 }
 
