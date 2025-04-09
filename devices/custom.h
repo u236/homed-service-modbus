@@ -1,5 +1,5 @@
-#ifndef CUSTOM_H
-#define CUSTOM_H
+#ifndef DEVICES_CUSTOM_H
+#define DEVICES_CUSTOM_H
 
 #include "device.h"
 
@@ -10,7 +10,7 @@ namespace Custom
     enum class RegisterType
     {
         coil,
-        status,
+        discrete,
         holding,
         input
     };

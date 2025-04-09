@@ -1,5 +1,5 @@
-#ifndef OTHER_H
-#define OTHER_H
+#ifndef DEVICES_OTHER_H
+#define DEVICES_OTHER_H
 
 #include "device.h"
 

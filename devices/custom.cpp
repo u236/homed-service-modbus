@@ -151,10 +151,10 @@ QByteArray Custom::Controller::pollRequest(void)
 
         switch (item->registerType())
         {
-            case RegisterType::coil:    return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       item->address(), 1);
-            case RegisterType::status:  return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      item->address(), 1);
-            case RegisterType::holding: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, item->address(), item->count());
-            case RegisterType::input:   return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
+            case RegisterType::coil:     return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       item->address(), 1);
+            case RegisterType::discrete: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      item->address(), 1);
+            case RegisterType::holding:  return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, item->address(), item->count());
+            case RegisterType::input:    return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
         }
     }
 
@@ -173,10 +173,10 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
     switch (item->registerType())
     {
-        case RegisterType::coil:    function = Modbus::ReadCoilStatus; break;
-        case RegisterType::status:  function = Modbus::ReadInputStatus; break;
-        case RegisterType::holding: function = Modbus::ReadHoldingRegisters; break;
-        case RegisterType::input:   function = Modbus::ReadInputRegisters; break;
+        case RegisterType::coil:     function = Modbus::ReadCoilStatus; break;
+        case RegisterType::discrete: function = Modbus::ReadInputStatus; break;
+        case RegisterType::holding:  function = Modbus::ReadHoldingRegisters; break;
+        case RegisterType::input:    function = Modbus::ReadInputRegisters; break;
     }
 
     if (Modbus::parseReply(m_slaveId, function, reply, buffer) != Modbus::ReplyStatus::Ok)
