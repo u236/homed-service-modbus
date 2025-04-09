@@ -212,6 +212,233 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
+void WirenBoard::WBMap6s::init(const Device &device)
+{
+    m_type = "wbMap6s";
+    m_description = "Wiren Board WB-MAP6S energy meter";
+
+    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
+
+    for (quint8 i = 0; i < 7; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy")), ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta"));
+
+            current->setMultiple(true);
+            current->setParent(endpoint.data());
+            endpoint->exposes().append(current);
+
+            power->setMultiple(true);
+            power->setParent(endpoint.data());
+            endpoint->exposes().append(power);
+
+            energy->setMultiple(true);
+            energy->setParent(endpoint.data());
+            endpoint->exposes().append(energy);
+
+            ratio->setMultiple(true);
+            ratio->setParent(endpoint.data());
+            endpoint->exposes().append(ratio);
+
+            delta->setMultiple(true);
+            delta->setParent(endpoint.data());
+            endpoint->exposes().append(delta);
+        }
+        else
+        {
+            Expose voltage = Expose(new SensorObject("voltage")), frequency = Expose(new SensorObject("frequency")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
+
+            voltage->setParent(endpoint.data());
+            endpoint->exposes().append(voltage);
+
+            frequency->setParent(endpoint.data());
+            endpoint->exposes().append(frequency);
+
+            power->setParent(endpoint.data());
+            endpoint->exposes().append(power);
+
+            energy->setParent(endpoint.data());
+            endpoint->exposes().append(energy);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+}
+
+void WirenBoard::WBMap6s::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    quint16 offset, registerAddress;
+
+    if (!endpointId || endpointId > 6)
+        return;
+
+    offset = (6 - endpointId) % 3 + (endpointId - 1) / 3 * 0x1000;
+
+    if (name == "ratio")
+        registerAddress = WBMAP_COIL_REGISTER_ADDRESS + offset;
+    else if (name == "delta")
+        registerAddress = WBMAP_COIL_REGISTER_ADDRESS + offset + 3;
+    else
+        return;
+
+    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, registerAddress, static_cast <quint16> (data.toInt())));
+    m_fullPoll = true;
+}
+
+void WirenBoard::WBMap6s::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 2;
+    m_polling = true;
+
+    m_totalPower = 0;
+    m_totalEnergy = 0;
+}
+
+QByteArray WirenBoard::WBMap6s::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0 ... 1:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS + m_sequence * 0x1000, WBMAP_COIL_REGISTER_COUNT);
+
+        case 2:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_VOLTAGE_REGISTER_ADDRESS, 1);
+
+        case 3:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+
+        case 4 ... 5:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS + (m_sequence - 4) * 0x1000, WBMAP_CURRENT_REGISTER_COUNT);
+
+        case 6 ... 7:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_POWER_REGISTER_ADDRESS + (m_sequence - 6) * 0x1000, WBMAP6S_POWER_REGISTER_COUNT);
+
+        case 8 ... 9:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_ENERGY_REGISTER_ADDRESS + (m_sequence - 8) * 0x1000, WBMAP6S_ENERGY_REGISTER_COUNT);
+
+        default:
+        {
+            auto it = m_endpoints.find(0);
+
+            it.value()->buffer().insert("power", m_totalPower);
+            it.value()->buffer().insert("energy", m_totalEnergy);
+
+            updateEndpoints();
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
+            return QByteArray();
+        }
+    }
+}
+
+
+void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0 ... 1:
+        {
+            quint16 data[WBMAP_COIL_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+            {
+                auto it = m_endpoints.find(m_sequence * 3 + 3 - i);
+                it.value()->buffer().insert("ratio", data[i]);
+                it.value()->buffer().insert("delta", static_cast <qint16> (data[i + 3]));
+            }
+
+            m_fullPoll = false;
+            break;
+        }
+
+        case 2:
+        {
+            quint16 value;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.find(0).value()->buffer().insert("voltage", round(static_cast <double> (value) * WBMAP6S_VOLTAGE_MULTIPILER) / 1000.0);
+            break;
+        }
+
+        case 3:
+        {
+            quint16 value;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPILER) / 1000.0);
+            break;
+        }
+
+        case 4 ... 5:
+        {
+            quint16 data[WBMAP_CURRENT_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+                m_endpoints.find((m_sequence - 4) * 3 + 3 - i).value()->buffer().insert("current", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPILER) / 1000.0);
+
+            break;
+        }
+
+        case 6 ... 7:
+        {
+            quint16 data[WBMAP_POWER_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+            {
+                double value = round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPILER) / 1000.0;
+                m_endpoints.find((m_sequence - 6) * 3 + 3 - i).value()->buffer().insert("power", value);
+                m_totalPower += value;
+            }
+
+            break;
+        }
+
+        case 8 ... 9:
+        {
+            quint16 data[WBMAP_ENERGY_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+            {
+                double value = round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPILER) / 1000.0;
+                m_endpoints.find((m_sequence - 8) * 3 + 3 - i).value()->buffer().insert("energy", value);
+                m_totalEnergy += value;
+            }
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 void WirenBoard::WBMap12h::init(const Device &device)
 {
     m_type = "wbMap12h";
@@ -418,9 +645,9 @@ void WirenBoard::WBMap12h::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 4; i++)
             {
                 if (i)
-                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP12H_POWER_MULTIPILER_C) / 1000.0);
+                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPILER) / 1000.0);
                 else
-                    m_totalPower += round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP12H_POWER_MULTIPILER_T) / 1000.0;
+                    m_totalPower += round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP12H_POWER_MULTIPILER) / 1000.0;
             }
 
             break;
