@@ -5,7 +5,7 @@
 void Other::T13::init(const Device &device)
 {
     Endpoint endpoint(new EndpointObject(0, device));
-    Expose operationMode = Expose(new SelectObject("operationMode")), frequency = Expose(new NumberObject("frequency")), voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), temperature = Expose(new SensorObject("temperature"));
+    Expose operationMode(new SelectObject("operationMode")), frequency(new NumberObject("frequency")), voltage(new SensorObject("voltage")), current(new SensorObject("current")), temperature(new SensorObject("temperature"));
 
     m_type = "t13";
     m_description = "T13-750W-12-H Frequency Converter";

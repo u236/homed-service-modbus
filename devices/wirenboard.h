@@ -20,13 +20,14 @@
 
 #define WBMAP_POWER_REGISTER_ADDRESS        0x1300
 #define WBMAP_POWER_REGISTER_COUNT          8
-#define WBMAP_POWER_MULTIPILER              0.244141
+#define WBMAP_POWER_MULTIPILER              5.12
 
 #define WBMAP6S_POWER_REGISTER_ADDRESS      0x1302
 #define WBMAP6S_POWER_REGISTER_COUNT        6
+#define WBMAP6S_POWER_MULTIPILER            0.244141
 
-#define WBMAP3E_POWER_MULTIPILER            5.12
-#define WBMAP12H_POWER_MULTIPILER           0.976562
+#define WBMAP12H_CHANNEL_POWER_MULTIPILER   0.244141
+#define WBMAP12H_TOTAL_POWER_MULTIPILER     0.976562
 
 #define WBMAP_ENERGY_REGISTER_ADDRESS       0x1200
 #define WBMAP_ENERGY_REGISTER_COUNT         16
@@ -77,13 +78,19 @@ namespace WirenBoard
 
     };
 
-    class WBMap12h : public DeviceObject
+    class WBMap12 : public DeviceObject
     {
 
     public:
 
-        WBMap12h(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
+        enum class Model
+        {
+            wbMap12e,
+            wbMap12h
+        };
+
+        WBMap12(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_model(model) {}
 
         void init(const Device &device) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
@@ -94,7 +101,28 @@ namespace WirenBoard
 
     private:
 
+        Model m_model;
         double m_totalPower, m_totalEnergy;
+
+    };
+
+    class WBMap12e : public WBMap12
+    {
+
+    public:
+
+        WBMap12e(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            WBMap12(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMap12e) {}
+
+    };
+
+    class WBMap12h : public WBMap12
+    {
+
+    public:
+
+        WBMap12h(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            WBMap12(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMap12h) {}
 
     };
 }

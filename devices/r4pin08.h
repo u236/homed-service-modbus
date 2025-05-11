@@ -10,8 +10,17 @@ namespace R4PIN08
 
     public:
 
-        Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, quint8 mode) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_mode(mode) {}
+        enum class Model
+        {
+            r4pin08m0,
+            r4pin08m1,
+            r4pin08m2,
+            r4pin08m3,
+            r4pin08m4
+        };
+
+        Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_model(model) {}
 
         void init(const Device &device) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
@@ -22,7 +31,8 @@ namespace R4PIN08
 
     private:
 
-        quint8 m_mode, m_inputs, m_outputs;
+        Model m_model;
+        quint8 m_inputs, m_outputs;
         quint16 m_input[8], m_output[8];
 
     };
@@ -33,7 +43,7 @@ namespace R4PIN08
     public:
 
         M0(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, 0) {}
+            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::r4pin08m0) {}
 
     };
 
@@ -43,7 +53,7 @@ namespace R4PIN08
     public:
 
         M1(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, 1) {}
+            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::r4pin08m1) {}
 
     };
 
@@ -53,7 +63,7 @@ namespace R4PIN08
     public:
 
         M2(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, 2) {}
+            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::r4pin08m2) {}
 
     };
 
@@ -63,7 +73,7 @@ namespace R4PIN08
     public:
 
         M3(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, 3) {}
+            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::r4pin08m3) {}
 
     };
 
@@ -73,7 +83,7 @@ namespace R4PIN08
     public:
 
         M4(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, 4) {}
+            Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::r4pin08m4) {}
 
     };
 }

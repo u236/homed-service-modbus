@@ -22,7 +22,7 @@ void WirenBoard::WBMap3e::init(const Device &device)
 
         if (i)
         {
-            Expose voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy")), ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta"));
+            Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -50,7 +50,7 @@ void WirenBoard::WBMap3e::init(const Device &device)
         }
         else
         {
-            Expose frequency = Expose(new SensorObject("frequency")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
+            Expose frequency(new SensorObject("frequency")), power(new SensorObject("power")), energy(new SensorObject("energy"));
 
             frequency->setParent(endpoint.data());
             endpoint->exposes().append(frequency);
@@ -190,7 +190,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-                m_endpoints.find(i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP3E_POWER_MULTIPILER) / 1000.0);
+                m_endpoints.find(i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPILER) / 1000.0);
 
             break;
         }
@@ -231,7 +231,7 @@ void WirenBoard::WBMap6s::init(const Device &device)
 
         if (i)
         {
-            Expose current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy")), ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta"));
+            Expose current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
             current->setMultiple(true);
             current->setParent(endpoint.data());
@@ -255,7 +255,7 @@ void WirenBoard::WBMap6s::init(const Device &device)
         }
         else
         {
-            Expose voltage = Expose(new SensorObject("voltage")), frequency = Expose(new SensorObject("frequency")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
+            Expose voltage(new SensorObject("voltage")), frequency(new SensorObject("frequency")), power(new SensorObject("power")), energy(new SensorObject("energy"));
 
             voltage->setParent(endpoint.data());
             endpoint->exposes().append(voltage);
@@ -410,7 +410,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 3; i++)
             {
-                double value = round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPILER) / 1000.0;
+                double value = round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP6S_POWER_MULTIPILER) / 1000.0;
                 m_endpoints.find((m_sequence - 6) * 3 + 3 - i).value()->buffer().insert("power", value);
                 m_totalPower += value;
             }
@@ -439,10 +439,20 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void WirenBoard::WBMap12h::init(const Device &device)
+void WirenBoard::WBMap12::init(const Device &device)
 {
-    m_type = "wbMap12h";
-    m_description = "Wiren Board WB-MAP12H Energy Meter";
+    switch (m_model)
+    {
+        case Model::wbMap12e:
+            m_type = "wbMap12e";
+            m_description = "Wiren Board WB-MAP12H Energy Meter";
+            break;
+
+        case Model::wbMap12h:
+            m_type = "wbMap12h";
+            m_description = "Wiren Board WB-MAP12H Energy Meter";
+            break;
+    }
 
     m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
     m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
@@ -458,7 +468,7 @@ void WirenBoard::WBMap12h::init(const Device &device)
 
         if (i)
         {
-            Expose voltage = Expose(new SensorObject("voltage")), current = Expose(new SensorObject("current")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy")), ratio = Expose(new NumberObject("ratio")), delta = Expose(new NumberObject("delta"));
+            Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -486,7 +496,7 @@ void WirenBoard::WBMap12h::init(const Device &device)
         }
         else
         {
-            Expose frequency = Expose(new SensorObject("frequency")), power = Expose(new SensorObject("power")), energy = Expose(new SensorObject("energy"));
+            Expose frequency(new SensorObject("frequency")), power(new SensorObject("power")), energy(new SensorObject("energy"));
 
             frequency->setParent(endpoint.data());
             endpoint->exposes().append(frequency);
@@ -502,7 +512,7 @@ void WirenBoard::WBMap12h::init(const Device &device)
     }
 }
 
-void WirenBoard::WBMap12h::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+void WirenBoard::WBMap12::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
     quint16 offset, registerAddress;
 
@@ -522,7 +532,7 @@ void WirenBoard::WBMap12h::enqueueAction(quint8 endpointId, const QString &name,
     m_fullPoll = true;
 }
 
-void WirenBoard::WBMap12h::startPoll(void)
+void WirenBoard::WBMap12::startPoll(void)
 {
     if (m_polling)
         return;
@@ -534,7 +544,7 @@ void WirenBoard::WBMap12h::startPoll(void)
     m_totalEnergy = 0;
 }
 
-QByteArray WirenBoard::WBMap12h::pollRequest(void)
+QByteArray WirenBoard::WBMap12::pollRequest(void)
 {
     switch (m_sequence)
     {
@@ -571,7 +581,7 @@ QByteArray WirenBoard::WBMap12h::pollRequest(void)
     }
 }
 
-void WirenBoard::WBMap12h::parseReply(const QByteArray &reply)
+void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
 {
     switch (m_sequence)
     {
@@ -645,9 +655,9 @@ void WirenBoard::WBMap12h::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 4; i++)
             {
                 if (i)
-                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPILER) / 1000.0);
+                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_CHANNEL_POWER_MULTIPILER : WBMAP_POWER_MULTIPILER)) / 1000.0);
                 else
-                    m_totalPower += round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP12H_POWER_MULTIPILER) / 1000.0;
+                    m_totalPower += round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_TOTAL_POWER_MULTIPILER : WBMAP_POWER_MULTIPILER)) / 1000.0;
             }
 
             break;

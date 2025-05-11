@@ -4,45 +4,42 @@
 
 void R4PIN08::Controller::init(const Device &device)
 {
-    switch (m_mode)
+    switch (m_model)
     {
-        case 0:
+        case Model::r4pin08m0:
             m_type = "r4pin08m0";
             m_description = "Eletechsup R4PIN08-8DI Controller";
             m_inputs = 8;
             m_outputs = 0;
             break;
 
-        case 1:
+        case Model::r4pin08m1:
             m_type = "r4pin08m1";
             m_description = "Eletechsup R4PIN08-8DO Controller";
             m_inputs = 0;
             m_outputs = 8;
             break;
 
-        case 2:
+        case Model::r4pin08m2:
             m_type = "r4pin08m2";
             m_description = "Eletechsup R4PIN08-4DI-4DO Controller";
             m_inputs = 4;
             m_outputs = 4;
             break;
 
-        case 3:
+        case Model::r4pin08m3:
             m_type = "r4pin08m3";
             m_description = "Eletechsup R4PIN08-2DI-6DO Controller";
             m_inputs = 2;
             m_outputs = 6;
             break;
 
-        case 4:
+        case Model::r4pin08m4:
             m_type = "r4pin08m4";
             m_description = "Eletechsup R4PIN08-6DI-2DO Controller";
             m_inputs = 6;
             m_outputs = 2;
             break;
-
-        default:
-            return;
     }
 
     if (m_inputs)
@@ -69,14 +66,14 @@ void R4PIN08::Controller::init(const Device &device)
         {
             if (m_inputs)
             {
-                Expose expose = Expose(new ToggleObject("inputMode"));
+                Expose expose(new ToggleObject("inputMode"));
                 expose->setParent(endpoint.data());
                 endpoint->exposes().append(expose);
             }
 
             if (m_outputs)
             {
-                Expose expose = Expose(new ToggleObject("outputMode"));
+                Expose expose(new ToggleObject("outputMode"));
                 expose->setParent(endpoint.data());
                 endpoint->exposes().append(expose);
             }
