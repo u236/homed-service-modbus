@@ -2,6 +2,70 @@
 #include "modbus.h"
 #include "other.h"
 
+void Other::JTH2D1::init(const Device &device)
+{
+    Endpoint endpoint(new EndpointObject(0, device));
+    Expose temperature(new SensorObject("temperature")), humidity(new SensorObject("humidity"));
+
+    m_type = "jth2d1";
+    m_description = "JTH-2D1 Temperature and Humidity Sensor";
+
+    m_options.insert("temperature", QJsonObject {{"type", "sensor"}, {"class", "temperature"}, {"state", "measurement"}, {"unit", "°C"}});
+    m_options.insert("humidity",    QJsonObject {{"type", "sensor"}, {"class", "humidity"}, {"state", "measurement"}, {"unit", "%"}});
+
+    temperature->setParent(endpoint.data());
+    endpoint->exposes().append(temperature);
+
+    humidity->setParent(endpoint.data());
+    endpoint->exposes().append(humidity);
+
+    m_endpoints.insert(0, endpoint);
+}
+
+void Other::JTH2D1::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = 0;
+    m_polling = true;
+}
+
+QByteArray Other::JTH2D1::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0300, 2);
+
+        default:
+            updateEndpoints();
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
+            return QByteArray();
+    }
+}
+
+void Other::JTH2D1::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("temperature", static_cast <qint16> (data[0]) / 10.0);
+            m_endpoints.value(0)->buffer().insert("humidity", data[1] / 10.0);
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 void Other::T13::init(const Device &device)
 {
     Endpoint endpoint(new EndpointObject(0, device));
