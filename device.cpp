@@ -49,6 +49,7 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
         "wbMap6s",
         "wbMap12e",
         "wbMap12h",
+        "wbMr6",
         "neptunSmartPlus",
         "jth2d1",
         "t13"
@@ -131,9 +132,10 @@ Device DeviceList::parse(const QJsonObject &json)
         case 9:  device = Device(new WirenBoard::WBMap6s(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 10: device = Device(new WirenBoard::WBMap12e(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 11: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 12: device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 13: device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 14: device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 12: device = Device(new WirenBoard::WBMr6(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 13: device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 14: device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 15: device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
     }
 
     if (!device.isNull())

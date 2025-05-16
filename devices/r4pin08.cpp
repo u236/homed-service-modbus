@@ -57,7 +57,7 @@ void R4PIN08::Controller::init(const Device &device)
 
         if (i)
         {
-            Expose expose = i < m_inputs + 1 ? Expose(new SensorObject("input")) : Expose(new SwitchObject);
+            Expose expose = i < m_inputs + 1 ? Expose(new BinaryObject("input")) : Expose(new SwitchObject);
             expose->setMultiple(true);
             expose->setParent(endpoint.data());
             endpoint->exposes().append(expose);

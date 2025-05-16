@@ -686,3 +686,118 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
 
     m_sequence++;
 }
+
+void WirenBoard::WBMr6::init(const Device &device)
+{
+    m_type = "wbMr6";
+    m_description = "Wiren Board WB-MR6 Relay Controller";
+    m_options.insert("input",      QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
+
+    for (quint8 i = 0; i < 7; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose output(new SwitchObject), input(new BinaryObject("input"));
+
+            output->setMultiple(true);
+            output->setParent(endpoint.data());
+            endpoint->exposes().append(output);
+
+            input->setMultiple(true);
+            input->setParent(endpoint.data());
+            endpoint->exposes().append(input);
+        }
+        else
+        {
+            Expose input(new BinaryObject("input_0"));
+            input->setParent(endpoint.data());
+            endpoint->exposes().append(input);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+}
+
+void WirenBoard::WBMr6::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    if (name == "status" && endpointId && endpointId <= 6)
+    {
+        QList <QString> list = {"on", "off", "toggle"};
+        quint16 value;
+
+        switch (list.indexOf(data.toString()))
+        {
+            case 0:  value = 1; break;
+            case 1:  value = 0; break;
+            case 2:  value = m_output[endpointId - 1] ? 0 : 1; break;
+            default: return;
+        }
+
+        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+    }
+}
+
+void WirenBoard::WBMr6::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = 0;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBMr6::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 6);
+
+        case 1:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 8);
+
+        default:
+            updateEndpoints();
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
+            return QByteArray();
+    }
+}
+
+void WirenBoard::WBMr6::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data[8];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 6; i++)
+                m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
+
+            memcpy(m_output, data, sizeof(m_output));
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[8];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 6; i++)
+                m_endpoints.value(i + 1)->buffer().insert("input", data[i] ? true : false);
+
+            m_endpoints.value(0)->buffer().insert("input_0", data[7] ? true : false);
+            break;
+        }
+    }
+
+    m_sequence++;
+}
