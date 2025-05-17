@@ -36,6 +36,10 @@
 #define WBMAP6S_ENERGY_REGISTER_ADDRESS     0x1204
 #define WBMAP6S_ENERGY_REGISTER_COUNT       12
 
+#define WBMAP_ANGLE_REGISTER_ADDRESS        0x10FD
+#define WBMAP_ANGLE_REGISTER_COUNT          3
+#define WBMAP_ANGLE_MULTIPILER              100.0
+
 #include "device.h"
 
 namespace WirenBoard

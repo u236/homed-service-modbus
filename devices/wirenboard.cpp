@@ -13,6 +13,7 @@ void WirenBoard::WBMap3e::init(const Device &device)
     m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
     m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
     m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("angle",     QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
     m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
     m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
@@ -22,7 +23,7 @@ void WirenBoard::WBMap3e::init(const Device &device)
 
         if (i)
         {
-            Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
+            Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), angle(new SensorObject("angle")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -39,6 +40,10 @@ void WirenBoard::WBMap3e::init(const Device &device)
             energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
+
+            angle->setMultiple(true);
+            angle->setParent(endpoint.data());
+            endpoint->exposes().append(angle);
 
             ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
@@ -114,6 +119,9 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
 
         case 5:
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS, WBMAP_ENERGY_REGISTER_COUNT);
+
+        case 6:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
 
         default:
             updateEndpoints();
@@ -204,6 +212,19 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 4; i++)
                m_endpoints.find(i).value()->buffer().insert("energy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPILER) / 1000.0);
+
+            break;
+        }
+
+        case 6:
+        {
+            quint16 data[WBMAP_ANGLE_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+                m_endpoints.find(i + 1).value()->buffer().insert("angle", round(static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPILER) / 1000.0);
 
             break;
         }
@@ -459,6 +480,7 @@ void WirenBoard::WBMap12::init(const Device &device)
     m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
     m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
     m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("angle",     QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
     m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
     m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
@@ -468,7 +490,7 @@ void WirenBoard::WBMap12::init(const Device &device)
 
         if (i)
         {
-            Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
+            Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), angle(new SensorObject("angle")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
             voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
@@ -485,6 +507,10 @@ void WirenBoard::WBMap12::init(const Device &device)
             energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
+
+            angle->setMultiple(true);
+            angle->setParent(endpoint.data());
+            endpoint->exposes().append(angle);
 
             ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
@@ -565,6 +591,9 @@ QByteArray WirenBoard::WBMap12::pollRequest(void)
 
         case 14 ... 17:
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS + (m_sequence - 14) * 0x1000, WBMAP_ENERGY_REGISTER_COUNT);
+
+        case 18:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
 
         default:
         {
@@ -678,6 +707,24 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                     m_endpoints.find((m_sequence - 14) * 3 + i).value()->buffer().insert("energy", value);
                 else
                     m_totalEnergy += value;
+            }
+
+            break;
+        }
+
+        case 18:
+        {
+            quint16 data[WBMAP_ANGLE_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+            {
+                double value = round(static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPILER) / 1000.0;
+
+                for (quint8 j = 0; j < 4; j++)
+                    m_endpoints.find(i + j * 3 + 1 ).value()->buffer().insert("angle", value);
             }
 
             break;
