@@ -160,7 +160,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPILER) / 1000.0);
+            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER) / 1000.0);
             break;
         }
 
@@ -172,7 +172,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("voltage", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPILER) / 1000.0);
+                m_endpoints.find(i + 1).value()->buffer().insert("voltage", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -185,7 +185,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("current", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPILER) / 1000.0);
+                m_endpoints.find(i + 1).value()->buffer().insert("current", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -198,7 +198,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-                m_endpoints.find(i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPILER) / 1000.0);
+                m_endpoints.find(i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -211,7 +211,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-               m_endpoints.find(i).value()->buffer().insert("energy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPILER) / 1000.0);
+               m_endpoints.find(i).value()->buffer().insert("energy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -224,7 +224,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("angle", round(static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPILER) / 1000.0);
+                m_endpoints.find(i + 1).value()->buffer().insert("angle", round(static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -394,7 +394,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("voltage", round(static_cast <double> (value) * WBMAP6S_VOLTAGE_MULTIPILER) / 1000.0);
+            m_endpoints.find(0).value()->buffer().insert("voltage", round(static_cast <double> (value) * WBMAP6S_VOLTAGE_MULTIPLIER) / 1000.0);
             break;
         }
 
@@ -405,7 +405,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPILER) / 1000.0);
+            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER) / 1000.0);
             break;
         }
 
@@ -417,7 +417,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find((m_sequence - 4) * 3 + 3 - i).value()->buffer().insert("current", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPILER) / 1000.0);
+                m_endpoints.find((m_sequence - 4) * 3 + 3 - i).value()->buffer().insert("current", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -431,7 +431,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 3; i++)
             {
-                double value = round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP6S_POWER_MULTIPILER) / 1000.0;
+                double value = round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP6S_POWER_MULTIPLIER) / 1000.0;
                 m_endpoints.find((m_sequence - 6) * 3 + 3 - i).value()->buffer().insert("power", value);
                 m_totalPower += value;
             }
@@ -448,7 +448,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 3; i++)
             {
-                double value = round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPILER) / 1000.0;
+                double value = round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER) / 1000.0;
                 m_endpoints.find((m_sequence - 8) * 3 + 3 - i).value()->buffer().insert("energy", value);
                 m_totalEnergy += value;
             }
@@ -639,7 +639,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPILER) / 1000.0);
+            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER) / 1000.0);
             break;
         }
 
@@ -652,7 +652,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 3; i++)
             {
-                double value = round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPILER) / 1000.0;
+                double value = round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER) / 1000.0;
 
                 for (quint8 j = 0; j < 4; j++)
                     m_endpoints.find(i + j * 3 + 1 ).value()->buffer().insert("voltage", value);
@@ -669,7 +669,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find((m_sequence - 6) * 3 + i + 1).value()->buffer().insert("current", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPILER) / 1000.0);
+                m_endpoints.find((m_sequence - 6) * 3 + i + 1).value()->buffer().insert("current", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -684,9 +684,9 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 4; i++)
             {
                 if (i)
-                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_CHANNEL_POWER_MULTIPILER : WBMAP_POWER_MULTIPILER)) / 1000.0);
+                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_CHANNEL_POWER_MULTIPLIER : WBMAP_POWER_MULTIPLIER)) / 1000.0);
                 else
-                    m_totalPower += round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_TOTAL_POWER_MULTIPILER : WBMAP_POWER_MULTIPILER)) / 1000.0;
+                    m_totalPower += round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_TOTAL_POWER_MULTIPLIER : WBMAP_POWER_MULTIPLIER)) / 1000.0;
             }
 
             break;
@@ -701,7 +701,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 4; i++)
             {
-                double value = round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPILER) / 1000.0;
+                double value = round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER) / 1000.0;
 
                 if (i)
                     m_endpoints.find((m_sequence - 14) * 3 + i).value()->buffer().insert("energy", value);
@@ -721,7 +721,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 3; i++)
             {
-                double value = round(static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPILER) / 1000.0;
+                double value = round(static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER) / 1000.0;
 
                 for (quint8 j = 0; j < 4; j++)
                     m_endpoints.find(i + j * 3 + 1 ).value()->buffer().insert("angle", value);
@@ -819,7 +819,7 @@ void WirenBoard::WBMr6::parseReply(const QByteArray &reply)
     {
         case 0:
         {
-            quint16 data[8];
+            quint16 data[6];
 
             if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
