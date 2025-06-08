@@ -8,14 +8,16 @@ void WirenBoard::WBMap3e::init(const Device &device)
     m_type = "wbMap3e";
     m_description = "Wiren Board WB-MAP3E Energy Meter";
 
-    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("angle",     QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
-    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
+    m_options.insert("frequency",   QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",     QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",       QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("totalPower",  QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",      QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("totalEnergy", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("angle",       QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
+    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 4; i++)
     {
@@ -55,16 +57,16 @@ void WirenBoard::WBMap3e::init(const Device &device)
         }
         else
         {
-            Expose frequency(new SensorObject("frequency")), power(new SensorObject("power")), energy(new SensorObject("energy"));
+            Expose frequency(new SensorObject("frequency")), totalPower(new SensorObject("totalPower")), totalEnergy(new SensorObject("totalEnergy"));
 
             frequency->setParent(endpoint.data());
             endpoint->exposes().append(frequency);
 
-            power->setParent(endpoint.data());
-            endpoint->exposes().append(power);
+            totalPower->setParent(endpoint.data());
+            endpoint->exposes().append(totalPower);
 
-            energy->setParent(endpoint.data());
-            endpoint->exposes().append(energy);
+            totalEnergy->setParent(endpoint.data());
+            endpoint->exposes().append(totalEnergy);
         }
 
         m_endpoints.insert(i, endpoint);
@@ -198,7 +200,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-                m_endpoints.find(i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPLIER) / 1000.0);
+                m_endpoints.find(i).value()->buffer().insert(i ? "power" : "totalPower", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -211,7 +213,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-               m_endpoints.find(i).value()->buffer().insert("energy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER) / 1000.0);
+               m_endpoints.find(i).value()->buffer().insert(i ? "energy" : "totalEnergy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER) / 1000.0);
 
             break;
         }
@@ -238,13 +240,15 @@ void WirenBoard::WBMap6s::init(const Device &device)
     m_type = "wbMap6s";
     m_description = "Wiren Board WB-MAP6S Energy Meter";
 
-    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
+    m_options.insert("frequency",   QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",     QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",       QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("totalPower",  QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",      QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("totalEnergy", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 7; i++)
     {
@@ -276,7 +280,7 @@ void WirenBoard::WBMap6s::init(const Device &device)
         }
         else
         {
-            Expose voltage(new SensorObject("voltage")), frequency(new SensorObject("frequency")), power(new SensorObject("power")), energy(new SensorObject("energy"));
+            Expose voltage(new SensorObject("voltage")), frequency(new SensorObject("frequency")), totalPower(new SensorObject("totalPower")), totalEnergy(new SensorObject("totalEnergy"));
 
             voltage->setParent(endpoint.data());
             endpoint->exposes().append(voltage);
@@ -284,11 +288,11 @@ void WirenBoard::WBMap6s::init(const Device &device)
             frequency->setParent(endpoint.data());
             endpoint->exposes().append(frequency);
 
-            power->setParent(endpoint.data());
-            endpoint->exposes().append(power);
+            totalPower->setParent(endpoint.data());
+            endpoint->exposes().append(totalPower);
 
-            energy->setParent(endpoint.data());
-            endpoint->exposes().append(energy);
+            totalEnergy->setParent(endpoint.data());
+            endpoint->exposes().append(totalEnergy);
         }
 
         m_endpoints.insert(i, endpoint);
@@ -353,8 +357,8 @@ QByteArray WirenBoard::WBMap6s::pollRequest(void)
         {
             auto it = m_endpoints.find(0);
 
-            it.value()->buffer().insert("power", m_totalPower);
-            it.value()->buffer().insert("energy", m_totalEnergy);
+            it.value()->buffer().insert("totalPower", m_totalPower);
+            it.value()->buffer().insert("totalEnergy", m_totalEnergy);
 
             updateEndpoints();
             m_pollTime = QDateTime::currentMSecsSinceEpoch();
@@ -475,14 +479,16 @@ void WirenBoard::WBMap12::init(const Device &device)
             break;
     }
 
-    m_options.insert("frequency", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",   QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",     QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",    QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("angle",     QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
-    m_options.insert("delta",     QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
+    m_options.insert("frequency",   QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
+    m_options.insert("voltage",     QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
+    m_options.insert("current",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
+    m_options.insert("power",       QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("totalPower",  QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
+    m_options.insert("energy",      QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("totalEnergy", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
+    m_options.insert("angle",       QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
+    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 13; i++)
     {
@@ -522,16 +528,22 @@ void WirenBoard::WBMap12::init(const Device &device)
         }
         else
         {
-            Expose frequency(new SensorObject("frequency")), power(new SensorObject("power")), energy(new SensorObject("energy"));
+            Expose frequency(new SensorObject("frequency"));
+
+            for (quint8 j = 1; j <= 4; j++)
+            {
+                Expose totalPower(new SensorObject(QString("totalPower_%1").arg(j))), totalEnergy(new SensorObject(QString("totalEnergy_%1").arg(j)));
+
+                totalPower->setParent(endpoint.data());
+                endpoint->exposes().append(totalPower);
+
+                totalEnergy->setParent(endpoint.data());
+                endpoint->exposes().append(totalEnergy);
+            }
 
             frequency->setParent(endpoint.data());
             endpoint->exposes().append(frequency);
 
-            power->setParent(endpoint.data());
-            endpoint->exposes().append(power);
-
-            energy->setParent(endpoint.data());
-            endpoint->exposes().append(energy);
         }
 
         m_endpoints.insert(i, endpoint);
@@ -565,9 +577,6 @@ void WirenBoard::WBMap12::startPoll(void)
 
     m_sequence = m_fullPoll ? 0 : 4;
     m_polling = true;
-
-    m_totalPower = 0;
-    m_totalEnergy = 0;
 }
 
 QByteArray WirenBoard::WBMap12::pollRequest(void)
@@ -597,11 +606,6 @@ QByteArray WirenBoard::WBMap12::pollRequest(void)
 
         default:
         {
-            auto it = m_endpoints.find(0);
-
-            it.value()->buffer().insert("power", m_totalPower);
-            it.value()->buffer().insert("energy", m_totalEnergy);
-
             updateEndpoints();
             m_pollTime = QDateTime::currentMSecsSinceEpoch();
             m_polling = false;
@@ -683,10 +687,12 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 4; i++)
             {
+                double value = round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? i ? WBMAP12H_CHANNEL_POWER_MULTIPLIER : WBMAP12H_TOTAL_POWER_MULTIPLIER : WBMAP_POWER_MULTIPLIER)) / 1000.0;
+
                 if (i)
-                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_CHANNEL_POWER_MULTIPLIER : WBMAP_POWER_MULTIPLIER)) / 1000.0);
+                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", value);
                 else
-                    m_totalPower += round(static_cast <double> (static_cast <qint32> (data[i * 2]) << 16 | static_cast <qint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? WBMAP12H_TOTAL_POWER_MULTIPLIER : WBMAP_POWER_MULTIPLIER)) / 1000.0;
+                    m_endpoints.find(0).value()->buffer().insert(QString("totalPower_%1").arg(m_sequence - 9), value);
             }
 
             break;
@@ -706,7 +712,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 if (i)
                     m_endpoints.find((m_sequence - 14) * 3 + i).value()->buffer().insert("energy", value);
                 else
-                    m_totalEnergy += value;
+                    m_endpoints.find(0).value()->buffer().insert(QString("totalEnergy_%1").arg(m_sequence - 13), value);
             }
 
             break;

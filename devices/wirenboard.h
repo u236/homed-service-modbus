@@ -106,7 +106,6 @@ namespace WirenBoard
     private:
 
         Model m_model;
-        double m_totalPower, m_totalEnergy;
 
     };
 
