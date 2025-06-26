@@ -2,12 +2,9 @@
 #include "device.h"
 #include "logger.h"
 
-Controller::Controller(const QString &configFile) : HOMEd(configFile, true), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
+Controller::Controller(const QString &configFile) : HOMEd(SERVICE_VERSION, configFile, true), m_timer(new QTimer(this)), m_devices(new DeviceList(getConfig(), this)), m_commands(QMetaEnum::fromType <Command> ()), m_events(QMetaEnum::fromType <Event> ())
 {
     QList <QString> keys = getConfig()->childGroups();
-
-    logInfo << "Starting version" << SERVICE_VERSION;
-    logInfo << "Configuration file is" << getConfig()->fileName();
 
     m_haPrefix = getConfig()->value("homeassistant/prefix", "homeassistant").toString();
     m_haStatus = getConfig()->value("homeassistant/status", "homeassistant/status").toString();
