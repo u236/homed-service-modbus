@@ -858,7 +858,7 @@ void WirenBoard::WBMr6::parseReply(const QByteArray &reply)
 void WirenBoard::WBUps::init(const Device &device)
 {
     Endpoint endpoint(new EndpointObject(0, device));
-    Expose battety(new SensorObject("battery")), batteryStatus(new SensorObject("batteryStatus")), temperature(new SensorObject("temperature")), temperatureStatus(new SensorObject("temperatureStatus")), inputVoltage(new SensorObject("inputVoltage")), outputVoltage(new SensorObject("outputVoltage")), batteryVoltage(new SensorObject("batteryVoltage")), batteryCurrent(new SensorObject("batteryCurrent")), chargeCurrent(new SensorObject("chargeCurrent")), dischargeCurrent(new SensorObject("dischargeCurrent")), outputMode(new SelectObject("outputMode")), outputVoltageLimit(new NumberObject("outputVoltageLimit")), chargeCurrentLimit(new NumberObject("chargeCurrentLimit"));
+    Expose battety(new SensorObject("battery")), batteryStatus(new SensorObject("batteryStatus")), temperature(new SensorObject("temperature")), temperatureStatus(new SensorObject("temperatureStatus")), inputVoltage(new SensorObject("inputVoltage")), outputVoltage(new SensorObject("outputVoltage")), batteryVoltage(new SensorObject("batteryVoltage")), batteryCurrent(new SensorObject("batteryCurrent")), chargeCurrent(new SensorObject("chargeCurrent")), dischargeCurrent(new SensorObject("dischargeCurrent")), operationMode(new SelectObject("operationMode")), outputVoltageLimit(new NumberObject("outputVoltageLimit")), chargeCurrentLimit(new NumberObject("chargeCurrentLimit"));
 
     m_type = "wbUps";
     m_description = "Wiren Board UPS v3 Backup Power Supply";
@@ -873,7 +873,7 @@ void WirenBoard::WBUps::init(const Device &device)
     m_options.insert("batteryCurrent",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
     m_options.insert("chargeCurrent",      QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
     m_options.insert("dischargeCurrent",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("outputMode",         QJsonObject {{"type", "select"}, {"enum", QJsonArray {"auto", "manual"}}, {"icon", "mdi:cog"}});
+    m_options.insert("operationMode",      QJsonObject {{"type", "select"}, {"enum", QJsonArray {"auto", "manual"}}, {"icon", "mdi:cog"}});
     m_options.insert("outputVoltageLimit", QJsonObject {{"type", "number"}, {"min", 9}, {"max", 26.5}, {"step", 0.1}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("chargeCurrentLimit", QJsonObject {{"type", "number"}, {"min", 0.3}, {"max", 2}, {"step", 0.1}, {"unit", "A"}, {"icon", "mdi:current-ac"}});
 
@@ -907,8 +907,8 @@ void WirenBoard::WBUps::init(const Device &device)
     dischargeCurrent->setParent(endpoint.data());
     endpoint->exposes().append(dischargeCurrent);
 
-    outputMode->setParent(endpoint.data());
-    endpoint->exposes().append(outputMode);
+    operationMode->setParent(endpoint.data());
+    endpoint->exposes().append(operationMode);
 
     outputVoltageLimit->setParent(endpoint.data());
     endpoint->exposes().append(outputVoltageLimit);
@@ -921,12 +921,12 @@ void WirenBoard::WBUps::init(const Device &device)
 
 void WirenBoard::WBUps::enqueueAction(quint8, const QString &name, const QVariant &data)
 {
-    QList <QString> list = {"outputMode", "outputVoltageLimit", "chargeCurrentLimit"};
+    QList <QString> list = {"operationMode", "outputVoltageLimit", "chargeCurrentLimit"};
     int index = list.indexOf(name);
 
     switch (index)
     {
-        case 0: // outputMode
+        case 0: // operationMode
         {
             quint16 value = data.toString() == "manual" ? 1 : 0;
             m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0010, value));
@@ -986,7 +986,7 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("outputMode",         data[0] ? "manual" : "auto");
+            m_endpoints.value(0)->buffer().insert("operationMode",         data[0] ? "manual" : "auto");
             m_endpoints.value(0)->buffer().insert("outputVoltageLimit", data[1] / 1000.0);
             m_endpoints.value(0)->buffer().insert("chargeCurrentLimit", data[2] / 1000.0);
 
