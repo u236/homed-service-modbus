@@ -2,7 +2,7 @@
 #include "modbus.h"
 #include "r4pin08.h"
 
-void R4PIN08::Controller::init(const Device &device)
+void R4PIN08::Controller::init(const Device &device, const QMap <QString, QVariant> &)
 {
     switch (m_model)
     {
@@ -42,15 +42,6 @@ void R4PIN08::Controller::init(const Device &device)
             break;
     }
 
-    if (m_inputs)
-    {
-        m_options.insert("inputMode",  QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
-        m_options.insert("input",      QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
-    }
-
-    if (m_outputs)
-        m_options.insert("outputMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
-
     for (quint8 i = 0; i < 9; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
@@ -81,6 +72,15 @@ void R4PIN08::Controller::init(const Device &device)
 
         m_endpoints.insert(i, endpoint);
     }
+
+    if (m_inputs)
+    {
+        m_options.insert("inputMode",  QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
+        m_options.insert("input",      QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
+    }
+
+    if (m_outputs)
+        m_options.insert("outputMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
 
     memset(m_input, 0xFF, sizeof(m_input));
     memset(m_output, 0xFF, sizeof(m_output));

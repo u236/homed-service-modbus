@@ -52,7 +52,7 @@ namespace WirenBoard
         WBMap3e(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
 
-        void init(const Device &device) override;
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
         void startPoll(void) override;
 
@@ -69,7 +69,7 @@ namespace WirenBoard
         WBMap6s(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
 
-        void init(const Device &device) override;
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
         void startPoll(void) override;
 
@@ -96,7 +96,7 @@ namespace WirenBoard
         WBMap12(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_model(model) {}
 
-        void init(const Device &device) override;
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
         void startPoll(void) override;
 
@@ -137,7 +137,7 @@ namespace WirenBoard
         WBMr6(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
 
-        void init(const Device &device) override;
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
         void startPoll(void) override;
 
@@ -158,7 +158,7 @@ namespace WirenBoard
         WBUps(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
 
-        void init(const Device &device) override;
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
         void startPoll(void) override;
 

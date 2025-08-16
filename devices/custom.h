@@ -78,7 +78,7 @@ namespace Custom
 
         inline QList <Item> &items(void) { return m_items; }
 
-        void init(const Device &device) override;
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
         void startPoll(void) override;
 

@@ -3,21 +3,10 @@
 #include "modbus.h"
 #include "wirenboard.h"
 
-void WirenBoard::WBMap3e::init(const Device &device)
+void WirenBoard::WBMap3e::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     m_type = "wbMap3e";
     m_description = "Wiren Board WB-MAP3E Energy Meter";
-
-    m_options.insert("frequency",   QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",     QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",       QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("totalPower",  QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",      QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("totalEnergy", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("angle",       QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
-    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 4; i++)
     {
@@ -71,6 +60,15 @@ void WirenBoard::WBMap3e::init(const Device &device)
 
         m_endpoints.insert(i, endpoint);
     }
+
+    updateOptions(exposeOptions);
+
+    m_options.insert("totalPower",  exposeOptions.value("power"));
+    m_options.insert("totalEnergy", exposeOptions.value("energy"));
+
+    m_options.insert("angle",       QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
+    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 }
 
 void WirenBoard::WBMap3e::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
@@ -235,20 +233,10 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void WirenBoard::WBMap6s::init(const Device &device)
+void WirenBoard::WBMap6s::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     m_type = "wbMap6s";
     m_description = "Wiren Board WB-MAP6S Energy Meter";
-
-    m_options.insert("frequency",   QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",     QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",       QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("totalPower",  QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",      QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("totalEnergy", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 7; i++)
     {
@@ -297,6 +285,15 @@ void WirenBoard::WBMap6s::init(const Device &device)
 
         m_endpoints.insert(i, endpoint);
     }
+
+    updateOptions(exposeOptions);
+
+    m_options.insert("totalPower",  exposeOptions.value("power"));
+    m_options.insert("totalEnergy", exposeOptions.value("energy"));
+
+    m_options.insert("angle",       QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
+    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 }
 
 void WirenBoard::WBMap6s::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
@@ -464,7 +461,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void WirenBoard::WBMap12::init(const Device &device)
+void WirenBoard::WBMap12::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     switch (m_model)
     {
@@ -478,17 +475,6 @@ void WirenBoard::WBMap12::init(const Device &device)
             m_description = "Wiren Board WB-MAP12H Energy Meter";
             break;
     }
-
-    m_options.insert("frequency",   QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "measurement"}, {"unit", "Hz"}, {"round", 1}});
-    m_options.insert("voltage",     QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("current",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("power",       QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("totalPower",  QJsonObject {{"type", "sensor"}, {"class", "power"}, {"state", "measurement"}, {"unit", "W"}, {"round", 2}});
-    m_options.insert("energy",      QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("totalEnergy", QJsonObject {{"type", "sensor"}, {"class", "energy"}, {"state", "total_increasing"}, {"unit", "kWh"}, {"round", 2}});
-    m_options.insert("angle",       QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
-    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
-    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 
     for (quint8 i = 0; i < 13; i++)
     {
@@ -548,6 +534,15 @@ void WirenBoard::WBMap12::init(const Device &device)
 
         m_endpoints.insert(i, endpoint);
     }
+
+    updateOptions(exposeOptions);
+
+    m_options.insert("totalPower",  exposeOptions.value("power"));
+    m_options.insert("totalEnergy", exposeOptions.value("energy"));
+
+    m_options.insert("angle",       QJsonObject {{"type", "sensor"}, {"unit", "°"}, {"icon", "mdi:angle-acute"}});
+    m_options.insert("delta",       QJsonObject {{"type", "number"}, {"min", -32768}, {"max", 32767}, {"icon", "mdi:delta"}});
+    m_options.insert("ratio",       QJsonObject {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:alpha-k-box-outline"}});
 }
 
 void WirenBoard::WBMap12::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
@@ -740,11 +735,10 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void WirenBoard::WBMr6::init(const Device &device)
+void WirenBoard::WBMr6::init(const Device &device, const QMap <QString, QVariant> &)
 {
     m_type = "wbMr6";
     m_description = "Wiren Board WB-MR6 Relay Controller";
-    m_options.insert("input", QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
 
     for (quint8 i = 0; i < 7; i++)
     {
@@ -771,6 +765,8 @@ void WirenBoard::WBMr6::init(const Device &device)
 
         m_endpoints.insert(i, endpoint);
     }
+
+    m_options.insert("input", QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
 }
 
 void WirenBoard::WBMr6::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
@@ -855,27 +851,13 @@ void WirenBoard::WBMr6::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void WirenBoard::WBUps::init(const Device &device)
+void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     Endpoint endpoint(new EndpointObject(0, device));
     Expose battety(new SensorObject("battery")), batteryStatus(new SensorObject("batteryStatus")), temperature(new SensorObject("temperature")), temperatureStatus(new SensorObject("temperatureStatus")), inputVoltage(new SensorObject("inputVoltage")), outputVoltage(new SensorObject("outputVoltage")), batteryVoltage(new SensorObject("batteryVoltage")), batteryCurrent(new SensorObject("batteryCurrent")), chargeCurrent(new SensorObject("chargeCurrent")), dischargeCurrent(new SensorObject("dischargeCurrent")), operationMode(new SelectObject("operationMode")), outputVoltageLimit(new NumberObject("outputVoltageLimit")), chargeCurrentLimit(new NumberObject("chargeCurrentLimit"));
 
     m_type = "wbUps";
     m_description = "Wiren Board UPS v3 Backup Power Supply";
-
-    m_options.insert("battery",            QJsonObject {{"type", "sensor"}, {"class", "battery"}, {"unit", "%"}, {"round", 1}});
-    m_options.insert("batteryStatus",      QJsonObject {{"type", "sensor"}, {"icon", "mdi:battery-charging"}});
-    m_options.insert("temperature",        QJsonObject {{"type", "sensor"}, {"class", "temperature"}, {"state", "measurement"}, {"unit", "°C"}, {"round", 1}});
-    m_options.insert("temperatureStatus",  QJsonObject {{"type", "sensor"}, {"icon", "mdi:thermometer"}});
-    m_options.insert("inputVoltage",       QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("outputVoltage",      QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("batteryVoltage",     QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}, {"round", 1}});
-    m_options.insert("batteryCurrent",     QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("chargeCurrent",      QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("dischargeCurrent",   QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}, {"round", 3}});
-    m_options.insert("operationMode",      QJsonObject {{"type", "select"}, {"enum", QJsonArray {"auto", "manual"}}, {"icon", "mdi:cog"}});
-    m_options.insert("outputVoltageLimit", QJsonObject {{"type", "number"}, {"min", 9}, {"max", 26.5}, {"step", 0.1}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
-    m_options.insert("chargeCurrentLimit", QJsonObject {{"type", "number"}, {"min", 0.3}, {"max", 2}, {"step", 0.1}, {"unit", "A"}, {"icon", "mdi:current-ac"}});
 
     battety->setParent(endpoint.data());
     endpoint->exposes().append(battety);
@@ -917,6 +899,22 @@ void WirenBoard::WBUps::init(const Device &device)
     endpoint->exposes().append(chargeCurrentLimit);
 
     m_endpoints.insert(0, endpoint);
+    updateOptions(exposeOptions);
+
+    m_options.insert("batteryStatus",      QJsonObject {{"type", "sensor"}, {"icon", "mdi:battery-charging"}});
+    m_options.insert("temperatureStatus",  QJsonObject {{"type", "sensor"}, {"icon", "mdi:thermometer"}});
+
+    m_options.insert("inputVoltage",       exposeOptions.value("voltage"));
+    m_options.insert("outputVoltage",      exposeOptions.value("voltage"));
+    m_options.insert("batteryVoltage",     exposeOptions.value("voltage"));
+
+    m_options.insert("batteryCurrent",     exposeOptions.value("current"));
+    m_options.insert("chargeCurrent",      exposeOptions.value("current"));
+    m_options.insert("dischargeCurrent",   exposeOptions.value("current"));
+
+    m_options.insert("operationMode",      QJsonObject {{"type", "select"}, {"enum", QJsonArray {"auto", "manual"}}, {"icon", "mdi:cog"}});
+    m_options.insert("outputVoltageLimit", QJsonObject {{"type", "number"}, {"min", 9}, {"max", 26.5}, {"step", 0.1}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
+    m_options.insert("chargeCurrentLimit", QJsonObject {{"type", "number"}, {"min", 0.3}, {"max", 2}, {"step", 0.1}, {"unit", "A"}, {"icon", "mdi:current-ac"}});
 }
 
 void WirenBoard::WBUps::enqueueAction(quint8, const QString &name, const QVariant &data)

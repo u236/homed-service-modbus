@@ -2,16 +2,13 @@
 #include "modbus.h"
 #include "other.h"
 
-void Other::JTH2D1::init(const Device &device)
+void Other::JTH2D1::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     Endpoint endpoint(new EndpointObject(0, device));
     Expose temperature(new SensorObject("temperature")), humidity(new SensorObject("humidity"));
 
     m_type = "jth2d1";
     m_description = "JTH-2D1 Temperature and Humidity Sensor";
-
-    m_options.insert("temperature", QJsonObject {{"type", "sensor"}, {"class", "temperature"}, {"state", "measurement"}, {"unit", "°C"}});
-    m_options.insert("humidity",    QJsonObject {{"type", "sensor"}, {"class", "humidity"}, {"state", "measurement"}, {"unit", "%"}});
 
     temperature->setParent(endpoint.data());
     endpoint->exposes().append(temperature);
@@ -20,6 +17,7 @@ void Other::JTH2D1::init(const Device &device)
     endpoint->exposes().append(humidity);
 
     m_endpoints.insert(0, endpoint);
+    updateOptions(exposeOptions);
 }
 
 void Other::JTH2D1::startPoll(void)
@@ -66,7 +64,7 @@ void Other::JTH2D1::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void Other::T13::init(const Device &device)
+void Other::T13::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     Endpoint endpoint(new EndpointObject(0, device));
     Expose operationMode(new SelectObject("operationMode")), frequency(new NumberObject("frequency")), voltage(new SensorObject("voltage")), current(new SensorObject("current")), temperature(new SensorObject("temperature"));
@@ -74,12 +72,6 @@ void Other::T13::init(const Device &device)
     m_type = "t13";
     m_description = "T13-750W-12-H Frequency Converter";
     m_modes = {"forward", "stop", "reverse"};
-
-    m_options.insert("operationMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray::fromStringList(m_modes)}, {"control", true}, {"icon", "mdi:sync"}});
-    m_options.insert("frequency",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 50}, {"step", 0.1}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
-    m_options.insert("voltage",       QJsonObject {{"type", "sensor"}, {"class", "voltage"}, {"state", "measurement"}, {"unit", "V"}});
-    m_options.insert("current",       QJsonObject {{"type", "sensor"}, {"class", "current"}, {"state", "measurement"}, {"unit", "A"}});
-    m_options.insert("temperature",   QJsonObject {{"type", "sensor"}, {"class", "temperature"}, {"state", "measurement"}, {"unit", "°C"}});
 
     operationMode->setParent(endpoint.data());
     endpoint->exposes().append(operationMode);
@@ -97,6 +89,9 @@ void Other::T13::init(const Device &device)
     endpoint->exposes().append(temperature);
 
     m_endpoints.insert(0, endpoint);
+    updateOptions(exposeOptions);
+
+    m_options.insert("operationMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray::fromStringList(m_modes)}, {"control", true}, {"icon", "mdi:sync"}});
 }
 
 void Other::T13::enqueueAction(quint8, const QString &name, const QVariant &data)

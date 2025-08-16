@@ -9,6 +9,22 @@
 #include "expose.h"
 #include "logger.h"
 
+void DeviceObject::updateOptions(const QMap <QString, QVariant> &exposeOptions)
+{
+    for (auto it = m_endpoints.begin(); it != m_endpoints.end(); it++)
+    {
+        for (int i = 0; i < it.value()->exposes().count(); i++)
+        {
+            const QString &name = it.value()->exposes().at(i)->name();
+
+            if (m_options.contains(name) || !exposeOptions.contains(name))
+                continue;
+
+            m_options.insert(name, exposeOptions.value(name));
+        }
+    }
+}
+
 void DeviceObject::updateEndpoints(void)
 {
     for (auto it = m_endpoints.begin(); it != m_endpoints.end(); it++)
@@ -152,7 +168,7 @@ Device DeviceList::parse(const QJsonObject &json)
             device->setCloud(json.value("cloud").toBool());
 
         device->setNote(json.value("note").toString());
-        device->init(device);
+        device->init(device, m_exposeOptions);
 
         if (device->type() == "customController")
         {

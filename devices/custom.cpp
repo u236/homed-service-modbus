@@ -21,7 +21,7 @@ quint16 Custom::ItemObject::count(void)
     }
 }
 
-void Custom::Controller::init(const Device &)
+void Custom::Controller::init(const Device &, const QMap <QString, QVariant> &)
 {
     m_type = "customController";
     m_description = "Custom Modbus Controller";

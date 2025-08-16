@@ -2,20 +2,10 @@
 #include "modbus.h"
 #include "neptun.h"
 
-void Neptun::SmartPlus::init(const Device &device)
+void Neptun::SmartPlus::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     m_type = "neptunSmartPlus";
     m_description = "Neptun Smart+ Controller";
-
-    m_options.insert("lock",           "valve");
-    m_options.insert("waterLeak",      QJsonObject {{"type", "binary"}, {"class", "moisture"}});
-    m_options.insert("volume",         QJsonObject {{"type", "number"}, {"class", "volume"}, {"state", "total_increasing"}, {"min", 0}, {"max", 1000000000}, {"unit", "L"}});
-
-    m_options.insert("enableGroups",   QJsonObject {{"type", "toggle"}, {"icon", "mdi:source-branch"}});
-    m_options.insert("lostProtection", QJsonObject {{"type", "toggle"}, {"icon", "mdi:leak-off"}});
-    m_options.insert("pairingMode",    QJsonObject {{"type", "toggle"}, {"icon", "mdi:leak"}});
-    m_options.insert("childLock",      QJsonObject {{"type", "toggle"}, {"control", true}, {"icon", "mdi:lock"}});
-    m_options.insert("cleaningMode",   QJsonObject {{"type", "toggle"}, {"control", true}, {"icon", "mdi:vacuum"}});
 
     for (quint8 i = 0; i < 11; i++)
     {
@@ -97,6 +87,16 @@ void Neptun::SmartPlus::init(const Device &device)
 
         m_endpoints.insert(endpointId, endpoint);
     }
+
+    updateOptions(exposeOptions);
+
+    m_options.insert("volume",         QJsonObject {{"type", "number"}, {"class", "volume"}, {"state", "total_increasing"}, {"min", 0}, {"max", 1000000000}, {"unit", "L"}});
+    m_options.insert("enableGroups",   QJsonObject {{"type", "toggle"}, {"icon", "mdi:source-branch"}});
+    m_options.insert("lostProtection", QJsonObject {{"type", "toggle"}, {"icon", "mdi:leak-off"}});
+    m_options.insert("pairingMode",    QJsonObject {{"type", "toggle"}, {"icon", "mdi:leak"}});
+    m_options.insert("cleaningMode",   QJsonObject {{"type", "toggle"}, {"control", true}, {"icon", "mdi:vacuum"}});
+
+    m_options.insert("lock",           "valve");
 }
 
 void Neptun::SmartPlus::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)

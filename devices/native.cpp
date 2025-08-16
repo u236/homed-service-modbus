@@ -2,12 +2,10 @@
 #include "modbus.h"
 #include "native.h"
 
-void Native::RelayController::init(const Device &device)
+void Native::RelayController::init(const Device &device, const QMap <QString, QVariant> &)
 {
     m_type = "homedRelayController";
     m_description = "HOMEd Relay Controller";
-
-    m_options.insert("invert", QJsonObject {{"type", "toggle"}, {"icon", "mdi:swap-horizontal-bold"}});
 
     for (quint8 i = 0; i < 17; i++)
     {
@@ -20,6 +18,8 @@ void Native::RelayController::init(const Device &device)
         endpoint->exposes().append(expose);
         m_endpoints.insert(i, endpoint);
     }
+
+    m_options.insert("invert", QJsonObject {{"type", "toggle"}, {"icon", "mdi:swap-horizontal-bold"}});
 }
 
 void Native::RelayController::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
@@ -120,13 +120,10 @@ void Native::RelayController::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void Native::SwitchController::init(const Device &device)
+void Native::SwitchController::init(const Device &device, const QMap <QString, QVariant> &)
 {
     m_type = "homedSwitchController";
     m_description = "HOMEd Switch Controller";
-
-    m_options.insert("invert", QJsonObject {{"type", "toggle"}, {"icon", "mdi:swap-horizontal-bold"}});
-    m_options.insert("action", QJsonObject {{"type", "sensor"}, {"trigger", QJsonArray {"singleClock", "doubleClick", "hold", "release"}}, {"icon", "mdi:gesture-double-tap"}});
 
     for (quint8 i = 0; i < 17; i++)
     {
@@ -139,6 +136,9 @@ void Native::SwitchController::init(const Device &device)
         endpoint->exposes().append(expose);
         m_endpoints.insert(i, endpoint);
     }
+
+    m_options.insert("invert", QJsonObject {{"type", "toggle"}, {"icon", "mdi:swap-horizontal-bold"}});
+    m_options.insert("action", QJsonObject {{"type", "sensor"}, {"trigger", QJsonArray {"singleClock", "doubleClick", "hold", "release"}}, {"icon", "mdi:gesture-double-tap"}});
 
     memset(m_time, 0, sizeof(m_time));
     memset(m_count, 0, sizeof(m_count));

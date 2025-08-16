@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#define SERVICE_VERSION             "1.1.9"
+#define SERVICE_VERSION             "1.2.0"
 #define UPDATE_PROPERTIES_DELAY     1000
 
 #include <QMetaEnum>

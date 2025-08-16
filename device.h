@@ -34,7 +34,7 @@ public:
     DeviceObject(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
         AbstractDeviceObject(name), m_portId(portId), m_slaveId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_requestTimeout(requestTimeout), m_replyTimeout(replyTimeout), m_pollTime(0), m_errorCount(0), m_sequence(0), m_polling(false), m_fullPoll(true) {}
 
-    virtual void init(const Device &) {}
+    virtual void init(const Device &, const QMap <QString, QVariant> &) {}
     virtual void enqueueAction(quint8, const QString &, const QVariant &) {}
     virtual void startPoll(void) = 0;
 
@@ -74,6 +74,7 @@ protected:
     bool m_polling, m_fullPoll;
     QQueue <QByteArray> m_actionQueue;
 
+    void updateOptions(const QMap <QString, QVariant> &exposeOptions);
     void updateEndpoints(void);
 
 signals:
