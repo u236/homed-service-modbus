@@ -7,7 +7,7 @@ void Native::RelayController::init(const Device &device, const QMap <QString, QV
     m_type = "homedRelayController";
     m_description = "HOMEd Relay Controller";
 
-    for (quint8 i = 0; i < 17; i++)
+    for (quint8 i = 0; i <= 16; i++)
     {
         Expose expose = i ? Expose(new SwitchObject) : Expose(new ToggleObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));
@@ -125,7 +125,7 @@ void Native::SwitchController::init(const Device &device, const QMap <QString, Q
     m_type = "homedSwitchController";
     m_description = "HOMEd Switch Controller";
 
-    for (quint8 i = 0; i < 17; i++)
+    for (quint8 i = 0; i <= 16; i++)
     {
         Expose expose = i ? Expose(new SensorObject("action")) : Expose(new ToggleObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));

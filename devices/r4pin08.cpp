@@ -42,7 +42,7 @@ void R4PIN08::Controller::init(const Device &device, const QMap <QString, QVaria
             break;
     }
 
-    for (quint8 i = 0; i < 9; i++)
+    for (quint8 i = 0; i <= 8; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
 

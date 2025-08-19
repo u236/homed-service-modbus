@@ -7,7 +7,7 @@ void Neptun::SmartPlus::init(const Device &device, const QMap <QString, QVariant
     m_type = "neptunSmartPlus";
     m_description = "Neptun Smart+ Controller";
 
-    for (quint8 i = 0; i < 11; i++)
+    for (quint8 i = 0; i <= 10; i++)
     {
         Endpoint endpoint;
         quint8 endpointId;
@@ -64,7 +64,7 @@ void Neptun::SmartPlus::init(const Device &device, const QMap <QString, QVariant
             sensorLostList->setParent(endpoint.data());
             endpoint->exposes().append(sensorLostList);
         }
-        else if (endpointId < 3)
+        else if (endpointId <= 2)
         {
             Expose lock(new LockObject), waterLeak(new BinaryObject("waterLeak"));
 

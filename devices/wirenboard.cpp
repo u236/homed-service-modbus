@@ -8,7 +8,7 @@ void WirenBoard::WBMap3e::init(const Device &device, const QMap <QString, QVaria
     m_type = "wbMap3e";
     m_description = "Wiren Board WB-MAP3E Energy Meter";
 
-    for (quint8 i = 0; i < 4; i++)
+    for (quint8 i = 0; i <= 3; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
 
@@ -238,7 +238,7 @@ void WirenBoard::WBMap6s::init(const Device &device, const QMap <QString, QVaria
     m_type = "wbMap6s";
     m_description = "Wiren Board WB-MAP6S Energy Meter";
 
-    for (quint8 i = 0; i < 7; i++)
+    for (quint8 i = 0; i <= 6; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
 
@@ -476,7 +476,7 @@ void WirenBoard::WBMap12::init(const Device &device, const QMap <QString, QVaria
             break;
     }
 
-    for (quint8 i = 0; i < 13; i++)
+    for (quint8 i = 0; i <= 12; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
 
