@@ -129,13 +129,20 @@ namespace WirenBoard
 
     };
 
-    class WBMr6 : public DeviceObject
+    class WBMr : public DeviceObject
     {
 
     public:
 
-        WBMr6(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
+        enum class Model
+        {
+            wbMrm2,
+            wbMrwl3,
+            wbMr6
+        };
+
+        WBMr(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_model(model) {}
 
         void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
@@ -146,7 +153,39 @@ namespace WirenBoard
 
     private:
 
+        Model m_model;
+        quint8 m_channels;
         quint16 m_output[6];
+
+    };
+
+    class WBMrm2 : public WBMr
+    {
+
+    public:
+
+        WBMrm2(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            WBMr(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMrm2) {}
+
+    };
+
+    class WBMrwl3 : public WBMr
+    {
+
+    public:
+
+        WBMrwl3(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            WBMr(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMrwl3) {}
+
+    };
+
+    class WBMr6 : public WBMr
+    {
+
+    public:
+
+        WBMr6(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            WBMr(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMr6) {}
 
     };
 

@@ -735,12 +735,30 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void WirenBoard::WBMr6::init(const Device &device, const QMap <QString, QVariant> &)
+void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant> &)
 {
-    m_type = "wbMr6";
-    m_description = "Wiren Board WB-MR6 Relay Controller";
+    switch (m_model)
+    {
+        case Model::wbMrm2:
+            m_type = "wbMrm2";
+            m_description = "Wiren Board WB-MRM2 Relay Controller";
+            m_channels = 2;
+            break;
 
-    for (quint8 i = 0; i < 7; i++)
+        case Model::wbMrwl3:
+            m_type = "wbMrwl3";
+            m_description = "Wiren Board WB-MRWL3 Relay Controller";
+            m_channels = 3;
+            break;
+
+        case Model::wbMr6:
+            m_type = "wbMr6";
+            m_description = "Wiren Board WB-MR6 Relay Controller";
+            m_channels = 6;
+            break;
+    }
+
+    for (quint8 i = m_model != Model::wbMrm2 ? 0 : 1; i <= m_channels; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
 
@@ -769,9 +787,9 @@ void WirenBoard::WBMr6::init(const Device &device, const QMap <QString, QVariant
     m_options.insert("input", QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
 }
 
-void WirenBoard::WBMr6::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
-    if (name == "status" && endpointId && endpointId <= 6)
+    if (name == "status" && endpointId && endpointId <= m_channels)
     {
         QList <QString> list = {"on", "off", "toggle"};
         quint16 value;
@@ -788,7 +806,7 @@ void WirenBoard::WBMr6::enqueueAction(quint8 endpointId, const QString &name, co
     }
 }
 
-void WirenBoard::WBMr6::startPoll(void)
+void WirenBoard::WBMr::startPoll(void)
 {
     if (m_polling)
         return;
@@ -797,15 +815,15 @@ void WirenBoard::WBMr6::startPoll(void)
     m_polling = true;
 }
 
-QByteArray WirenBoard::WBMr6::pollRequest(void)
+QByteArray WirenBoard::WBMr::pollRequest(void)
 {
     switch (m_sequence)
     {
         case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 6);
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
 
         case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 8);
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_model != Model::wbMrm2 ? 8 : 2);
 
         default:
             updateEndpoints();
@@ -815,7 +833,7 @@ QByteArray WirenBoard::WBMr6::pollRequest(void)
     }
 }
 
-void WirenBoard::WBMr6::parseReply(const QByteArray &reply)
+void WirenBoard::WBMr::parseReply(const QByteArray &reply)
 {
     switch (m_sequence)
     {
@@ -826,7 +844,7 @@ void WirenBoard::WBMr6::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            for (quint8 i = 0; i < 6; i++)
+            for (quint8 i = 0; i < m_channels; i++)
                 m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
 
             memcpy(m_output, data, sizeof(m_output));
@@ -840,10 +858,12 @@ void WirenBoard::WBMr6::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            for (quint8 i = 0; i < 6; i++)
+            for (quint8 i = 0; i < m_channels; i++)
                 m_endpoints.value(i + 1)->buffer().insert("input", data[i] ? true : false);
 
-            m_endpoints.value(0)->buffer().insert("input_0", data[7] ? true : false);
+            if (m_model != Model::wbMrm2)
+                m_endpoints.value(0)->buffer().insert("input_0", data[7] ? true : false);
+
             break;
         }
     }
@@ -913,7 +933,7 @@ void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant
     m_options.insert("dischargeCurrent",   exposeOptions.value("current"));
 
     m_options.insert("operationMode",      QJsonObject {{"type", "select"}, {"enum", QJsonArray {"auto", "manual"}}, {"icon", "mdi:cog"}});
-    m_options.insert("outputVoltageLimit", QJsonObject {{"type", "number"}, {"min", 9}, {"max", 26.5}, {"step", 0.1}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
+    m_options.insert("outputVoltageLimit", QJsonObject {{"type", "number"}, {"min", 9}, {"max", 25.6}, {"step", 0.1}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("chargeCurrentLimit", QJsonObject {{"type", "number"}, {"min", 0.3}, {"max", 2}, {"step", 0.1}, {"unit", "A"}, {"icon", "mdi:current-ac"}});
 }
 
