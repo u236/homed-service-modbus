@@ -741,19 +741,25 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
     {
         case Model::wbMrm2:
             m_type = "wbMrm2";
-            m_description = "Wiren Board WB-MRM2 Relay Controller";
+            m_description = "Wiren Board WB-MRM2-mini Relay Controller";
             m_channels = 2;
             break;
 
-        case Model::wbMrwl3:
-            m_type = "wbMrwl3";
-            m_description = "Wiren Board WB-MRWL3 Relay Controller";
+        case Model::wbMr3:
+            m_type = "wbMr3";
+            m_description = "Wiren Board WB-MR3LV/MRWL3 Relay Controller";
             m_channels = 3;
             break;
 
         case Model::wbMr6:
             m_type = "wbMr6";
-            m_description = "Wiren Board WB-MR6 Relay Controller";
+            m_description = "Wiren Board WB-MR6C/MR6-LV Relay Controller";
+            m_channels = 6;
+            break;
+
+        case Model::wbMr6p:
+            m_type = "wbMr6p";
+            m_description = "Wiren Board WB-MR6CU/MRPS6 Relay Controller";
             m_channels = 6;
             break;
     }
@@ -764,15 +770,18 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
 
         if (i)
         {
-            Expose output(new SwitchObject), input(new BinaryObject("input"));
-
+            Expose output(new SwitchObject);
             output->setMultiple(true);
             output->setParent(endpoint.data());
             endpoint->exposes().append(output);
 
-            input->setMultiple(true);
-            input->setParent(endpoint.data());
-            endpoint->exposes().append(input);
+            if (m_model != Model::wbMr6p)
+            {
+                Expose input(new BinaryObject("input"));
+                input->setMultiple(true);
+                input->setParent(endpoint.data());
+                endpoint->exposes().append(input);
+            }
         }
         else
         {
@@ -823,7 +832,12 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
             return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
 
         case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_model != Model::wbMrm2 ? 8 : 2);
+
+            if (m_model != Model::wbMr6p)
+                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_model != Model::wbMrm2 ? 8 : 2);
+
+            m_sequence++;
+            return QByteArray();
 
         default:
             updateEndpoints();

@@ -137,8 +137,9 @@ namespace WirenBoard
         enum class Model
         {
             wbMrm2,
-            wbMrwl3,
-            wbMr6
+            wbMr3,
+            wbMr6,
+            wbMr6p
         };
 
         WBMr(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
@@ -169,13 +170,13 @@ namespace WirenBoard
 
     };
 
-    class WBMrwl3 : public WBMr
+    class WBMr3 : public WBMr
     {
 
     public:
 
-        WBMrwl3(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            WBMr(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMrwl3) {}
+        WBMr3(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            WBMr(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMr3) {}
 
     };
 
@@ -186,6 +187,16 @@ namespace WirenBoard
 
         WBMr6(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
             WBMr(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMr6) {}
+
+    };
+
+    class WBMr6p : public WBMr
+    {
+
+    public:
+
+        WBMr6p(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            WBMr(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name, Model::wbMr6p) {}
 
     };
 
