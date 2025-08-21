@@ -92,6 +92,7 @@ void Other::T13::init(const Device &device, const QMap <QString, QVariant> &expo
     updateOptions(exposeOptions);
 
     m_options.insert("operationMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray::fromStringList(m_modes)}, {"control", true}, {"icon", "mdi:sync"}});
+    m_options.insert("frequency",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 50}, {"step", 0.1}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
 }
 
 void Other::T13::enqueueAction(quint8, const QString &name, const QVariant &data)
@@ -169,6 +170,105 @@ void Other::T13::parseReply(const QByteArray &reply)
             m_endpoints.value(0)->buffer().insert("voltage",     data[0] / 10.0);
             m_endpoints.value(0)->buffer().insert("current",     data[1] / 10.0);
             m_endpoints.value(0)->buffer().insert("temperature", data[2]);
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
+void Other::M0701s::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+{
+    Endpoint endpoint(new EndpointObject(0, device));
+    Expose status(new SwitchObject), frequency(new NumberObject("frequency")), voltage(new SensorObject("voltage")), current(new SensorObject("current")), temperature(new SensorObject("temperature"));
+
+    m_type = "m0701s";
+    m_description = "VFC-M0701S Frequency Converter";
+
+    status->setParent(endpoint.data());
+    endpoint->exposes().append(status);
+
+    frequency->setParent(endpoint.data());
+    endpoint->exposes().append(frequency);
+
+    voltage->setParent(endpoint.data());
+    endpoint->exposes().append(voltage);
+
+    current->setParent(endpoint.data());
+    endpoint->exposes().append(current);
+
+    temperature->setParent(endpoint.data());
+    endpoint->exposes().append(temperature);
+
+    m_endpoints.insert(0, endpoint);
+    updateOptions(exposeOptions);
+
+    m_options.insert("frequency", QJsonObject {{"type", "number"}, {"min", 0}, {"max", 400}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
+}
+
+void Other::M0701s::enqueueAction(quint8, const QString &name, const QVariant &data)
+{
+    if (name == "status")
+    {
+        QList <QString> list = {"on", "off", "toggle"};
+        quint16 value;
+
+        switch (list.indexOf(data.toString()))
+        {
+            case 0:  value = 1; break;
+            case 1:  value = 0; break;
+            case 2:  value = m_status ? 0 : 1; break;
+            default: return;
+        }
+
+        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA7, value));
+    }
+    else if (name == "frequency")
+        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA6, static_cast <quint16> (data.toDouble() * 100)));
+}
+
+void Other::M0701s::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = 0;
+    m_polling = true;
+}
+
+QByteArray Other::M0701s::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x9CF4, 6);
+
+        default:
+            updateEndpoints();
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
+            return QByteArray();
+    }
+}
+
+void Other::M0701s::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data[6];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_status = data[0] != 1 ? true : false;
+
+            m_endpoints.value(0)->buffer().insert("status",      m_status ? "on" : "off");
+            m_endpoints.value(0)->buffer().insert("frequency",   data[1] / 100.0);
+            m_endpoints.value(0)->buffer().insert("current",     data[3] / 10.0);
+            m_endpoints.value(0)->buffer().insert("voltage",     data[4] / 10.0);
+            m_endpoints.value(0)->buffer().insert("temperature", data[5]);
             break;
         }
     }

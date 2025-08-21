@@ -1018,7 +1018,7 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
             if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("operationMode",         data[0] ? "manual" : "auto");
+            m_endpoints.value(0)->buffer().insert("operationMode",      data[0] ? "manual" : "auto");
             m_endpoints.value(0)->buffer().insert("outputVoltageLimit", data[1] / 1000.0);
             m_endpoints.value(0)->buffer().insert("chargeCurrentLimit", data[2] / 1000.0);
 

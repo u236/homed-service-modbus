@@ -72,7 +72,8 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
         "wbUps",
         "neptunSmartPlus",
         "jth2d1",
-        "t13"
+        "t13",
+        "m0701s"
     };
 
     m_specialExposes =
@@ -160,6 +161,7 @@ Device DeviceList::parse(const QJsonObject &json)
         case 17: device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 18: device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 19: device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 20: device = Device(new Other::M0701s(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
     }
 
     if (!device.isNull())
