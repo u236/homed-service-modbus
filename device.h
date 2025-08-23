@@ -89,6 +89,44 @@ class DeviceList : public QObject, public QList <Device>
 
 public:
 
+    enum class DeviceType
+    {
+        customController,
+        homedRelayController,
+        homedSwitchController,
+        r4pin08m0,
+        r4pin08m1,
+        r4pin08m2,
+        r4pin08m3,
+        r4pin08m4,
+        wbMap3ev,
+        wbMap3e,
+        wbMap6s,
+        wbMap12e,
+        wbMap12h,
+        wbMrwm2,
+        wbMrm2,
+        wbMr3,
+        wbMr6,
+        wbMr6p,
+        wbLed0,
+        wbLed1,
+        wbLed2,
+        wbLed16,
+        wbLed17,
+        wbLed18,
+        wbLed32,
+        wbLed33,
+        wbLed34,
+        wbLed256,
+        wbLed512,
+        wbUps,
+        neptunSmartPlus,
+        jth2d1,
+        t13,
+        m0701s
+    };
+
     DeviceList(QSettings *config, QObject *parent);
     ~DeviceList(void);
 
@@ -101,16 +139,18 @@ public:
     Device byName(const QString &name, int *index = nullptr);
     Device parse(const QJsonObject &json);
 
+    Q_ENUM(DeviceType)
+
 private:
 
     QTimer *m_timer;
 
-    QMetaEnum m_registerTypes, m_dataTypes, m_byteOrders;
+    QMetaEnum m_deviceTypes, m_registerTypes, m_dataTypes, m_byteOrders;
     QFile m_file;
     bool m_names, m_sync;
 
     QMap <QString, QVariant> m_exposeOptions;
-    QList <QString> m_types, m_specialExposes;
+    QList <QString> m_specialExposes;
 
     void unserialize(const QJsonArray &devices);
     QJsonArray serialize(void);
