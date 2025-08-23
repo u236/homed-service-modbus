@@ -4,6 +4,115 @@
 #include "modbus.h"
 #include "wirenboard.h"
 
+void WirenBoard::WBMap3ev::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+{
+    m_type = "wbMap3ev";
+    m_description = "Wiren Board WB-MAP3EV Voltage Meter";
+
+    for (quint8 i = 0; i <= 3; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose voltage(new SensorObject("voltage")), angle(new SensorObject("angle"));
+
+            voltage->setMultiple(true);
+            voltage->setParent(endpoint.data());
+            endpoint->exposes().append(voltage);
+
+            angle->setMultiple(true);
+            angle->setParent(endpoint.data());
+            endpoint->exposes().append(angle);
+        }
+        else
+        {
+            Expose frequency(new SensorObject("frequency"));
+            frequency->setParent(endpoint.data());
+            endpoint->exposes().append(frequency);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    updateOptions(exposeOptions);
+}
+
+void WirenBoard::WBMap3ev::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = 0;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBMap3ev::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+
+        case 1:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
+
+        case 2:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
+
+        default:
+            updateEndpoints();
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
+            return QByteArray();
+    }
+}
+
+void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 value;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.find(0).value()->buffer().insert("frequency", round(static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER) / 1000.0);
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[WBMAP_VOLTAGE_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+                m_endpoints.find(i + 1).value()->buffer().insert("voltage", round(static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER) / 1000.0);
+
+            break;
+        }
+
+        case 2:
+        {
+            quint16 data[WBMAP_ANGLE_REGISTER_COUNT];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+                m_endpoints.find(i + 1).value()->buffer().insert("angle", round(static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER) / 1000.0);
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 void WirenBoard::WBMap3e::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     m_type = "wbMap3e";
@@ -212,7 +321,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-               m_endpoints.find(i).value()->buffer().insert(i ? "energy" : "totalEnergy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER) / 1000.0);
+                m_endpoints.find(i).value()->buffer().insert(i ? "energy" : "totalEnergy", round(static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER) / 1000.0);
 
             break;
         }
