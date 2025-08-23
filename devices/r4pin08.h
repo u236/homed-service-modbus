@@ -10,14 +10,7 @@ namespace R4PIN08
 
     public:
 
-        enum class Model
-        {
-            r4pin08m0,
-            r4pin08m1,
-            r4pin08m2,
-            r4pin08m3,
-            r4pin08m4
-        };
+        enum class Model {r4pin08m0, r4pin08m1, r4pin08m2, r4pin08m3, r4pin08m4};
 
         Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_model(model) {}

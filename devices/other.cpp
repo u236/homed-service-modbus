@@ -91,8 +91,8 @@ void Other::T13::init(const Device &device, const QMap <QString, QVariant> &expo
     m_endpoints.insert(0, endpoint);
     updateOptions(exposeOptions);
 
-    m_options.insert("operationMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray::fromStringList(m_modes)}, {"control", true}, {"icon", "mdi:sync"}});
-    m_options.insert("frequency",     QJsonObject {{"type", "number"}, {"min", 0}, {"max", 50}, {"step", 0.1}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
+    m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", QVariant(m_modes)}, {"control", true}, {"icon", "mdi:sync"}});
+    m_options.insert("frequency",     QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 50}, {"step", 0.1}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
 }
 
 void Other::T13::enqueueAction(quint8, const QString &name, const QVariant &data)
@@ -203,7 +203,7 @@ void Other::M0701s::init(const Device &device, const QMap <QString, QVariant> &e
     m_endpoints.insert(0, endpoint);
     updateOptions(exposeOptions);
 
-    m_options.insert("frequency", QJsonObject {{"type", "number"}, {"min", 0}, {"max", 400}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
+    m_options.insert("frequency", QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 400}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
 }
 
 void Other::M0701s::enqueueAction(quint8, const QString &name, const QVariant &data)

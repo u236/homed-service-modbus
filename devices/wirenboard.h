@@ -87,11 +87,7 @@ namespace WirenBoard
 
     public:
 
-        enum class Model
-        {
-            wbMap12e,
-            wbMap12h
-        };
+        enum class Model {wbMap12e, wbMap12h};
 
         WBMap12(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_model(model) {}
@@ -134,13 +130,7 @@ namespace WirenBoard
 
     public:
 
-        enum class Model
-        {
-            wbMrm2,
-            wbMr3,
-            wbMr6,
-            wbMr6p
-        };
+        enum class Model {wbMrwm2, wbMrm2, wbMr3, wbMr6, wbMr6p};
 
         WBMr(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name, Model model) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_model(model) {}

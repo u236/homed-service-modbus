@@ -75,12 +75,12 @@ void R4PIN08::Controller::init(const Device &device, const QMap <QString, QVaria
 
     if (m_inputs)
     {
-        m_options.insert("inputMode",  QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
-        m_options.insert("input",      QJsonObject {{"type", "sensor"}, {"icon", "mdi:import"}});
+        m_options.insert("inputMode",  QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
+        m_options.insert("input",      QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
     }
 
     if (m_outputs)
-        m_options.insert("outputMode", QJsonObject {{"type", "select"}, {"enum", QJsonArray {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
+        m_options.insert("outputMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"low", "high"}}, {"icon", "mdi:swap-horizontal-bold"}});
 
     memset(m_input, 0xFF, sizeof(m_input));
     memset(m_output, 0xFF, sizeof(m_output));
@@ -101,13 +101,13 @@ void R4PIN08::Controller::enqueueAction(quint8 endpointId, const QString &name, 
     else if (m_outputs && name == "status" && endpointId > m_inputs && endpointId <= m_inputs + m_outputs)
     {
         QList <QString> list = {"on", "off", "toggle"};
-        quint16 value;
+        bool value;
 
         switch (list.indexOf(data.toString()))
         {
-            case 0:  value = 1; break;
-            case 1:  value = 0; break;
-            case 2:  value = m_output[endpointId - 1] ? 0 : 1; break;
+            case 0:  value = true; break;
+            case 1:  value = false; break;
+            case 2:  value = m_output[endpointId - 1] ? false : true; break;
             default: return;
         }
 
