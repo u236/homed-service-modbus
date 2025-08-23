@@ -65,10 +65,22 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
         "wbMap6s",
         "wbMap12e",
         "wbMap12h",
+        "wbMrwm2",
         "wbMrm2",
         "wbMr3",
         "wbMr6",
         "wbMr6p",
+        "wbLed0",
+        "wbLed1",
+        "wbLed2",
+        "wbLed16",
+        "wbLed17",
+        "wbLed18",
+        "wbLed32",
+        "wbLed33",
+        "wbLed34",
+        "wbLed256",
+        "wbLed512",
         "wbUps",
         "neptunSmartPlus",
         "jth2d1",
@@ -153,15 +165,27 @@ Device DeviceList::parse(const QJsonObject &json)
         case 9:  device = Device(new WirenBoard::WBMap6s(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 10: device = Device(new WirenBoard::WBMap12e(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case 11: device = Device(new WirenBoard::WBMap12h(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 12: device = Device(new WirenBoard::WBMrm2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 13: device = Device(new WirenBoard::WBMr3(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 14: device = Device(new WirenBoard::WBMr6(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 15: device = Device(new WirenBoard::WBMr6p(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 16: device = Device(new WirenBoard::WBUps(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 17: device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 18: device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 19: device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case 20: device = Device(new Other::M0701s(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 12: device = Device(new WirenBoard::WBMrwm2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 13: device = Device(new WirenBoard::WBMrm2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 14: device = Device(new WirenBoard::WBMr3(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 15: device = Device(new WirenBoard::WBMr6(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 16: device = Device(new WirenBoard::WBMr6p(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 17: device = Device(new WirenBoard::WBLed0(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 18: device = Device(new WirenBoard::WBLed1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 19: device = Device(new WirenBoard::WBLed2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 20: device = Device(new WirenBoard::WBLed16(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 21: device = Device(new WirenBoard::WBLed17(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 22: device = Device(new WirenBoard::WBLed18(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 23: device = Device(new WirenBoard::WBLed32(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 24: device = Device(new WirenBoard::WBLed33(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 25: device = Device(new WirenBoard::WBLed34(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 26: device = Device(new WirenBoard::WBLed256(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 27: device = Device(new WirenBoard::WBLed512(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 28: device = Device(new WirenBoard::WBUps(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 29: device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 30: device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 31: device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case 32: device = Device(new Other::M0701s(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
     }
 
     if (!device.isNull())

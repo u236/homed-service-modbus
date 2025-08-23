@@ -1,4 +1,5 @@
 #include <math.h>
+#include "color.h"
 #include "expose.h"
 #include "modbus.h"
 #include "wirenboard.h"
@@ -739,32 +740,43 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
 {
     switch (m_model)
     {
+        case Model::wbMrwm2:
+            m_type = "wbMrwm2";
+            m_description = "Wiren Board WB-MRWM2 Relay Controller";
+            m_channels = 2;
+            m_inputs = 2;
+            break;
+
         case Model::wbMrm2:
             m_type = "wbMrm2";
             m_description = "Wiren Board WB-MRM2-mini Relay Controller";
             m_channels = 2;
+            m_inputs = 2;
             break;
 
         case Model::wbMr3:
             m_type = "wbMr3";
             m_description = "Wiren Board WB-MR3LV/MRWL3 Relay Controller";
             m_channels = 3;
+            m_inputs = 8;
             break;
 
         case Model::wbMr6:
             m_type = "wbMr6";
             m_description = "Wiren Board WB-MR6C/MR6-LV Relay Controller";
             m_channels = 6;
+            m_inputs = 8;
             break;
 
         case Model::wbMr6p:
             m_type = "wbMr6p";
             m_description = "Wiren Board WB-MR6CU/MRPS6 Relay Controller";
             m_channels = 6;
+            m_inputs = 0;
             break;
     }
 
-    for (quint8 i = m_model != Model::wbMrm2 ? 0 : 1; i <= m_channels; i++)
+    for (quint8 i = m_inputs == 8 ? 0 : 1; i <= m_channels; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
 
@@ -775,12 +787,16 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
             output->setParent(endpoint.data());
             endpoint->exposes().append(output);
 
-            if (m_model != Model::wbMr6p)
+            if (m_inputs)
             {
                 Expose input(new BinaryObject("input"));
                 input->setMultiple(true);
                 input->setParent(endpoint.data());
                 endpoint->exposes().append(input);
+            }
+
+            if (m_model == Model::wbMrwm2)
+            {
             }
         }
         else
@@ -798,7 +814,10 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
 
 void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
-    if (name == "status" && endpointId && endpointId <= m_channels)
+    if (!endpointId || endpointId > m_channels)
+        return;
+
+    if (name == "status")
     {
         QList <QString> list = {"on", "off", "toggle"};
         quint16 value;
@@ -813,6 +832,11 @@ void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, con
 
         m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
     }
+
+    if (m_model != Model::wbMrwm2)
+        return;
+
+    m_fullPoll = true;
 }
 
 void WirenBoard::WBMr::startPoll(void)
@@ -820,7 +844,7 @@ void WirenBoard::WBMr::startPoll(void)
     if (m_polling)
         return;
 
-    m_sequence = 0;
+    m_sequence = m_fullPoll && m_model == Model::wbMrwm2 ? 0 : 6;
     m_polling = true;
 }
 
@@ -828,13 +852,32 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
+        case 0 ... 5:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x06A0 + m_sequence * 8, 2);
+
+        case 6:
             return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
 
-        case 1:
+        case 7:
 
-            if (m_model != Model::wbMr6p)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_model != Model::wbMrm2 ? 8 : 2);
+            if (m_inputs)
+                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
+
+            m_sequence++;
+            return QByteArray();
+
+        case 8 ... 9:
+
+            if (m_model == Model::wbMrwm2)
+                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 8 ? 0x0038 : 0x0048, 4);
+
+            m_sequence++;
+            return QByteArray();
+
+        case 10:
+
+            if (m_model == Model::wbMrwm2)
+                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
 
             m_sequence++;
             return QByteArray();
@@ -851,7 +894,13 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
 {
     switch (m_sequence)
     {
-        case 0:
+        case 0 ... 5:
+        {
+            m_fullPoll = false;
+            break;
+        }
+
+        case 6:
         {
             quint16 data[6];
 
@@ -865,7 +914,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 1:
+        case 7:
         {
             quint16 data[8];
 
@@ -875,8 +924,284 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < m_channels; i++)
                 m_endpoints.value(i + 1)->buffer().insert("input", data[i] ? true : false);
 
-            if (m_model != Model::wbMrm2)
+            if (m_inputs == 8)
                 m_endpoints.value(0)->buffer().insert("input_0", data[7] ? true : false);
+
+            break;
+        }
+
+        case 8 ... 9:
+        {
+            break;
+        }
+
+        case 10:
+        {
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
+void WirenBoard::WBLed::init(const Device &device, const QMap <QString, QVariant> &)
+{
+    switch (m_model)
+    {
+        case Model::wbLed0:
+            m_type = "wbLed0";
+            m_description = "Wiren Board WB-LED Dimmer (W1, W2, W3, W4)";
+            m_mode = 0x0000;
+            m_list = {1, 2, 3, 4};
+            break;
+
+        case Model::wbLed1:
+            m_type = "wbLed1";
+            m_description = "Wiren Board WB-LED Dimmer (W1+W2, W3, W4)";
+            m_mode = 0x0001;
+            m_list = {3, 4, 5};
+            break;
+
+        case Model::wbLed2:
+            m_type = "wbLed2";
+            m_description = "Wiren Board WB-LED Dimmer (CCT1, W3, W4)";
+            m_mode = 0x0002;
+            m_list = {3, 4, 8};
+            break;
+
+        case Model::wbLed16:
+            m_type = "wbLed16";
+            m_description = "Wiren Board WB-LED Dimmer (W1, W2, W3+W4)";
+            m_mode = 0x0010;
+            m_list = {1, 2, 6};
+            break;
+
+        case Model::wbLed17:
+            m_type = "wbLed17";
+            m_description = "Wiren Board WB-LED Dimmer (W1+W2, W3+W4)";
+            m_mode = 0x0011;
+            m_list = {5, 6};
+            break;
+
+        case Model::wbLed18:
+            m_type = "wbLed18";
+            m_description = "Wiren Board WB-LED Dimmer (CCT1, W3+W4)";
+            m_mode = 0x0012;
+            m_list = {6, 8};
+            break;
+
+        case Model::wbLed32:
+            m_type = "wbLed32";
+            m_description = "Wiren Board WB-LED Dimmer (W1, W2, CCT2)";
+            m_mode = 0x0020;
+            m_list = {1, 2, 9};
+            break;
+
+        case Model::wbLed33:
+            m_type = "wbLed33";
+            m_description = "Wiren Board WB-LED Dimmer (W1+W2, CCT2)";
+            m_mode = 0x0021;
+            m_list = {5, 9};
+            break;
+
+        case Model::wbLed34:
+            m_type = "wbLed34";
+            m_description = "Wiren Board WB-LED Dimmer (CCT1, CCT2)";
+            m_mode = 0x0022;
+            m_list = {8, 9};
+            break;
+
+        case Model::wbLed256:
+            m_type = "wbLed256";
+            m_description = "Wiren Board WB-LED Dimmer (RGB, W4)";
+            m_mode = 0x0100;
+            m_list = {4, 10};
+            break;
+
+        case Model::wbLed512:
+            m_type = "wbLed512";
+            m_description = "Wiren Board WB-LED Dimmer (W1+W2+W3+W4)";
+            m_mode = 0x0200;
+            m_list = {7};
+            break;
+    }
+
+    for (quint8 i = 1; i <= 10; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+        Expose light(new LightObject);
+
+        if (!m_list.contains(i))
+            continue;
+
+        light->setMultiple(true);
+        light->setParent(endpoint.data());
+        endpoint->exposes().append(light);
+
+        m_options.insert(QString("light_%1").arg(i), i < 8 ? QList <QVariant> {"level"} : i < 10 ? QList <QVariant> {"level", "colorTemperature"} : QList <QVariant> {"level", "color"});
+        m_endpoints.insert(i, endpoint);
+    }
+
+    m_options.insert("endpointName", QMap <QString, QVariant> {{"1", "W1"}, {"2", "W2"}, {"3", "W3"}, {"4", "W4"}, {"5", "W1+W2"}, {"6", "W3+W4"}, {"7", "W1+W2+W3+W4"}, {"8", "CCT1"}, {"9", "CCT2"}, {"10", "RGB"}});
+    m_options.insert("colorTemperature", QMap <QString, QVariant> {{"min", 150}, {"max", 450}, {"step", 3}});
+}
+
+void WirenBoard::WBLed::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    QList <QString> actions = {"status", "level", "colorTemperature", "color"};
+
+    if (!m_list.contains(endpointId))
+        return;
+
+    switch (actions.indexOf(name))
+    {
+        case 0: // status
+        {
+            QList <QString> list = {"on", "off", "toggle"};
+            quint16 value;
+
+            switch (list.indexOf(data.toString()))
+            {
+                case 0:  value = 1; break;
+                case 1:  value = 0; break;
+                case 2:  value = m_output[endpointId - 1] ? 0 : 1; break;
+                default: return;
+            }
+
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+            break;
+        }
+
+        case 1: // level
+        {
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x07D0 + (endpointId <= 9 ? endpointId <= 7 ? endpointId - 1 : (endpointId - 8) * 2 + 8 : 16), static_cast <quint16> (round(data.toInt() / 2.55))));
+            break;
+        }
+
+        case 2: // colorTemperature
+        {
+            if (endpointId != 8 && endpointId != 9)
+                break;
+
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x07D7 + (endpointId - 8) * 2, static_cast <quint16> ((450 - data.toInt()) / 3)));
+            break;
+        }
+
+        case 3: // color
+        {
+            QList <QVariant> list = data.toList();
+            Color color(list.value(0).toDouble() / 0xFF, list.value(1).toDouble() / 0xFF, list.value(2).toDouble() / 0xFF);
+            double h, s;
+            quint16 value[2];
+
+            color.toHS(&h, &s);
+            value[0] = round(h * 360);
+            value[1] = round(s * 100);
+
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, 0x07DE, 2, value));
+            break;
+        }
+    }
+}
+
+void WirenBoard::WBLed::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 1;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBLed::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0:
+            return Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0FA0, m_mode);
+
+        case 1:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 10);
+
+        case 2:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
+
+        default:
+            updateEndpoints();
+            m_pollTime = QDateTime::currentMSecsSinceEpoch();
+            m_polling = false;
+            return QByteArray();
+    }
+}
+
+void WirenBoard::WBLed::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            if (Modbus::parseReply(m_slaveId, Modbus::WriteSingleRegister, reply) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_fullPoll = false;
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[16];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 10; i++)
+            {
+                if (!m_list.contains(i + 1))
+                    continue;
+
+                m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
+            }
+
+            memcpy(m_output, data, sizeof(m_output));
+            break;
+        }
+
+        case 2:
+        {
+            quint16 data[17];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 10; i++)
+            {
+                if (!m_list.contains(i + 1))
+                    continue;
+
+                switch (i)
+                {
+                    case 0 ... 6:
+                    {
+                        m_endpoints.value(i + 1)->buffer().insert("level", round(data[i] * 2.55));
+                        break;
+                    }
+
+                    case 7 ... 8:
+                    {
+                        m_endpoints.value(i + 1)->buffer().insert("level", round(data[(i - 7) * 2 + 8] * 2.55));
+                        m_endpoints.value(i + 1)->buffer().insert("colorTemperature", 450 - data[7 + (i - 7) * 2] * 3);
+                        break;
+                    }
+
+                    case 9:
+                    {
+                        Color color(Color::fromHS(data[14] / 360.0, data[15] / 100.0));
+                        m_endpoints.value(i + 1)->buffer().insert("level", data[16] * 2.55);
+                        m_endpoints.value(i + 1)->buffer().insert("color", QList <QVariant> {static_cast <quint8> (color.r() * 255), static_cast <quint8> (color.g() * 255), static_cast <quint8> (color.b() * 255)});
+                        break;
+                    }
+                }
+            }
 
             break;
         }
