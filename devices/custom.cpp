@@ -161,6 +161,7 @@ QByteArray Custom::Controller::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+
     return QByteArray();
 }
 

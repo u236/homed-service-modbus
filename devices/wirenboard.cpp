@@ -51,21 +51,16 @@ QByteArray WirenBoard::WBMap3ev::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
-
-        case 2:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
@@ -212,33 +207,20 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS, WBMAP_COIL_REGISTER_COUNT);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
-
-        case 2:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
-
-        case 3:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS, WBMAP_CURRENT_REGISTER_COUNT);
-
-        case 4:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_POWER_REGISTER_ADDRESS, WBMAP_POWER_REGISTER_COUNT);
-
-        case 5:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS, WBMAP_ENERGY_REGISTER_COUNT);
-
-        case 6:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS, WBMAP_COIL_REGISTER_COUNT);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
+        case 3: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS, WBMAP_CURRENT_REGISTER_COUNT);
+        case 4: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_POWER_REGISTER_ADDRESS, WBMAP_POWER_REGISTER_COUNT);
+        case 5: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS, WBMAP_ENERGY_REGISTER_COUNT);
+        case 6: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
@@ -459,20 +441,16 @@ QByteArray WirenBoard::WBMap6s::pollRequest(void)
 
         case 8 ... 9:
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_ENERGY_REGISTER_ADDRESS + (m_sequence - 8) * 0x1000, WBMAP6S_ENERGY_REGISTER_COUNT);
-
-        default:
-        {
-            auto it = m_endpoints.find(0);
-
-            it.value()->buffer().insert("totalPower", m_totalPower);
-            it.value()->buffer().insert("totalEnergy", m_totalEnergy);
-
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
-        }
     }
+
+    m_endpoints.find(0).value()->buffer().insert("totalPower", m_totalPower);
+    m_endpoints.find(0).value()->buffer().insert("totalEnergy", m_totalEnergy);
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 
@@ -708,15 +686,13 @@ QByteArray WirenBoard::WBMap12::pollRequest(void)
 
         case 18:
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
-
-        default:
-        {
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
-        }
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
@@ -969,34 +945,31 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
 
         case 7:
 
-            if (m_inputs)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
+            if (!m_inputs)
+                break;
 
-            m_sequence++;
-            return QByteArray();
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
 
         case 8 ... 9:
 
-            if (m_model == Model::wbMrwm2)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 8 ? 0x0038 : 0x0048, 4);
+            if (m_model != Model::wbMrwm2)
+                break;
 
-            m_sequence++;
-            return QByteArray();
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 8 ? 0x0038 : 0x0048, 4);
 
         case 10:
 
-            if (m_model == Model::wbMrwm2)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
+            if (m_model != Model::wbMrwm2)
+                break;
 
-            m_sequence++;
-            return QByteArray();
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void WirenBoard::WBMr::parseReply(const QByteArray &reply)
@@ -1226,21 +1199,16 @@ QByteArray WirenBoard::WBLed::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0FA0, m_mode);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 10);
-
-        case 2:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister,  0x0FA0, m_mode);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 10);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void WirenBoard::WBLed::parseReply(const QByteArray &reply)
@@ -1427,18 +1395,15 @@ QByteArray WirenBoard::WBUps::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0010, 3);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0000, 10);
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0010, 3);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0000, 10);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void WirenBoard::WBUps::parseReply(const QByteArray &reply)

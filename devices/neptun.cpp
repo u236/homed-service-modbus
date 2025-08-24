@@ -170,21 +170,16 @@ QByteArray Neptun::SmartPlus::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 1);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0039, 16);
-
-        case 2:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x006B, 16);
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 1);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0039, 16);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x006B, 16);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void Neptun::SmartPlus::parseReply(const QByteArray &reply)

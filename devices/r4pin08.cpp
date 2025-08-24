@@ -130,42 +130,50 @@ QByteArray R4PIN08::Controller::pollRequest(void)
     {
         case 0:
 
-            if (m_inputs)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F5, 1);
+            if (!m_inputs)
+            {
+                m_sequence++;
+                return pollRequest();
+            }
 
-            m_sequence++;
-            return QByteArray();
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F5, 1);
 
         case 1:
 
-            if (m_outputs)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F6, 1);
+            if (!m_outputs)
+            {
+                m_sequence++;
+                return pollRequest();
+            }
 
-            m_sequence++;
-            return QByteArray();
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F6, 1);
 
         case 2:
 
-            if (m_inputs)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 8);
+            if (!m_inputs)
+            {
+                m_sequence++;
+                return pollRequest();
+            }
 
-            m_sequence++;
-            return QByteArray();
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 8);
 
         case 3:
 
-            if (m_outputs)
-                return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 8);
+            if (!m_outputs)
+            {
+                m_sequence++;
+                return pollRequest();
+            }
 
-            m_sequence++;
-            return QByteArray();
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 8);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void R4PIN08::Controller::parseReply(const QByteArray &reply)
