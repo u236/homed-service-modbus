@@ -64,18 +64,15 @@ QByteArray Native::RelayController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void Native::RelayController::parseReply(const QByteArray &reply)
@@ -170,17 +167,14 @@ QByteArray Native::SwitchController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0001, 1);
-
-        default:
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0001, 1);
     }
+
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void Native::SwitchController::parseReply(const QByteArray &reply)

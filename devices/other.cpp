@@ -31,17 +31,14 @@ void Other::JTH2D1::startPoll(void)
 
 QByteArray Other::JTH2D1::pollRequest(void)
 {
-    switch (m_sequence)
-    {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0300, 2);
+    if (!m_sequence)
+        return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0300, 2);
 
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
-    }
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void Other::JTH2D1::parseReply(const QByteArray &reply)
@@ -123,18 +120,15 @@ QByteArray Other::T13::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0002, 2);
-
-        case 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0008, 3);
-
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0002, 2);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0008, 3);
     }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void Other::T13::parseReply(const QByteArray &reply)
@@ -238,17 +232,14 @@ void Other::M0701s::startPoll(void)
 
 QByteArray Other::M0701s::pollRequest(void)
 {
-    switch (m_sequence)
-    {
-        case 0:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x9CF4, 6);
+    if (!m_sequence)
+        return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x9CF4, 6);
 
-        default:
-            updateEndpoints();
-            m_pollTime = QDateTime::currentMSecsSinceEpoch();
-            m_polling = false;
-            return QByteArray();
-    }
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
 }
 
 void Other::M0701s::parseReply(const QByteArray &reply)
