@@ -103,30 +103,33 @@ void Neptun::SmartPlus::enqueueAction(quint8 endpointId, const QString &name, co
 {
     quint16 status = m_status;
 
-    if (endpointId < 3)
+    if (endpointId <= 2)
     {
-        if (name == "status" && endpointId)
-        {
-            QList <QString> list = {"on", "off", "toggle"};
-            quint16 mask = 1 << (endpointId + 7);
+        QList <QString> list = {"status", "enableGroups", "lostProtection", "pairingMode", "childLock", "cleaningMode"};
 
-            switch (list.indexOf(data.toString()))
+        switch (list.indexOf(name))
+        {
+            case 0: // status
             {
-                case 0: status |=  mask; break;
-                case 1: status &= ~mask; break;
-                case 2: status ^=  mask; break;
+                QList <QString> list = {"on", "off", "toggle"};
+                quint16 mask = 1 << (endpointId + 7);
+
+                switch (list.indexOf(data.toString()))
+                {
+                    case 0: status |=  mask; break;
+                    case 1: status &= ~mask; break;
+                    case 2: status ^=  mask; break;
+                }
+
+                break;
             }
+
+            case 1: status = data.toBool() ? status | 0x0400 : status & 0xFBFF; break; // enableGroups
+            case 2: status = data.toBool() ? status | 0x0800 : status & 0xF7FF; break; // lostProtection
+            case 3: status = data.toBool() ? status | 0x0080 : status & 0xFF7F; break; // pairingMode
+            case 4: status = data.toBool() ? status | 0x1000 : status & 0xEFFF; break; // childLock
+            case 5: status = data.toBool() ? status | 0x0001 : status & 0xFFFE; break; // cleaningMode
         }
-        else if (name == "enableGroups")
-            status = data.toBool() ? status | 0x0400 : status & 0xFBFF;
-        else if (name == "lostProtection")
-            status = data.toBool() ? status | 0x0800 : status & 0xF7FF;
-        else if (name == "pairingMode")
-            status = data.toBool() ? status | 0x0080 : status & 0xFF7F;
-        else if (name == "childLock")
-            status = data.toBool() ? status | 0x1000 : status & 0xEFFF;
-        else if (name == "cleaningMode")
-            status = data.toBool() ? status | 0x0001 : status & 0xFFFE;
 
         if (status != m_status)
             m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0000, status));
@@ -188,24 +191,24 @@ void Neptun::SmartPlus::parseReply(const QByteArray &reply)
     {
         case 0:
         {
-            quint16 status;
+            quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &status) != Modbus::ReplyStatus::Ok || m_status == status)
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok || m_status == value)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("enableGroups",   status & 0x0400 ? true : false);
-            m_endpoints.value(0)->buffer().insert("lostProtection", status & 0x0800 ? true : false);
-            m_endpoints.value(0)->buffer().insert("pairingMode",    status & 0x0080 ? true : false);
-            m_endpoints.value(0)->buffer().insert("childLock",      status & 0x1000 ? true : false);
-            m_endpoints.value(0)->buffer().insert("cleaningMode",   status & 0x0001 ? true : false);
-            m_endpoints.value(0)->buffer().insert("batteryLow",     status & 0x0008 ? true : false);
-            m_endpoints.value(0)->buffer().insert("sensorLost",     status & 0x0010 ? true : false);
-            m_endpoints.value(1)->buffer().insert("waterLeak",      status & 0x0002 ? true : false);
-            m_endpoints.value(1)->buffer().insert("status",         status & 0x0100 ? "on" : "off");
-            m_endpoints.value(2)->buffer().insert("waterLeak",      status & 0x0004 ? true : false);
-            m_endpoints.value(2)->buffer().insert("status",         status & 0x0200 ? "on" : "off");
+            m_endpoints.value(0)->buffer().insert("enableGroups",   value & 0x0400 ? true : false);
+            m_endpoints.value(0)->buffer().insert("lostProtection", value & 0x0800 ? true : false);
+            m_endpoints.value(0)->buffer().insert("pairingMode",    value & 0x0080 ? true : false);
+            m_endpoints.value(0)->buffer().insert("childLock",      value & 0x1000 ? true : false);
+            m_endpoints.value(0)->buffer().insert("cleaningMode",   value & 0x0001 ? true : false);
+            m_endpoints.value(0)->buffer().insert("batteryLow",     value & 0x0008 ? true : false);
+            m_endpoints.value(0)->buffer().insert("sensorLost",     value & 0x0010 ? true : false);
+            m_endpoints.value(1)->buffer().insert("waterLeak",      value & 0x0002 ? true : false);
+            m_endpoints.value(1)->buffer().insert("status",         value & 0x0100 ? "on" : "off");
+            m_endpoints.value(2)->buffer().insert("waterLeak",      value & 0x0004 ? true : false);
+            m_endpoints.value(2)->buffer().insert("status",         value & 0x0200 ? "on" : "off");
 
-            m_status = status;
+            m_status = value;
             break;
         }
 
