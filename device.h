@@ -99,6 +99,7 @@ public:
         r4pin08m2,
         r4pin08m3,
         r4pin08m4,
+        wbMs,
         wbMap3ev,
         wbMap3e,
         wbMap6s,
