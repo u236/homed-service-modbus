@@ -990,7 +990,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
-void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant> &)
+void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     switch (m_model)
     {
@@ -1051,6 +1051,35 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
 
             if (m_model == Model::wbMrwm2)
             {
+                Expose voltage(new SensorObject("voltage")), power(new SensorObject("power")), energy(new SensorObject("energy")), alarm(new BinaryObject("alarm")), voltageProtection(new ToggleObject("voltageProtection")), voltageLow(new NumberObject("voltageLow")), voltageHigh(new NumberObject("voltageHigh"));
+
+                voltage->setMultiple(true);
+                voltage->setParent(endpoint.data());
+                endpoint->exposes().append(voltage);
+
+                power->setMultiple(true);
+                power->setParent(endpoint.data());
+                endpoint->exposes().append(power);
+
+                energy->setMultiple(true);
+                energy->setParent(endpoint.data());
+                endpoint->exposes().append(energy);
+
+                alarm->setMultiple(true);
+                alarm->setParent(endpoint.data());
+                endpoint->exposes().append(alarm);
+
+                voltageProtection->setMultiple(true);
+                voltageProtection->setParent(endpoint.data());
+                endpoint->exposes().append(voltageProtection);
+
+                voltageLow->setMultiple(true);
+                voltageLow->setParent(endpoint.data());
+                endpoint->exposes().append(voltageLow);
+
+                voltageHigh->setMultiple(true);
+                voltageHigh->setParent(endpoint.data());
+                endpoint->exposes().append(voltageHigh);
             }
         }
         else
@@ -1063,15 +1092,23 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
         m_endpoints.insert(i, endpoint);
     }
 
-    m_options.insert("input", QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
+    updateOptions(exposeOptions);
+
+    m_options.insert("input",             QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
+    m_options.insert("voltageProtection", QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:sine-wave"}});
+    m_options.insert("voltageLow",        QMap <QString, QVariant> {{"type", "number"}, {"min", 120}, {"max", 220}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
+    m_options.insert("voltageHigh",       QMap <QString, QVariant> {{"type", "number"}, {"min", 230}, {"max", 277}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
 }
 
 void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
+    QList <QString> actions = {"status", "voltageProtection", "voltageLow", "voltageHigh"};
+    int index = actions.indexOf(name);
+
     if (!endpointId || endpointId > m_channels)
         return;
 
-    if (name == "status")
+    if (!index)
     {
         QList <QString> list = {"on", "off", "toggle"};
         quint16 value;
@@ -1090,6 +1127,21 @@ void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, con
     if (m_model != Model::wbMrwm2)
         return;
 
+    switch (index)
+    {
+        case 1: // voltageProtection
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x06A0 + endpointId - 1, data.toBool() ? 0x0001 : 0x0000));
+            break;
+
+        case 2: // voltageLow
+        case 3: // voltageHigh
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, (index == 2 ? 0x06A8 : 0x06B0) + endpointId - 1, static_cast <quint16> (data.toInt() * 100)));
+            break;
+
+        default:
+            return;
+    }
+
     m_fullPoll = true;
 }
 
@@ -1098,7 +1150,7 @@ void WirenBoard::WBMr::startPoll(void)
     if (m_polling)
         return;
 
-    m_sequence = m_fullPoll && m_model == Model::wbMrwm2 ? 0 : 6;
+    m_sequence = m_fullPoll && m_model == Model::wbMrwm2 ? 0 : 3;
     m_polling = true;
 }
 
@@ -1106,32 +1158,39 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0 ... 5:
+        case 0 ... 2:
             return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x06A0 + m_sequence * 8, 2);
 
-        case 6:
+        case 3:
             return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
 
-        case 7:
+        case 4:
 
             if (!m_inputs)
                 break;
 
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
 
-        case 8 ... 9:
-
-            if (m_model != Model::wbMrwm2)
-                break;
-
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 8 ? 0x0038 : 0x0048, 4);
-
-        case 10:
+        case 5:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
             return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
+
+        case 6 ... 7:
+
+            if (m_model != Model::wbMrwm2)
+                break;
+
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 6 ? 0x0038 : 0x0040, 2);
+
+        case 8:
+
+            if (m_model != Model::wbMrwm2)
+                break;
+
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0048, 4);
     }
 
     updateEndpoints();
@@ -1145,13 +1204,26 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
 {
     switch (m_sequence)
     {
-        case 0 ... 5:
+        case 0 ... 2:
         {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+            {
+                if (!m_sequence)
+                    m_endpoints.value(i + 1)->buffer().insert("voltageProtection", data[i] ? true : false);
+                else
+                    m_endpoints.value(i + 1)->buffer().insert(m_sequence == 1 ? "voltageLow" : "voltageHigh", data[i] / 100.0);
+            }
+
             m_fullPoll = false;
             break;
         }
 
-        case 6:
+        case 3:
         {
             quint16 data[6];
 
@@ -1165,7 +1237,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 7:
+        case 4:
         {
             quint16 data[8];
 
@@ -1181,13 +1253,42 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 8 ... 9:
+        case 5:
         {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("alarm", data[i] ? false : true);
+
             break;
         }
 
-        case 10:
+        case 6 ... 7:
         {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 6 ? "voltage" : "power", data[i] / 100.0);
+
+            break;
+        }
+
+        case 8:
+        {
+            quint16 data[4];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("energy", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) / 1000);
+
             break;
         }
     }
