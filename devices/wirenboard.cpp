@@ -142,16 +142,16 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
                 break;
 
             if (data[0] != 0x7FFF)
-                m_endpoints.value(0)->buffer().insert("temperature", data[0] / 100.0);
+                m_endpoints.value(0)->buffer().insert("temperature", static_cast <qint16> (data[0]) / 100.0);
 
-            if (data[1] != 0x7FFF)
+            if (data[1] != 0xFFFF)
                 m_endpoints.value(0)->buffer().insert("humidity", data[1] / 100.0);
 
             if (data[2] != 0x7FFF)
-                m_endpoints.value(1)->buffer().insert("temperature", data[2] / 16.0);
+                m_endpoints.value(1)->buffer().insert("temperature", static_cast <qint16> (data[2]) / 16.0);
 
             if (data[3] != 0x7FFF)
-                m_endpoints.value(2)->buffer().insert("temperature", data[3] / 16.0);
+                m_endpoints.value(2)->buffer().insert("temperature", static_cast <qint16> (data[3]) / 16.0);
 
             break;
         }
@@ -172,6 +172,234 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
 
     m_sequence++;
 }
+
+void WirenBoard::WBMsw::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+{
+    m_type = "wbMsw";
+    m_description = "Wiren Board WB-MSW Wall-mounted Sensor";
+
+    for (quint8 i = 0; i <= 3; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose status(new SwitchObject);
+            status->setMultiple(true);
+            status->setParent(endpoint.data());
+            endpoint->exposes().append(status);
+        }
+        else
+        {
+            Expose blinkInterval(new NumberObject("blinkInterval")), blinkDuration(new NumberObject("blinkDuration")), temperature(new SensorObject("temperature")), humidity(new SensorObject("humidity")), illuminance(new SensorObject("illuminance")), noise(new SensorObject("noise")), co2(new SensorObject("co2")), co2AutoCalibration(new ToggleObject("co2AutoCalibration")), voc(new SensorObject("voc"));
+
+            blinkInterval->setParent(endpoint.data());
+            endpoint->exposes().append(blinkInterval);
+
+            blinkDuration->setParent(endpoint.data());
+            endpoint->exposes().append(blinkDuration);
+
+            temperature->setParent(endpoint.data());
+            endpoint->exposes().append(temperature);
+
+            humidity->setParent(endpoint.data());
+            endpoint->exposes().append(humidity);
+
+            illuminance->setParent(endpoint.data());
+            endpoint->exposes().append(illuminance);
+
+            noise->setParent(endpoint.data());
+            endpoint->exposes().append(noise);
+
+            co2->setParent(endpoint.data());
+            endpoint->exposes().append(co2);
+
+            co2AutoCalibration->setParent(endpoint.data());
+            endpoint->exposes().append(co2AutoCalibration);
+
+            voc->setParent(endpoint.data());
+            endpoint->exposes().append(voc);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    updateOptions(exposeOptions);
+
+    m_options.insert("endpointName",  QMap <QString, QVariant> {{"1", "Buzzer"}, {"2", "Red"}, {"3", "Green"}});
+    m_options.insert("blinkInterval", QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 10}, {"unit", "sec"}, {"icon", "mdi:led-on"}});
+    m_options.insert("blinkDuration", QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 50}, {"unit", "ms"}, {"icon", "mdi:led-on"}});
+    m_options.insert("noise",         QMap <QString, QVariant> {{"type", "sensor"}, {"unit", "dB"}, {"icon", "mdi:ear-hearing"}});
+
+}
+
+void WirenBoard::WBMsw::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    QList <QString> actions = {"status", "blinkInterval", "blinkDuration", "co2AutoCalibration"};
+    int index = actions.indexOf(name);
+
+    switch (index)
+    {
+        case 0: // status
+        {
+            QList <QString> list = {"on", "off", "toggle"};
+            bool value;
+
+            if (!endpointId || endpointId > 3)
+                return;
+
+            switch (list.indexOf(data.toString()))
+            {
+                case 0:  value = true; break;
+                case 1:  value = false; break;
+                case 2:  value = m_status[endpointId - 1] ? false : true; break;
+                default: return;
+            }
+
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId == 1 ? 0x0000 : 0x000A + endpointId - 2, value ? 0xFF00 : 0x0000));
+            break;
+        }
+
+        case 1: // blinkInterval
+        case 2: // blinkDuration
+        {
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, index == 1 ? 0x0061 : 0x0062, static_cast <quint16> (data.toInt())));
+            break;
+        }
+
+        case 3: // co2AutoCalibration
+        {
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x005F, data.toBool() ? 0x0001 : 0x0000));
+            break;
+        }
+    }
+}
+
+void WirenBoard::WBMsw::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 2;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBMsw::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x005F, 1);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0061, 2);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 1);
+        case 3: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x000A, 2);
+        case 4: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0003, 3);
+        case 5: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0008, 4);
+    }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
+}
+
+void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 value;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("co2AutoCalibration", value ? true : false);
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("blinkInterval", data[0]);
+            m_endpoints.value(0)->buffer().insert("blinkDuration", data[1]);
+            break;
+        }
+
+        case 2:
+        {
+            quint16 value;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(1)->buffer().insert("status", value ? "on" : "off");
+            m_status[0] = value ? true : false;
+            break;
+        }
+
+        case 3:
+        {
+            quint16 data[3];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+            {
+                m_endpoints.value(i + 2)->buffer().insert("status", data[i] ? "on" : "off");
+                m_status[i + 1] = data[i] ? true : false;
+            }
+
+            break;
+        }
+
+        case 4:
+        {
+            quint16 data[3];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            if (data[0] != 0xFFFF)
+                m_endpoints.value(0)->buffer().insert("noise", data[0] / 100.0);
+
+            if (data[1] != 0x7FFF)
+                m_endpoints.value(0)->buffer().insert("temperature", static_cast <qint16> (data[1]) / 100.0);
+
+            if (data[2] != 0xFFFF)
+                m_endpoints.value(0)->buffer().insert("humidity", data[2] / 100.0);
+
+            break;
+        }
+
+        case 5:
+        {
+            quint16 data[4];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            if (data[0] != 0xFFFF)
+                m_endpoints.value(0)->buffer().insert("co2", data[0]);
+
+            if (data[1] != 0xFFFF && data[2] != 0xFFFF)
+                m_endpoints.value(0)->buffer().insert("illuminance", static_cast <double> (static_cast <quint32> (data[1]) << 16 | static_cast <quint32> (data[2])) / 100);
+
+            if (data[3] != 0xFFFF)
+                m_endpoints.value(0)->buffer().insert("voc", data[3]);
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 
 void WirenBoard::WBMap3ev::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
