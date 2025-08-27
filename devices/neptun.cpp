@@ -105,9 +105,9 @@ void Neptun::SmartPlus::enqueueAction(quint8 endpointId, const QString &name, co
 
     if (endpointId <= 2)
     {
-        QList <QString> list = {"status", "enableGroups", "lostProtection", "pairingMode", "childLock", "cleaningMode"};
+        QList <QString> actions = {"status", "enableGroups", "lostProtection", "pairingMode", "childLock", "cleaningMode"};
 
-        switch (list.indexOf(name))
+        switch (actions.indexOf(name))
         {
             case 0: // status
             {

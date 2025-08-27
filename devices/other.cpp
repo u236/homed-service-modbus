@@ -205,17 +205,17 @@ void Other::M0701s::enqueueAction(quint8, const QString &name, const QVariant &d
     if (name == "status")
     {
         QList <QString> list = {"on", "off", "toggle"};
-        quint16 value;
+        bool value;
 
         switch (list.indexOf(data.toString()))
         {
-            case 0:  value = 1; break;
-            case 1:  value = 0; break;
-            case 2:  value = m_status ? 0 : 1; break;
+            case 0:  value = true; break;
+            case 1:  value = false; break;
+            case 2:  value = m_status ? false : true; break;
             default: return;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA7, value));
+        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA7, value ? 0x0001 : 0x0000));
     }
     else if (name == "frequency")
         m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA6, static_cast <quint16> (data.toDouble() * 100)));

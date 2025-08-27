@@ -1265,6 +1265,7 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
         if (i)
         {
             Expose output(new SwitchObject);
+
             output->setMultiple(true);
             output->setParent(endpoint.data());
             endpoint->exposes().append(output);
@@ -1339,13 +1340,13 @@ void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, con
     if (!index)
     {
         QList <QString> list = {"on", "off", "toggle"};
-        quint16 value;
+        bool value;
 
         switch (list.indexOf(data.toString()))
         {
-            case 0:  value = 1; break;
-            case 1:  value = 0; break;
-            case 2:  value = m_output[endpointId - 1] ? 0 : 1; break;
+            case 0:  value = true; break;
+            case 1:  value = false; break;
+            case 2:  value = m_output[endpointId - 1] ? false : true; break;
             default: return;
         }
 
@@ -1638,13 +1639,13 @@ void WirenBoard::WBLed::enqueueAction(quint8 endpointId, const QString &name, co
         case 0: // status
         {
             QList <QString> list = {"on", "off", "toggle"};
-            quint16 value;
+            bool value;
 
             switch (list.indexOf(data.toString()))
             {
-                case 0:  value = 1; break;
-                case 1:  value = 0; break;
-                case 2:  value = m_output[endpointId - 1] ? 0 : 1; break;
+                case 0:  value = true; break;
+                case 1:  value = false; break;
+                case 2:  value = m_output[endpointId - 1] ? false : true; break;
                 default: return;
             }
 
@@ -1853,8 +1854,8 @@ void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant
 
 void WirenBoard::WBUps::enqueueAction(quint8, const QString &name, const QVariant &data)
 {
-    QList <QString> list = {"operationMode", "outputVoltageLimit", "chargeCurrentLimit"};
-    int index = list.indexOf(name);
+    QList <QString> actions = {"operationMode", "outputVoltageLimit", "chargeCurrentLimit"};
+    int index = actions.indexOf(name);
 
     switch (index)
     {
