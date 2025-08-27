@@ -147,6 +147,7 @@ Device DeviceList::parse(const QJsonObject &json)
         case DeviceType::wbLed34:               device = Device(new WirenBoard::WBLed34(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbLed256:              device = Device(new WirenBoard::WBLed256(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbLed512:              device = Device(new WirenBoard::WBLed512(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::wbMdm:                 device = Device(new WirenBoard::WBMdm(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbUps:                 device = Device(new WirenBoard::WBUps(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::neptunSmartPlus:       device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::jth2d1:                device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;

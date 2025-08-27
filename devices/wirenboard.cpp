@@ -257,7 +257,7 @@ void WirenBoard::WBMsw::enqueueAction(quint8 endpointId, const QString &name, co
             }
 
             m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId == 1 ? 0x0000 : 0x000A + endpointId - 2, value ? 0xFF00 : 0x0000));
-            break;
+            return;
         }
 
         case 1: // blinkInterval
@@ -272,7 +272,12 @@ void WirenBoard::WBMsw::enqueueAction(quint8 endpointId, const QString &name, co
             m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x005F, data.toBool() ? 0x0001 : 0x0000));
             break;
         }
+
+        default:
+            return;
     }
+
+    m_fullPoll = true;
 }
 
 void WirenBoard::WBMsw::startPoll(void)
@@ -1351,6 +1356,7 @@ void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, con
         }
 
         m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+        return;
     }
 
     if (m_model != Model::wbMrwm2)
@@ -1778,6 +1784,183 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
                     }
                 }
             }
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
+void WirenBoard::WBMdm::init(const Device &device, const QMap <QString, QVariant> &)
+{
+    m_type = "wbMdm";
+    m_description = "Wiren Board WB-MDM3 Mosfet Dimmer";
+    m_modes = {"log", "linear", "switch"};
+
+    for (quint8 i = 1; i <= 3; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+        Expose light(new LightObject), dimmerMode(new SelectObject("dimmerMode")), dimmerFront(new SelectObject("dimmerFront"));
+
+        light->setMultiple(true);
+        light->setParent(endpoint.data());
+        endpoint->exposes().append(light);
+
+        dimmerMode->setMultiple(true);
+        dimmerMode->setParent(endpoint.data());
+        endpoint->exposes().append(dimmerMode);
+
+        dimmerFront->setMultiple(true);
+        dimmerFront->setParent(endpoint.data());
+        endpoint->exposes().append(dimmerFront);
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    m_options.insert("light",       QList <QVariant> {"level"});
+    m_options.insert("dimmerMode",  QMap <QString, QVariant> {{"type", "select"}, {"enum", QVariant(m_modes)}, {"icon", "mdi:cog"}});
+    m_options.insert("dimmerFront", QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"leading", "trailing"}}, {"icon", "mdi:cog"}});
+}
+
+void WirenBoard::WBMdm::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    QList <QString> actions = {"status", "level", "dimmerMode", "dimmerFront"};
+
+    if (!endpointId || endpointId > 3)
+        return;
+
+    switch (actions.indexOf(name))
+    {
+        case 0: // status
+        {
+            QList <QString> list = {"on", "off", "toggle"};
+            bool value;
+
+            switch (list.indexOf(data.toString()))
+            {
+                case 0:  value = true; break;
+                case 1:  value = false; break;
+                case 2:  value = m_output[endpointId - 1] ? false : true; break;
+                default: return;
+            }
+
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+            return;
+        }
+
+        case 1: // level
+        {
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, endpointId - 1, static_cast <quint16> (round(data.toInt() / 2.55))));
+            return;
+        }
+
+        case 2: // dimmerMode
+        {
+            int value = m_modes.indexOf(data.toString());
+
+            if (value < 0)
+                return;
+
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0032 + endpointId - 1, static_cast <quint16> (value)));
+            break;
+        }
+
+        case 3: // dimmerFront
+        {
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x003C + endpointId - 1, data.toString() == "trailing" ? 0x0001 : 0x0000));
+            break;
+        }
+
+        default:
+            return;
+    }
+
+    m_fullPoll = true;
+}
+
+void WirenBoard::WBMdm::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 2;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBMdm::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0032, 3);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x003C, 3);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 3);
+        case 3: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 3);
+    }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
+}
+
+void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
+{
+    quint16 data[3];
+
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+            {
+                QString mode = m_modes.value(data[i]);
+
+                if (mode.isEmpty())
+                    continue;
+
+                m_endpoints.value(i + 1)->buffer().insert("dimmerMode", mode);
+            }
+
+            m_fullPoll = false;
+            break;
+        }
+
+        case 1:
+        {
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+                m_endpoints.value(i + 1)->buffer().insert("dimmerFront", data[i] ? "trailing" : "leading");
+
+            m_fullPoll = false;
+            break;
+        }
+
+        case 2:
+        {
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+                m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
+
+            memcpy(m_output, data, sizeof(m_output));
+            break;
+        }
+
+        case 3:
+        {
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 3; i++)
+                m_endpoints.value(i + 1)->buffer().insert("level", round(data[i] * 2.55));
 
             break;
         }

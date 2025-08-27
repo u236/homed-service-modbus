@@ -122,6 +122,7 @@ public:
         wbLed34,
         wbLed256,
         wbLed512,
+        wbMdm,
         wbUps,
         neptunSmartPlus,
         jth2d1,
