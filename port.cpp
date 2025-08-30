@@ -51,6 +51,9 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     if (availability == device->availability())
         return;
 
+    if (device->availability() == Availability::Offline)
+        device->resetPoll();
+
     emit updateAvailability(device.data());
 }
 
@@ -89,6 +92,9 @@ void PortThread::startTimer(void)
 
 void PortThread::readyRead(void)
 {
+    if (m_replyData.length() < 4)
+        return;
+
     logDebug(m_debug) << "Port" << m_portId << "serial data received:" << m_replyData.toHex(':');
     emit replyReceived();
 }

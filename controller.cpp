@@ -104,6 +104,9 @@ void Controller::mqttConnected(void)
         mqttSubscribe(m_haStatus);
     }
 
+    for (int i = 0; i < m_devices->count(); i++)
+        updateAvailability(m_devices->at(i).data());
+
     m_devices->store();
     mqttPublishStatus();
 }
