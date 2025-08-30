@@ -124,6 +124,7 @@ Device DeviceList::parse(const QJsonObject &json)
         case DeviceType::r4pin08m2:             device = Device(new R4PIN08::M2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::r4pin08m3:             device = Device(new R4PIN08::M3(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::r4pin08m4:             device = Device(new R4PIN08::M4(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::wbM1w2:                device = Device(new WirenBoard::WBM1w2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbMs:                  device = Device(new WirenBoard::WBMs(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbMsw:                 device = Device(new WirenBoard::WBMsw(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbMap3ev:              device = Device(new WirenBoard::WBMap3ev(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;

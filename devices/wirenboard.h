@@ -44,6 +44,23 @@
 
 namespace WirenBoard
 {
+    class WBM1w2 : public DeviceObject
+    {
+
+    public:
+
+        WBM1w2(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
+
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
+        void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
+        void startPoll(void) override;
+
+        QByteArray pollRequest(void) override;
+        void parseReply(const QByteArray &reply) override;
+
+    };
+
     class WBMs : public DeviceObject
     {
 

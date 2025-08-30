@@ -4,6 +4,124 @@
 #include "modbus.h"
 #include "wirenboard.h"
 
+void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+{
+    m_type = "wbM1w2";
+    m_description = "Wiren Board WB-M1W2 Temperature Sensor";
+
+    for (quint8 i = 1; i <= 2; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose temperature(new SensorObject("temperature")), input(new BinaryObject("input")), operationMode(new SelectObject("operationMode"));
+
+            temperature->setMultiple(true);
+            temperature->setParent(endpoint.data());
+            endpoint->exposes().append(temperature);
+
+            input->setMultiple(true);
+            input->setParent(endpoint.data());
+            endpoint->exposes().append(input);;
+
+            operationMode->setMultiple(true);
+            operationMode->setParent(endpoint.data());
+            endpoint->exposes().append(operationMode);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    updateOptions(exposeOptions);
+
+    m_options.insert("input",         QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
+    m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"temperature", "input"}}, {"icon", "mdi:cog"}});
+}
+
+void WirenBoard::WBM1w2::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    if (!endpointId || endpointId > 2 || name != "operationMode")
+        return;
+
+    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0113 + endpointId - 1, data.toString() == "input" ? 0x0001 : 0x0000));
+    m_fullPoll = true;
+}
+
+void WirenBoard::WBM1w2::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 1;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBM1w2::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0113, 2);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      0x0000, 2);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0007, 2);
+    }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
+}
+
+void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.find(i + 1).value()->buffer().insert("operationMode", data[i] ? "input" : "temperature");
+
+            m_fullPoll = false;
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("input", data[i] ? true : false);
+
+            break;
+        }
+
+        case 2:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                if (data[i] != 0x7FFF)
+                    m_endpoints.value(i + 1)->buffer().insert("temperature", static_cast <qint16> (data[i]) / 16.0);
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 void WirenBoard::WBMs::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     m_type = "wbMs";
