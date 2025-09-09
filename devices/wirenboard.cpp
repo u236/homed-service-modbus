@@ -1627,7 +1627,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
-                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 6 ? "voltage" : "power", data[i] / 100.0);
+                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 6 ? "voltage" : "power", data[i] / (m_sequence == 6 ? 100.0 : 10.0));
 
             break;
         }
