@@ -260,9 +260,11 @@ QJsonArray DeviceList::serialize(void)
 
                 if (item->registerType() == Custom::RegisterType::holding || item->registerType() == Custom::RegisterType::input)
                 {
+                    if (item->divider() != 1)
+                        json.insert("divider", item->divider());
+
                     json.insert("dataType", m_dataTypes.valueToKey(static_cast <int> (item->dataType())));
                     json.insert("byteOrder", m_byteOrders.valueToKey(static_cast <int> (item->byteOrder())));
-                    json.insert("divider", item->divider());
                 }
 
                 items.append(json);
@@ -319,6 +321,7 @@ void DeviceList::writeDatabase(void)
     if (!m_sync)
         return;
 
+    json.remove("names");
     m_sync = false;
 
     if (!m_file.open(QFile::WriteOnly))
