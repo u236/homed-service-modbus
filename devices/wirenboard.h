@@ -99,6 +99,39 @@ namespace WirenBoard
 
     };
 
+    class WBMai6 : public DeviceObject
+    {
+
+    public:
+
+        WBMai6(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
+
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
+        void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
+        void startPoll(void) override;
+
+        QByteArray pollRequest(void) override;
+        void parseReply(const QByteArray &reply) override;
+
+    private:
+
+        struct Settings
+        {
+            quint16 type;
+            double  inputMultiplier;
+            double  valueMultiplier;
+            bool    nChannel;
+        };
+
+        Settings m_pChannel[6];
+        Settings m_nChannel[6];
+
+        QList <QString> m_types;
+        QList <Settings> m_settings;
+
+    };
+
     class WBMap3ev : public DeviceObject
     {
 

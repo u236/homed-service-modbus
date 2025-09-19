@@ -103,6 +103,7 @@ public:
         wbM1w2,
         wbMs,
         wbMsw,
+        wbMai6,
         wbMap3ev,
         wbMap3e,
         wbMap6s,

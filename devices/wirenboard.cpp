@@ -545,6 +545,338 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
     m_sequence++;
 }
 
+void WirenBoard::WBMai6::init(const Device &device, const QMap <QString, QVariant> &)
+{
+    QList <QVariant> pSensors, nSensors;
+
+    m_type = "wbMai6";
+    m_description = "Wiren Board WB-MAI6 Analog Input Controller";
+
+    m_types =
+    {
+        "Disabled",
+        "0-30 V Unipolar",
+        "-2 to 2 V Differential",
+        "2-wire Resistance",
+        "3-Wire Resistance",
+        "0 tp 20 mA Current",
+        "Type K Thermocouple",
+        "NTC 10K Thermistor",
+        "2-wire RTD Pt 50",
+        "2-wire RTD Pt 100",
+        "2-wire RTD Pt 500",
+        "2-wire RTD Pt 1000",
+        "2-wire RTD 50P",
+        "2-wire RTD 100P",
+        "2-wire RTD 500P",
+        "2-wire RTD 1000P",
+        "2-wire RTD 50M",
+        "2-wire RTD 100M",
+        "2-wire RTD 500M",
+        "2-wire RTD 1000M",
+        "2-wire RTD Ni 100",
+        "2-wire RTD Ni 500",
+        "2-wire RTD Ni 1000",
+        "3-wire RTD Pt 50",
+        "3-wire RTD Pt 100",
+        "3-wire RTD Pt 500",
+        "3-wire RTD Pt 1000",
+        "3-wire RTD 50P",
+        "3-wire RTD 100P",
+        "3-wire RTD 500P",
+        "3-wire RTD 1000P",
+        "3-wire RTD 50M",
+        "3-wire RTD 100M",
+        "3-wire RTD 500M",
+        "3-wire RTD 1000M",
+        "3-wire RTD Ni 100",
+        "3-wire RTD Ni 500",
+        "3-wire RTD Ni 1000",
+        "0 to 5 mA Sensor",
+        "0 to 20 mA Sensor",
+        "4 to 20 mA Sensor",
+        "0 to 1 V Sensor",
+        "0 to 10 V Sensor",
+        "-50 to 50 mV Sensor",
+        "Dry Contact Sensor",
+        "Hall Effect Sensor"
+    };
+
+    m_settings =
+    {
+        {0x0000, 0,    0.0, true},  // Disabled
+        {0x0001, 1e-6, 0.0, true},  // 0-30 V Unipolar
+        {0x0101, 1e-6, 0.0, false}, // -2 to 2 V Differential
+        {0x0002, 1e-5, 0.0, true},  // -wire Resistance
+        {0x0102, 1e-5, 0.0, false}, // 3-Wire Resistance
+        {0x0003, 1e-9, 0.0, true},  // 0 tp 20 mA Current
+        {0x1000, 1e-5, 0.1, false}, // Type K Thermocouple
+        {0x1701, 1e-5, 0.1, true},  // NTC 10K Thermistor
+        {0x1100, 1e-5, 0.1, true},  // 2-wire RTD Pt 50
+        {0x1101, 1e-5, 0.1, true},  // 2-wire RTD Pt 100
+        {0x1102, 1e-5, 0.1, true},  // 2-wire RTD Pt 500
+        {0x1103, 1e-5, 0.1, true},  // 2-wire RTD Pt 1000
+        {0x1110, 1e-5, 0.1, true},  // 2-wire RTD 50P
+        {0x1111, 1e-5, 0.1, true},  // 2-wire RTD 100P
+        {0x1112, 1e-5, 0.1, true},  // 2-wire RTD 500P
+        {0x1113, 1e-5, 0.1, true},  // 2-wire RTD 1000P
+        {0x1120, 1e-5, 0.1, true},  // 2-wire RTD 50M
+        {0x1121, 1e-5, 0.1, true},  // 2-wire RTD 100M
+        {0x1122, 1e-5, 0.1, true},  // 2-wire RTD 500M
+        {0x1123, 1e-5, 0.1, true},  // 2-wire RTD 1000M
+        {0x1130, 1e-5, 0.1, true},  // 2-wire RTD Ni 100
+        {0x1131, 1e-5, 0.1, true},  // 2-wire RTD Ni 500
+        {0x1132, 1e-5, 0.1, true},  // 2-wire RTD Ni 1000
+        {0x1200, 1e-5, 0.1, false}, // 3-wire RTD Pt 50
+        {0x1201, 1e-5, 0.1, false}, // 3-wire RTD Pt 100
+        {0x1202, 1e-5, 0.1, false}, // 3-wire RTD Pt 500
+        {0x1203, 1e-5, 0.1, false}, // 3-wire RTD Pt 1000
+        {0x1210, 1e-5, 0.1, false}, // 3-wire RTD 50P
+        {0x1211, 1e-5, 0.1, false}, // 3-wire RTD 100P
+        {0x1212, 1e-5, 0.1, false}, // 3-wire RTD 500P
+        {0x1213, 1e-5, 0.1, false}, // 3-wire RTD 1000P
+        {0x1220, 1e-5, 0.1, false}, // 3-wire RTD 50M
+        {0x1221, 1e-5, 0.1, false}, // 3-wire RTD 100M
+        {0x1222, 1e-5, 0.1, false}, // 3-wire RTD 500M
+        {0x1223, 1e-5, 0.1, false}, // 3-wire RTD 1000M
+        {0x1230, 1e-5, 0.1, false}, // 3-wire RTD Ni 100
+        {0x1231, 1e-5, 0.1, false}, // 3-wire RTD Ni 500
+        {0x1232, 1e-5, 0.1, false}, // 3-wire RTD Ni 1000
+        {0x1300, 1e-9, 1.0, true},  // 0 to 5 mA Sensor
+        {0x1301, 1e-9, 1.0, true},  // 0 to 20 mA Sensor
+        {0x1302, 1e-9, 1.0, true},  // 4 to 20 mA Sensor
+        {0x1400, 1e-6, 1.0, true},  // 0 to 1 V Sensor
+        {0x1401, 1e-6, 1.0, true},  // 0 to 10 V Sensor
+        {0x1500, 1e-6, 1.0, false}, // -50 to 50 mV Sensor
+        {0x1600, 1e-5, 1.0, true},  // Dry Contact Sensor
+        {0x1800, 1e-6, 1.0, true}   // Hall Effect Sensor
+    };
+
+    for (int i = 0; i < m_types.count(); i++)
+    {
+        pSensors.append(m_types.at(i));
+
+        if (!m_settings.at(i).nChannel)
+            continue;
+
+        nSensors.append(m_types.at(i));
+    }
+
+    for (quint8 i = 1; i <= 6; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose pSensorType(new SelectObject("pSensorType")), pValueMin(new NumberObject("pValueMin")), pValueMax(new NumberObject("pValueMax")), pInput(new SensorObject("pInput")), pValue(new SensorObject("pValue")), nSensorType(new SelectObject("nSensorType")), nValueMin(new NumberObject("nValueMin")), nValueMax(new NumberObject("nValueMax")), nInput(new SensorObject("nInput")), nValue(new SensorObject("nValue"));
+
+            pSensorType->setMultiple(true);
+            pSensorType->setParent(endpoint.data());
+            endpoint->exposes().append(pSensorType);
+
+            pValueMin->setMultiple(true);
+            pValueMin->setParent(endpoint.data());
+            endpoint->exposes().append(pValueMin);
+
+            pValueMax->setMultiple(true);
+            pValueMax->setParent(endpoint.data());
+            endpoint->exposes().append(pValueMax);
+
+            pInput->setMultiple(true);
+            pInput->setParent(endpoint.data());
+            endpoint->exposes().append(pInput);
+
+            pValue->setMultiple(true);
+            pValue->setParent(endpoint.data());
+            endpoint->exposes().append(pValue);
+
+            nSensorType->setMultiple(true);
+            nSensorType->setParent(endpoint.data());
+            endpoint->exposes().append(nSensorType);
+
+            nValueMin->setMultiple(true);
+            nValueMin->setParent(endpoint.data());
+            endpoint->exposes().append(nValueMin);
+
+            nValueMax->setMultiple(true);
+            nValueMax->setParent(endpoint.data());
+            endpoint->exposes().append(nValueMax);
+
+            nInput->setMultiple(true);
+            nInput->setParent(endpoint.data());
+            endpoint->exposes().append(nInput);
+
+            nValue->setMultiple(true);
+            nValue->setParent(endpoint.data());
+            endpoint->exposes().append(nValue);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    m_options.insert("pSensorType", QMap <QString, QVariant> {{"type", "select"}, {"enum", pSensors}, {"icon", "mdi:cog"}});
+    m_options.insert("pValueMin",   QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:cog"}});
+    m_options.insert("pValueMax",   QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:cog"}});
+    m_options.insert("pInput",      QMap <QString, QVariant> {{"type", "sensor"}, {"round", 3}, {"icon", "mdi:import"}});
+    m_options.insert("pValue",      QMap <QString, QVariant> {{"type", "sensor"}, {"round", 3}, {"icon", "mdi:import"}});
+
+    m_options.insert("nSensorType", QMap <QString, QVariant> {{"type", "select"}, {"enum", nSensors}, {"icon", "mdi:cog"}});
+    m_options.insert("nValueMin",   QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:cog"}});
+    m_options.insert("nValueMax",   QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 65535}, {"icon", "mdi:cog"}});
+    m_options.insert("nInput",      QMap <QString, QVariant> {{"type", "sensor"}, {"round", 3}, {"icon", "mdi:import"}});
+    m_options.insert("nValue",      QMap <QString, QVariant> {{"type", "sensor"}, {"round", 3}, {"icon", "mdi:import"}});
+}
+
+void WirenBoard::WBMai6::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    QList <QString> list = {"pSensorType", "nSensorType", "pValueMin", "nValueMin", "pValueMax", "nValueMax"};
+    int index = list.indexOf(name);
+
+    if (!endpointId || endpointId > 6)
+        return;
+
+    switch (index)
+    {
+        case 0: // pSensorType
+        case 1: // nSensorType
+
+            for (int i = 0; i < m_types.count(); i++)
+            {
+                if (m_types.at(i) != data.toString() || (index && !m_settings.at(i).nChannel))
+                    continue;
+
+                m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, (index ? 0x0401 : 0x0400) + endpointId * 0x1000, m_settings.at(i).type));
+                break;
+            }
+
+            break;
+
+        case 2: // pValueMin
+        case 3: // nValueMin
+        case 4: // pValueMax
+        case 5: // nValueMax
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister,  0x0408 + endpointId * 0x1000 + index - 2, static_cast <quint16> (data.toInt())));
+            break;
+
+        default:
+            break;
+    }
+
+    m_fullPoll = true;
+}
+
+void WirenBoard::WBMai6::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 12;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBMai6::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0 ... 5:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0400 + (m_sequence + 1) * 0x1000, 2);
+
+        case 6 ... 11:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0408 + (m_sequence - 5) * 0x1000, 4);
+
+        case 12 ... 17:
+            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0500 + (m_sequence - 11) * 0x1000, 6);
+    }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
+}
+
+void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0 ... 5:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (int i = 0; i < m_settings.count(); i++)
+            {
+                if (m_settings.at(i).type == data[0])
+                {
+                    m_endpoints.find(m_sequence + 1).value()->buffer().insert("pSensorType", m_types.at(i));
+                    m_pChannel[m_sequence] = m_settings.at(i);
+                }
+
+                if (m_settings.at(i).type == data[1])
+                {
+                    m_endpoints.find(m_sequence + 1).value()->buffer().insert("nSensorType", m_types.at(i));
+                    m_nChannel[m_sequence] = m_settings.at(i);
+                }
+            }
+
+            m_fullPoll = false;
+            break;
+        }
+
+        case 6 ... 11:
+        {
+            quint16 data[4];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.find(m_sequence - 5).value()->buffer().insert("pValueMin", data[0]);
+            m_endpoints.find(m_sequence - 5).value()->buffer().insert("nValueMin", data[1]);
+            m_endpoints.find(m_sequence - 5).value()->buffer().insert("pValueMax", data[2]);
+            m_endpoints.find(m_sequence - 5).value()->buffer().insert("nValueMax", data[3]);
+
+            break;
+        }
+
+        case 12 ... 17:
+        {
+            quint16 data[6];
+            double pInput = NAN, nInput = NAN, pValue = NAN, nValue = NAN;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            if (data[0] != 0x7FFF && data[1] != 0xFFFF)
+                pInput = static_cast <qint32> (static_cast <quint32> (data[0]) << 16 | static_cast <quint32> (data[1])) * m_pChannel[m_sequence - 12].inputMultiplier;
+
+            if (data[2] != 0x7FFF && data[3] != 0xFFFF)
+                nInput = static_cast <qint32> (static_cast <quint32> (data[2]) << 16 | static_cast <quint32> (data[3])) * m_nChannel[m_sequence - 12].inputMultiplier;
+
+            if (data[4] != 0x7FFF)
+            {
+                double multiplier = m_pChannel[m_sequence - 12].valueMultiplier;
+                pValue = multiplier != 0.0 ? static_cast <qint16> (data[4]) * multiplier : pInput;
+            }
+
+            if (data[5] != 0x7FFF)
+            {
+                double multiplier = m_nChannel[m_sequence - 12].valueMultiplier;
+                nValue = multiplier != 0.0 ? static_cast <qint16> (data[5]) * multiplier : nInput;
+            }
+
+            m_endpoints.find(m_sequence - 11).value()->buffer().insert("pInput", pInput);
+            m_endpoints.find(m_sequence - 11).value()->buffer().insert("nInput", nInput);
+            m_endpoints.find(m_sequence - 11).value()->buffer().insert("pValue", pValue);
+            m_endpoints.find(m_sequence - 11).value()->buffer().insert("nValue", nValue);
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}
 
 void WirenBoard::WBMap3ev::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
