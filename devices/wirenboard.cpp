@@ -112,8 +112,14 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
+            {
+                double temperature = NAN;
+
                 if (data[i] != 0x7FFF)
-                    m_endpoints.value(i + 1)->buffer().insert("temperature", static_cast <qint16> (data[i]) / 16.0);
+                    temperature = static_cast <qint16> (data[i]) / 16.0;
+
+                m_endpoints.value(i + 1)->buffer().insert("temperature", temperature);
+            }
 
             break;
         }
@@ -255,21 +261,27 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
         case 3:
         {
             quint16 data[4];
+            double temperature = NAN, humidity = NAN, temperatureW1 = NAN, temperatureW2 = NAN;
 
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (data[0] != 0x7FFF)
-                m_endpoints.value(0)->buffer().insert("temperature", static_cast <qint16> (data[0]) / 100.0);
+                temperature = static_cast <qint16> (data[0]) / 100.0;
 
             if (data[1] != 0xFFFF)
-                m_endpoints.value(0)->buffer().insert("humidity", data[1] / 100.0);
+                humidity = data[1] / 100.0;
 
             if (data[2] != 0x7FFF)
-                m_endpoints.value(1)->buffer().insert("temperature", static_cast <qint16> (data[2]) / 16.0);
+                temperatureW1 = static_cast <qint16> (data[2]) / 16.0;
 
             if (data[3] != 0x7FFF)
-                m_endpoints.value(2)->buffer().insert("temperature", static_cast <qint16> (data[3]) / 16.0);
+                temperatureW2 = static_cast <qint16> (data[3]) / 16.0;
+
+            m_endpoints.value(0)->buffer().insert("temperature", temperature);
+            m_endpoints.value(0)->buffer().insert("humidity", humidity);
+            m_endpoints.value(1)->buffer().insert("temperature", temperatureW1);
+            m_endpoints.value(2)->buffer().insert("temperature", temperatureW2);
 
             break;
         }
@@ -484,18 +496,23 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
         case 4:
         {
             quint16 data[3];
+            double noise = NAN, temperature = NAN, humidity = NAN;
 
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (data[0] != 0xFFFF)
-                m_endpoints.value(0)->buffer().insert("noise", data[0] / 100.0);
+                noise = data[0] / 100.0;
 
             if (data[1] != 0x7FFF)
-                m_endpoints.value(0)->buffer().insert("temperature", static_cast <qint16> (data[1]) / 100.0);
+                temperature = static_cast <qint16> (data[1]) / 100.0;
 
             if (data[2] != 0xFFFF)
-                m_endpoints.value(0)->buffer().insert("humidity", data[2] / 100.0);
+                humidity = data[2] / 100.0;
+
+            m_endpoints.value(0)->buffer().insert("noise", noise);
+            m_endpoints.value(0)->buffer().insert("temperature", temperature);
+            m_endpoints.value(0)->buffer().insert("humidity", humidity);
 
             break;
         }
@@ -503,18 +520,23 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
         case 5:
         {
             quint16 data[4];
+            double co2 = NAN, illuminance = NAN, voc = NAN;
 
             if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (data[0] != 0xFFFF)
-                m_endpoints.value(0)->buffer().insert("co2", data[0]);
+                co2 = data[0];
 
             if (data[1] != 0xFFFF && data[2] != 0xFFFF)
-                m_endpoints.value(0)->buffer().insert("illuminance", static_cast <double> (static_cast <quint32> (data[1]) << 16 | static_cast <quint32> (data[2])) / 100);
+                illuminance = static_cast <double> (static_cast <quint32> (data[1]) << 16 | static_cast <quint32> (data[2])) / 100;
 
             if (data[3] != 0xFFFF)
-                m_endpoints.value(0)->buffer().insert("voc", data[3]);
+                voc = data[3];
+
+            m_endpoints.value(0)->buffer().insert("co2", co2);
+            m_endpoints.value(0)->buffer().insert("illuminance", illuminance);
+            m_endpoints.value(0)->buffer().insert("voc", voc);
 
             break;
         }
