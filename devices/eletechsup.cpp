@@ -1,8 +1,8 @@
+#include "eletechsup.h"
 #include "expose.h"
 #include "modbus.h"
-#include "r4pin08.h"
 
-void R4PIN08::Controller::init(const Device &device, const QMap <QString, QVariant> &)
+void Eletechsup::R4Pin08::init(const Device &device, const QMap <QString, QVariant> &)
 {
     switch (m_model)
     {
@@ -86,7 +86,7 @@ void R4PIN08::Controller::init(const Device &device, const QMap <QString, QVaria
     memset(m_output, 0xFF, sizeof(m_output));
 }
 
-void R4PIN08::Controller::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+void Eletechsup::R4Pin08::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
     if (m_inputs && name == "inputMode")
     {
@@ -115,7 +115,7 @@ void R4PIN08::Controller::enqueueAction(quint8 endpointId, const QString &name, 
     }
 }
 
-void R4PIN08::Controller::startPoll(void)
+void Eletechsup::R4Pin08::startPoll(void)
 {
     if (m_polling)
         return;
@@ -124,7 +124,7 @@ void R4PIN08::Controller::startPoll(void)
     m_polling = true;
 }
 
-QByteArray R4PIN08::Controller::pollRequest(void)
+QByteArray Eletechsup::R4Pin08::pollRequest(void)
 {
     switch (m_sequence)
     {
@@ -176,7 +176,7 @@ QByteArray R4PIN08::Controller::pollRequest(void)
     return QByteArray();
 }
 
-void R4PIN08::Controller::parseReply(const QByteArray &reply)
+void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
 {
     switch (m_sequence)
     {

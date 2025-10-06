@@ -849,10 +849,10 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
                 break;
 
             if (data[0] != 0x7FFF && data[1] != 0xFFFF)
-                pInput = static_cast <qint32> (static_cast <quint32> (data[0]) << 16 | static_cast <quint32> (data[1])) * m_pChannel[m_sequence - 12].inputMultiplier;
+                pInput = static_cast <qint32> (static_cast <qint32> (data[0]) << 16 | static_cast <qint32> (data[1])) * m_pChannel[m_sequence - 12].inputMultiplier;
 
             if (data[2] != 0x7FFF && data[3] != 0xFFFF)
-                nInput = static_cast <qint32> (static_cast <quint32> (data[2]) << 16 | static_cast <quint32> (data[3])) * m_nChannel[m_sequence - 12].inputMultiplier;
+                nInput = static_cast <qint32> (static_cast <qint32> (data[2]) << 16 | static_cast <qint32> (data[3])) * m_nChannel[m_sequence - 12].inputMultiplier;
 
             if (data[4] != 0x7FFF)
             {
