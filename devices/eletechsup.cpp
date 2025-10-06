@@ -1,6 +1,108 @@
+#include <math.h>
 #include "eletechsup.h"
 #include "expose.h"
 #include "modbus.h"
+
+void Eletechsup::N4Dsa02::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+{
+    m_type = "n4dsa02";
+    m_description = "Eletechsup N4DSA02 Temperature Sensor";
+
+    for (quint8 i = 1; i <= 2; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+        Expose temperature(new SensorObject("temperature")), temperatureOffset(new NumberObject("temperatureOffset"));
+
+        temperature->setMultiple(true);
+        temperature->setParent(endpoint.data());
+        endpoint->exposes().append(temperature);
+
+        temperatureOffset->setMultiple(true);
+        temperatureOffset->setParent(endpoint.data());
+        endpoint->exposes().append(temperatureOffset);
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    updateOptions(exposeOptions);
+    m_options.insert("temperatureOffset", QMap <QString, QVariant> {{"type", "number"}, {"min", -10}, {"max", 10}, {"step", 0.1}, {"unit", "°C"}, {"icon", "mdi:thermometer"}});
+}
+
+void Eletechsup::N4Dsa02::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    if (!endpointId || endpointId > 2 || name != "temperatureOffset")
+        return;
+
+    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0004 + endpointId - 1, static_cast <quint16> (data.toDouble() * 10)));
+    m_fullPoll = true;
+}
+
+void Eletechsup::N4Dsa02::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 1;
+    m_polling = true;
+}
+
+QByteArray Eletechsup::N4Dsa02::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0004, 2);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 2);
+    }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
+}
+
+void Eletechsup::N4Dsa02::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("temperatureOffset", static_cast <qint16> (data[i]) / 10.0);
+
+            m_fullPoll = false;
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+            {
+                double temperature = NAN;
+
+                if (data[i] != 0x8000)
+                    temperature = static_cast <qint16> (data[i]) / 10.0;
+
+                m_endpoints.value(i + 1)->buffer().insert("temperature", temperature);
+            }
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 
 void Eletechsup::R4Pin08::init(const Device &device, const QMap <QString, QVariant> &)
 {

@@ -93,14 +93,17 @@ public:
     enum class DeviceType
     {
         customController,
+        // homedCommon,
         homedRelayController,
         homedSwitchController,
+        n4dsa02,
         r4pin08m0,
         r4pin08m1,
         r4pin08m2,
         r4pin08m3,
         r4pin08m4,
         wbM1w2,
+        // wbCommon,
         wbMs,
         wbMsw,
         wbMai6,

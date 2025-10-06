@@ -119,6 +119,7 @@ Device DeviceList::parse(const QJsonObject &json)
         case DeviceType::customController:      device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::homedRelayController:  device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::homedSwitchController: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::n4dsa02:               device = Device(new Eletechsup::N4Dsa02(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::r4pin08m0:             device = Device(new Eletechsup::R4Pin08M0(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::r4pin08m1:             device = Device(new Eletechsup::R4Pin08M1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::r4pin08m2:             device = Device(new Eletechsup::R4Pin08M2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
