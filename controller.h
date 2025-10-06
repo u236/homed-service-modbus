@@ -60,7 +60,9 @@ private slots:
     void updateAvailability(DeviceObject *device);
     void updateProperties(void);
 
+    void deviceUpdated(DeviceObject *device);
     void endpointUpdated(DeviceObject *device, quint8 endpointId);
+
     void statusUpdated(const QJsonObject &json);
 
 };

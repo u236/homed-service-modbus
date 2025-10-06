@@ -21,6 +21,7 @@ Controller::Controller(const QString &configFile) : HOMEd(SERVICE_VERSION, confi
     for (int i = 0; i < m_devices->count(); i++)
     {
         const Device &device = m_devices->at(i);
+        connect(device.data(), &DeviceObject::deviceUpdated, this, &Controller::deviceUpdated);
         connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
     }
 
@@ -235,6 +236,12 @@ void Controller::updateProperties(void)
 {
     for (int i = 0; i < m_devices->count(); i++)
         publishProperties(m_devices->at(i));
+}
+
+void Controller::deviceUpdated(DeviceObject *device)
+{
+    logInfo << device->name() << "successfully updated";
+    m_devices->store(true);
 }
 
 void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)

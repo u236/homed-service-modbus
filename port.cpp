@@ -124,6 +124,7 @@ void PortThread::poll(void)
                 break;
             }
 
+            device->actionFinished();
             device->resetPollTime();
             continue;
         }

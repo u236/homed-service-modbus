@@ -4,6 +4,136 @@
 #include "modbus.h"
 #include "wirenboard.h"
 
+void WirenBoard::Common::init(const Device &device, const QMap <QString, QVariant> &)
+{
+    Endpoint endpoint(new EndpointObject(0, device));
+    Expose slaveId(new NumberObject("slaveId")), baudRate(new SelectObject("baudRate")), serialNumber(new SensorObject("serialNumber"));
+
+    m_type = "wbCommon";
+    m_description = "Wiren Board Device Common Settings";
+
+    slaveId->setParent(endpoint.data());
+    endpoint->exposes().append(slaveId);
+
+    baudRate->setParent(endpoint.data());
+    endpoint->exposes().append(baudRate);
+
+    serialNumber->setParent(endpoint.data());
+    endpoint->exposes().append(serialNumber);
+
+    m_endpoints.insert(0, endpoint);
+
+    m_options.insert("slaveId",      QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 247}, {"collapse", "true"}, {"icon", "mdi:cog"}});
+    m_options.insert("baudRate",     QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"}}, {"collapse", "true"}, {"icon", "mdi:cog"}});
+    m_options.insert("serialNumber", QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:numeric"}});
+}
+
+void WirenBoard::Common::enqueueAction(quint8, const QString &name, const QVariant &data)
+{
+    QList <QString> actions = {"slaveId", "baudRate"};
+
+    switch (actions.indexOf(name))
+    {
+        case 0: // slaveId
+            m_pendingSlaveId = static_cast <quint8> (data.toInt());
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0080, static_cast <quint16> (m_pendingSlaveId)));
+            break;
+
+        case 1: // baudRate
+            m_pendingBaudRate = static_cast <quint32> (data.toInt());
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x006E, static_cast <quint16> (m_pendingBaudRate / 100)));
+            break;
+    }
+}
+
+void WirenBoard::Common::actionFinished(void)
+{
+    bool check = false;
+
+    if (m_pendingSlaveId && m_slaveId != m_pendingSlaveId)
+    {
+        m_slaveId = m_pendingSlaveId;
+        check = true;
+    }
+
+    if (m_pendingBaudRate && m_baudRate != m_pendingBaudRate)
+    {
+        m_baudRate = m_pendingBaudRate;
+        check = true;
+    }
+
+    if (!check)
+        return;
+
+    emit deviceUpdated(this);
+}
+
+void WirenBoard::Common::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = 0;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::Common::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0080, 1);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x006E, 1);
+        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x010E, 2);
+    }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
+}
+
+void WirenBoard::Common::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("slaveId", data);
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("baudRate", data * 100);
+            break;
+        }
+
+        case 2:
+        {
+            quint16 data[2];
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("serialNumber", static_cast <quint32> (data[0]) << 16 | static_cast <quint32> (data[1]));
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     m_type = "wbM1w2";
@@ -23,7 +153,7 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
 
             input->setMultiple(true);
             input->setParent(endpoint.data());
-            endpoint->exposes().append(input);;
+            endpoint->exposes().append(input);
 
             operationMode->setMultiple(true);
             operationMode->setParent(endpoint.data());
@@ -147,7 +277,7 @@ void WirenBoard::WBMs::init(const Device &device, const QMap <QString, QVariant>
 
             input->setMultiple(true);
             input->setParent(endpoint.data());
-            endpoint->exposes().append(input);;
+            endpoint->exposes().append(input);
 
             operationMode->setMultiple(true);
             operationMode->setParent(endpoint.data());

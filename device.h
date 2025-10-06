@@ -34,8 +34,9 @@ public:
     DeviceObject(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
         AbstractDeviceObject(name), m_portId(portId), m_slaveId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_requestTimeout(requestTimeout), m_replyTimeout(replyTimeout), m_pollTime(0), m_errorCount(0), m_sequence(0), m_polling(false), m_fullPoll(true) {}
 
-    virtual void init(const Device &, const QMap <QString, QVariant> &) {}
+    virtual void init(const Device &, const QMap <QString, QVariant> &) = 0;
     virtual void enqueueAction(quint8, const QString &, const QVariant &) {}
+    virtual void actionFinished(void) {}
     virtual void startPoll(void) = 0;
 
     virtual QByteArray pollRequest(void) = 0;
@@ -66,7 +67,7 @@ protected:
     QString m_type, m_address;
 
     quint8 m_portId, m_slaveId;
-    qint32 m_baudRate, m_pollInterval, m_requestTimeout, m_replyTimeout;
+    quint32 m_baudRate, m_pollInterval, m_requestTimeout, m_replyTimeout;
 
     qint64 m_pollTime;
     quint32 m_errorCount;
@@ -80,6 +81,7 @@ protected:
 
 signals:
 
+    void deviceUpdated(DeviceObject *device);
     void endpointUpdated(DeviceObject *device, quint8 endpointId);
 
 };
@@ -103,7 +105,7 @@ public:
         r4pin08m3,
         r4pin08m4,
         wbM1w2,
-        // wbCommon,
+        wbCommon,
         wbMs,
         wbMsw,
         wbMai6,
