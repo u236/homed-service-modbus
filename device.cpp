@@ -117,6 +117,7 @@ Device DeviceList::parse(const QJsonObject &json)
     switch (static_cast <DeviceType> (m_deviceTypes.keyToValue(json.value("type").toString().toUtf8().constData())))
     {
         case DeviceType::customController:      device = Device(new Custom::Controller(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::homedCommon:           device = Device(new Native::Common(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::homedRelayController:  device = Device(new Native::RelayController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::homedSwitchController: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::n4dsa02:               device = Device(new Eletechsup::N4Dsa02(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;

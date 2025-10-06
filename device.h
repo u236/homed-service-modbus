@@ -95,7 +95,7 @@ public:
     enum class DeviceType
     {
         customController,
-        // homedCommon,
+        homedCommon,
         homedRelayController,
         homedSwitchController,
         n4dsa02,

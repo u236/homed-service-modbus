@@ -2,6 +2,120 @@
 #include "modbus.h"
 #include "native.h"
 
+void Native::Common::init(const Device &device, const QMap <QString, QVariant> &)
+{
+    Endpoint endpoint(new EndpointObject(0, device));
+    Expose slaveId(new NumberObject("slaveId")), baudRate(new SelectObject("baudRate")), serialNumber(new SensorObject("serialNumber"));
+
+    m_type = "homedCommon";
+    m_description = "HOMEd Device Common Settings";
+
+    slaveId->setParent(endpoint.data());
+    endpoint->exposes().append(slaveId);
+
+    baudRate->setParent(endpoint.data());
+    endpoint->exposes().append(baudRate);
+
+    m_endpoints.insert(0, endpoint);
+
+    m_options.insert("slaveId",      QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 247}, {"collapse", "true"}, {"icon", "mdi:cog"}});
+    m_options.insert("baudRate",     QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"}}, {"collapse", "true"}, {"icon", "mdi:cog"}});
+}
+
+void Native::Common::enqueueAction(quint8, const QString &name, const QVariant &data)
+{
+    QList <QString> actions = {"slaveId", "baudRate"};
+
+    switch (actions.indexOf(name))
+    {
+        case 0: // slaveId
+            m_pendingSlaveId = static_cast <quint8> (data.toInt());
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0020, static_cast <quint16> (m_pendingSlaveId)));
+            break;
+
+        case 1: // baudRate
+            m_pendingBaudRate = static_cast <quint32> (data.toInt());
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0021, static_cast <quint16> (m_pendingBaudRate / 100)));
+            break;
+    }
+}
+
+void Native::Common::actionFinished(void)
+{
+    bool check = false;
+
+    if (m_pendingSlaveId && m_slaveId != m_pendingSlaveId)
+    {
+        m_slaveId = m_pendingSlaveId;
+        check = true;
+    }
+
+    if (m_pendingBaudRate && m_baudRate != m_pendingBaudRate)
+    {
+        m_baudRate = m_pendingBaudRate;
+        check = true;
+    }
+
+    if (!check)
+        return;
+
+    emit deviceUpdated(this);
+}
+
+void Native::Common::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = 0;
+    m_polling = true;
+}
+
+QByteArray Native::Common::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0020, 1);
+        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0021, 1);
+    }
+
+    updateEndpoints();
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+
+    return QByteArray();
+}
+
+void Native::Common::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("slaveId", data);
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data;
+
+            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("baudRate", data * 100);
+            break;
+        }
+    }
+
+    m_sequence++;
+}
+
 void Native::RelayController::init(const Device &device, const QMap <QString, QVariant> &)
 {
     m_type = "homedRelayController";
