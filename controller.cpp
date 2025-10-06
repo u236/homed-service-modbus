@@ -168,7 +168,9 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                     deviceEvent(device.data(), Event::added);
                 }
 
+                connect(device.data(), &DeviceObject::deviceUpdated, this, &Controller::deviceUpdated);
                 connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
+
                 m_devices->store(true);
                 break;
             }
