@@ -25,7 +25,7 @@ void Eletechsup::N4Dsa02::init(const Device &device, const QMap <QString, QVaria
     }
 
     updateOptions(exposeOptions);
-    m_options.insert("temperatureOffset", QMap <QString, QVariant> {{"type", "number"}, {"min", -10}, {"max", 10}, {"step", 0.1}, {"unit", "°C"}, {"icon", "mdi:thermometer"}});
+    m_options.insert("temperatureOffset", QMap <QString, QVariant> {{"type", "number"}, {"min", -5}, {"max", 5}, {"step", 0.1}, {"unit", "°C"}, {"icon", "mdi:thermometer"}});
 }
 
 void Eletechsup::N4Dsa02::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
@@ -33,7 +33,7 @@ void Eletechsup::N4Dsa02::enqueueAction(quint8 endpointId, const QString &name, 
     if (!endpointId || endpointId > 2 || name != "temperatureOffset")
         return;
 
-    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0004 + endpointId - 1, static_cast <quint16> (data.toDouble() * 10)));
+    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0004 + endpointId - 1, static_cast <quint16> (static_cast <qint16> (data.toDouble() * 10))));
     m_fullPoll = true;
 }
 

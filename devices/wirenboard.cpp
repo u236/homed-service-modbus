@@ -2515,19 +2515,13 @@ void WirenBoard::WBUps::enqueueAction(quint8, const QString &name, const QVarian
     switch (index)
     {
         case 0: // operationMode
-        {
-            quint16 value = data.toString() == "manual" ? 1 : 0;
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0010, value));
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0010, data.toString() == "manual" ? 0x0001 : 0x0000));
             break;
-        }
 
         case 1: // outputVoltageLimit
         case 2: // chargeCurrentLimit
-        {
-            quint16 value = static_cast <quint16> (data.toDouble() * 1000);
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, index == 1 ? 0x0011 : 0x0012, value));
+            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, index == 1 ? 0x0011 : 0x0012, static_cast <quint16> (data.toDouble() * 1000)));
             break;
-        }
 
         default:
             return;
