@@ -310,8 +310,6 @@ QJsonArray DeviceList::serialize(void)
 void DeviceList::writeDatabase(void)
 {
     QJsonObject json = {{"devices", serialize()}, {"names", m_names}, {"timestamp", QDateTime::currentSecsSinceEpoch()}, {"version", SERVICE_VERSION}};
-    QByteArray data = QJsonDocument(json).toJson(QJsonDocument::Compact);
-    bool check = true;
 
     emit statusUpdated(json);
 
@@ -321,22 +319,8 @@ void DeviceList::writeDatabase(void)
     json.remove("names");
     m_sync = false;
 
-    if (!m_file.open(QFile::WriteOnly))
-    {
-        logWarning << "Database not stored, file" << m_file.fileName() << "open error:" << m_file.errorString();
-        return;
-    }
-
-    if (m_file.write(data) != data.length())
-    {
-        logWarning << "Database not stored, file" << m_file.fileName() << "write error";
-        check = false;
-    }
-
-    m_file.close();
-
-    if (!check)
+    if (reinterpret_cast <Controller*> (parent())->writeFile(m_file, QJsonDocument(json).toJson(QJsonDocument::Compact)))
         return;
 
-    system("sync");
+    logWarning << "Database not stored";
 }

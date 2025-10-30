@@ -4,7 +4,6 @@
 #define DEFAULT_ENDPOINT        0
 #define STORE_DATABASE_DELAY    20
 
-#include <QFile>
 #include <QMetaEnum>
 #include <QQueue>
 #include "endpoint.h"
