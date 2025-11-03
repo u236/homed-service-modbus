@@ -1,5 +1,6 @@
 #include "devices/custom.h"
 #include "devices/eletechsup.h"
+#include "devices/kincony.h"
 #include "devices/native.h"
 #include "devices/neptun.h"
 #include "devices/other.h"
@@ -147,6 +148,13 @@ Device DeviceList::parse(const QJsonObject &json)
         case DeviceType::r4pin08m2:             device = Device(new Eletechsup::R4Pin08M2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::r4pin08m3:             device = Device(new Eletechsup::R4Pin08M3(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::r4pin08m4:             device = Device(new Eletechsup::R4Pin08M4(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::kc868a4:               device = Device(new Kincony::KC868A4(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::kc868a6:               device = Device(new Kincony::KC868A6(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::kc868a8:               device = Device(new Kincony::KC868A8(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::kc868a16:              device = Device(new Kincony::KC868A16(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::kc868a32:              device = Device(new Kincony::KC868A32(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::kc868a64:              device = Device(new Kincony::KC868A64(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::kc868a128:             device = Device(new Kincony::KC868A128(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::neptunSmartPlus:       device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::jth2d1:                device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::t13:                   device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;

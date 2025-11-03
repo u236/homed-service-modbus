@@ -7,6 +7,7 @@ HEADERS += \
     device.h \
     devices/custom.h \
     devices/eletechsup.h \
+    devices/kincony.h \
     devices/native.h \
     devices/neptun.h \
     devices/other.h \
@@ -19,6 +20,7 @@ SOURCES += \
     device.cpp \
     devices/custom.cpp \
     devices/eletechsup.cpp \
+    devices/kincony.cpp \
     devices/native.cpp \
     devices/neptun.cpp \
     devices/other.cpp \
