@@ -118,7 +118,7 @@ namespace WirenBoard
 
     private:
 
-        bool m_status[3];
+        bool m_output[3];
 
     };
 

@@ -512,7 +512,7 @@ void WirenBoard::WBMsw::enqueueAction(quint8 endpointId, const QString &name, co
             {
                 case 0:  value = true; break;
                 case 1:  value = false; break;
-                case 2:  value = m_status[endpointId - 1] ? false : true; break;
+                case 2:  value = m_output[endpointId - 1] ? false : true; break;
                 default: return;
             }
 
@@ -603,7 +603,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
                 break;
 
             m_endpoints.value(1)->buffer().insert("status", value ? "on" : "off");
-            m_status[0] = value ? true : false;
+            m_output[0] = value ? true : false;
             break;
         }
 
@@ -617,7 +617,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 2; i++)
             {
                 m_endpoints.value(i + 2)->buffer().insert("status", data[i] ? "on" : "off");
-                m_status[i + 1] = data[i] ? true : false;
+                m_output[i + 1] = data[i] ? true : false;
             }
 
             break;
