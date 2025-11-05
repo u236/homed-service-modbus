@@ -52,7 +52,7 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
         file.close();
     }
 
-    m_specialExposes = {"light", "switch", "lock", "cover", "thermostat"};
+    m_specialExposes = {"switch", "lock", "light", "cover", "thermostat"};
 
     connect(m_timer, &QTimer::timeout, this, &DeviceList::writeDatabase);
     m_timer->setSingleShot(true);
