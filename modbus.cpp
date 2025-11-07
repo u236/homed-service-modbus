@@ -23,8 +23,7 @@ static const quint16 crcTable[] =
 
 QByteArray Modbus::makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress, quint16 registerValue, quint16 *registerData)
 {
-    QByteArray request;
-    quint16 crc;
+    QByteArray request;    
 
     request.append(static_cast <char> (slaveAddress));
     request.append(static_cast <char> (functionCode));
@@ -48,27 +47,38 @@ QByteArray Modbus::makeRequest(quint8 slaveAddress, FunctionCode functionCode, q
         }
     }
 
-    crc = qToLittleEndian(crc16(request));
-    return request.append(reinterpret_cast <char*> (&crc), sizeof(crc));
+    if (m_tcp)
+    {
+        quint16 sequence = qToBigEndian(m_sequence), length = qToBigEndian <quint16> (request.length());
+        return QByteArray(reinterpret_cast <char*> (&sequence), sizeof(sequence)).append(2, 0x00).append(reinterpret_cast <char*> (&length), sizeof(length)).append(request);
+    }
+    else
+    {
+        quint16 crc = qToLittleEndian(crc16(request));
+        return request.append(reinterpret_cast <char*> (&crc), sizeof(crc));
+    }
 }
 
 Modbus::ReplyStatus Modbus::parseReply(quint8 slaveAddress, FunctionCode functionCode, const QByteArray &reply, quint16 *registerData)
 {
     QByteArray data;
 
-    if (reply.length() < 4)
+    if (reply.length() < (m_tcp ? 8 : 4))
         return WrongLength;
 
-    if (slaveAddress != static_cast <quint8> (reply.at(0)))
+    if (slaveAddress != static_cast <quint8> (reply.at(m_tcp ? 6 : 0)))
         return WrongSlaveAddress;
 
-    if (functionCode != static_cast <FunctionCode> (reply.at(1) & 0x7F))
+    if (functionCode != static_cast <FunctionCode> (reply.at(m_tcp ? 7 : 1) & 0x7F))
         return WrongFunctionCode;
 
-    if (qFromLittleEndian(*(reinterpret_cast <const quint16*> (reply.mid(reply.length() - 2).constData()))) != crc16(reply.mid(0, reply.length() - 2)))
+    if (m_tcp && qFromBigEndian(*(reinterpret_cast <const quint16*> (reply.constData()))) != m_sequence)
+        return BadSequence;
+
+    if (!m_tcp && qFromLittleEndian(*(reinterpret_cast <const quint16*> (reply.mid(reply.length() - 2).constData()))) != crc16(reply.mid(0, reply.length() - 2)))
         return BadCRC;
 
-    if (reply.at(1) & 0x80)
+    if (reply.at(m_tcp ? 7 : 1) & 0x80)
     {
         if (registerData)
             *registerData = reply.at(2);
@@ -83,13 +93,13 @@ Modbus::ReplyStatus Modbus::parseReply(quint8 slaveAddress, FunctionCode functio
         case ReadHoldingRegisters:
         case ReadInputRegisters:
         case ReportSlaveId:
-            data = reply.mid(3, static_cast <int> (reply.at(2)));
+            data = reply.mid(m_tcp ? 9 : 3, static_cast <int> (reply.at(m_tcp ? 8 : 2)));
             break;
 
         case WriteSingleCoil:
         case WriteSingleRegister:
         case WriteMultipleRegisters:
-            data = reply.mid(2, reply.length() - 4);
+            data = reply.mid(m_tcp ? 8 : 2, reply.length() - (m_tcp ? 8 : 4));
             break;
     }
 
@@ -105,6 +115,9 @@ Modbus::ReplyStatus Modbus::parseReply(quint8 slaveAddress, FunctionCode functio
         else
             memcpy(registerData, data.constData(), data.length());
     }
+
+    if (m_tcp)
+        m_sequence++;
 
     return Ok;
 }

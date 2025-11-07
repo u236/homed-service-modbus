@@ -5,7 +5,7 @@
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_debug(debug), m_serialError(false), m_connected(false), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_debug(debug), m_serialError(false), m_connected(false), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -209,6 +209,8 @@ void PortThread::poll(void)
 
         if (device->portId() != m_portId || !device->active())
             continue;
+
+        device->modbus()->setTcp(m_tcp);
 
         if (!device->actionQueue().isEmpty())
         {

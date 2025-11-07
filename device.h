@@ -44,6 +44,7 @@ public:
     virtual QByteArray pollRequest(void) = 0;
     virtual void parseReply(const QByteArray &) = 0;
 
+    inline Modbus *modbus(void) { return m_modbus; }
     inline QString type(void) { return m_type; }
     inline QString address(void) { return QString("%1.%2").arg(m_portId).arg(m_slaveId); }
 

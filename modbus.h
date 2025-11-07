@@ -35,14 +35,23 @@ public:
         WrongLength,
         WrongSlaveAddress,
         WrongFunctionCode,
+        BadSequence,
         BadCRC,
         Exception
     };
+
+    Modbus(void) :
+        m_sequence(0), m_tcp(false) {}
+
+    inline void setTcp(bool value) { m_tcp = value; }
 
     QByteArray makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress = 0, quint16 registerValue = 0, quint16 *registerData = nullptr);
     ReplyStatus parseReply(quint8 slaveAddress, FunctionCode functionCode, const QByteArray &reply, quint16 *registerData = nullptr);
 
 private:
+
+    quint16 m_sequence;
+    bool m_tcp;
 
     quint16 crc16(const QByteArray &data);
 

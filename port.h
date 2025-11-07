@@ -17,7 +17,7 @@ class PortThread : public QThread
 
 public:
 
-    PortThread(quint8 portId, const QString &portName, bool debug, DeviceList *devices);
+    PortThread(quint8 portId, const QString &portName, bool tcp, bool debug, DeviceList *devices);
     ~PortThread(void);
 
     inline quint8 portId(void) { return m_portId; }
@@ -32,7 +32,7 @@ private:
 
     quint8 m_portId;
     QString m_portName;
-    bool m_debug, m_serialError;
+    bool m_tcp, m_debug, m_serialError;
 
     QHostAddress m_adddress;
     quint16 m_port;

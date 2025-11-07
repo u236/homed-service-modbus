@@ -32,7 +32,7 @@ Controller::Controller(const QString &configFile) : HOMEd(SERVICE_VERSION, confi
         if (QRegExp("^port-\\d+$").exactMatch(key))
         {
             quint8 id = static_cast <quint8> (key.split('-').value(1).toInt());
-            Port port(new PortThread(id, getConfig()->value(QString("%1/port").arg(key)).toString(), getConfig()->value(QString("%1/debug").arg(key), false).toBool(), m_devices));
+            Port port(new PortThread(id, getConfig()->value(QString("%1/port").arg(key)).toString(), getConfig()->value(QString("%1/tcp").arg(key), false).toBool(), getConfig()->value(QString("%1/debug").arg(key), false).toBool(), m_devices));
             connect(port.data(), &PortThread::updateAvailability, this, &Controller::updateAvailability);
             m_ports.insert(id, port);
         }
