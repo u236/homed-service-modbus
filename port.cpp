@@ -138,6 +138,8 @@ void PortThread::threadFinished(void)
 {
     if (m_connected)
         m_socket->disconnectFromHost();
+
+    m_socket->deleteLater();
 }
 
 void PortThread::serialError(QSerialPort::SerialPortError error)
