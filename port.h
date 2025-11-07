@@ -1,6 +1,9 @@
 #ifndef PORT_H
 #define PORT_H
 
+#define RESET_TIMEOUT   5000
+
+#include <QHostAddress>
 #include <QSerialPort>
 #include <QThread>
 #include "device.h"
@@ -17,20 +20,30 @@ public:
     PortThread(quint8 portId, const QString &portName, bool debug, DeviceList *devices);
     ~PortThread(void);
 
+    inline quint8 portId(void) { return m_portId; }
+
 private:
 
+    QTimer *m_receiveTimer, *m_resetTimer, *m_pollTimer;
+
     QSerialPort *m_serial;
-    QTimer *m_receiveTimer, *m_pollTimer;
+    QTcpSocket *m_socket;
+    QIODevice *m_device;
 
     quint8 m_portId;
     QString m_portName;
-    bool m_debug;
+    bool m_debug, m_serialError;
+
+    QHostAddress m_adddress;
+    quint16 m_port;
+    bool m_connected;
 
     QByteArray m_replyData;
     quint32 m_replyTimeout;
 
     DeviceList *m_devices;
 
+    void init(void);
     void sendRequest(const Device &device, const QByteArray &request);
 
 private slots:
@@ -38,8 +51,14 @@ private slots:
     void threadStarted(void);
     void threadFinished(void);
 
+    void serialError(QSerialPort::SerialPortError error);
+    void socketError(QTcpSocket::SocketError error);
+    void socketConnected(void);
+
     void startTimer(void);
     void readyRead(void);
+
+    void reset(void);
     void poll(void);
 
 signals:
@@ -48,5 +67,7 @@ signals:
     void updateAvailability(DeviceObject *device);
 
 };
+
+inline QDebug operator << (QDebug debug, PortThread *port) { return debug << "port" << port->portId(); }
 
 #endif
