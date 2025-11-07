@@ -1,7 +1,6 @@
 #include <math.h>
 #include "eletechsup.h"
 #include "expose.h"
-#include "modbus.h"
 
 void Eletechsup::N4Dsa02::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
@@ -33,7 +32,7 @@ void Eletechsup::N4Dsa02::enqueueAction(quint8 endpointId, const QString &name, 
     if (!endpointId || endpointId > 2 || name != "temperatureOffset")
         return;
 
-    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0004 + endpointId - 1, static_cast <quint16> (static_cast <qint16> (data.toDouble() * 10))));
+    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0004 + endpointId - 1, static_cast <quint16> (static_cast <qint16> (data.toDouble() * 10))));
     m_fullPoll = true;
 }
 
@@ -50,8 +49,8 @@ QByteArray Eletechsup::N4Dsa02::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0004, 2);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 2);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0004, 2);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 2);
     }
 
     updateEndpoints();
@@ -69,7 +68,7 @@ void Eletechsup::N4Dsa02::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -83,7 +82,7 @@ void Eletechsup::N4Dsa02::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -192,12 +191,12 @@ void Eletechsup::R4Pin08::enqueueAction(quint8 endpointId, const QString &name, 
 {
     if (m_inputs && name == "inputMode")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x00F5, data.toString() == "high" ? 0x0001 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x00F5, data.toString() == "high" ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
     else if (m_outputs && name == "outputMode")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x00F6, data.toString() == "high" ? 0x0001 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x00F6, data.toString() == "high" ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
     else if (m_outputs && name == "status" && endpointId > m_inputs && endpointId <= m_inputs + m_outputs)
@@ -213,7 +212,7 @@ void Eletechsup::R4Pin08::enqueueAction(quint8 endpointId, const QString &name, 
             default: return;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
     }
 }
 
@@ -238,7 +237,7 @@ QByteArray Eletechsup::R4Pin08::pollRequest(void)
                 return pollRequest();
             }
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F5, 1);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F5, 1);
 
         case 1:
 
@@ -248,7 +247,7 @@ QByteArray Eletechsup::R4Pin08::pollRequest(void)
                 return pollRequest();
             }
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F6, 1);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x00F6, 1);
 
         case 2:
 
@@ -258,7 +257,7 @@ QByteArray Eletechsup::R4Pin08::pollRequest(void)
                 return pollRequest();
             }
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 8);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 8);
 
         case 3:
 
@@ -268,7 +267,7 @@ QByteArray Eletechsup::R4Pin08::pollRequest(void)
                 return pollRequest();
             }
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 8);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 8);
     }
 
     updateEndpoints();
@@ -286,7 +285,7 @@ void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert(m_sequence ? "outputMode" : "inputMode", value ? "high" : "low");
@@ -298,7 +297,7 @@ void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
         {
             quint16 data[8];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok || !memcmp(m_input, data, sizeof(m_input)))
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok || !memcmp(m_input, data, sizeof(m_input)))
                 break;
 
             for (quint8 i = 0; i < m_inputs; i++)
@@ -312,7 +311,7 @@ void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
         {
             quint16 data[8];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok || !memcmp(m_output, data, sizeof(m_output)))
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok || !memcmp(m_output, data, sizeof(m_output)))
                 break;
 
             for (quint8 i = m_inputs; i < m_inputs + m_outputs; i++)

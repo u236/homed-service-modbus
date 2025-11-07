@@ -10,6 +10,11 @@
 #include "expose.h"
 #include "logger.h"
 
+DeviceObject::~DeviceObject(void)
+{
+    delete m_modbus;
+}
+
 void DeviceObject::updateOptions(const QMap <QString, QVariant> &exposeOptions)
 {
     for (auto it = m_endpoints.begin(); it != m_endpoints.end(); it++)

@@ -1,5 +1,4 @@
 #include "expose.h"
-#include "modbus.h"
 #include "neptun.h"
 
 void Neptun::SmartPlus::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
@@ -132,7 +131,7 @@ void Neptun::SmartPlus::enqueueAction(quint8 endpointId, const QString &name, co
         }
 
         if (status != m_status)
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0000, status));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0000, status));
 
         return;
     }
@@ -155,8 +154,8 @@ void Neptun::SmartPlus::enqueueAction(quint8 endpointId, const QString &name, co
             default: return;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, address, static_cast <quint16> (value >> 16)));
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, address + 1, static_cast <quint16> (value)));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, address, static_cast <quint16> (value >> 16)));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, address + 1, static_cast <quint16> (value)));
     }
 }
 
@@ -173,9 +172,9 @@ QByteArray Neptun::SmartPlus::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 1);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0039, 16);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x006B, 16);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 1);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0039, 16);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x006B, 16);
     }
 
     updateEndpoints();
@@ -193,7 +192,7 @@ void Neptun::SmartPlus::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok || m_status == value)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok || m_status == value)
                 break;
 
             m_endpoints.value(0)->buffer().insert("enableGroups",   value & 0x0400 ? true : false);
@@ -217,7 +216,7 @@ void Neptun::SmartPlus::parseReply(const QByteArray &reply)
             QList <QString> waterLeak, batteryLow, sensorLost;
             quint16 data[16];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 16; i++)
@@ -245,7 +244,7 @@ void Neptun::SmartPlus::parseReply(const QByteArray &reply)
         {
             quint16 data[16];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (qint8 i = 0; i < 8; i++)

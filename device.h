@@ -7,6 +7,7 @@
 #include <QMetaEnum>
 #include <QQueue>
 #include "endpoint.h"
+#include "modbus.h"
 
 class EndpointObject : public AbstractEndpointObject
 {
@@ -31,7 +32,9 @@ class DeviceObject : public AbstractDeviceObject
 public:
 
     DeviceObject(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-        AbstractDeviceObject(name), m_portId(portId), m_slaveId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_requestTimeout(requestTimeout), m_replyTimeout(replyTimeout), m_pollTime(0), m_errorCount(0), m_sequence(0), m_polling(false), m_fullPoll(true) {}
+        AbstractDeviceObject(name), m_modbus(new Modbus), m_portId(portId), m_slaveId(slaveId), m_baudRate(baudRate), m_pollInterval(pollInterval), m_requestTimeout(requestTimeout), m_replyTimeout(replyTimeout), m_pollTime(0), m_errorCount(0), m_sequence(0), m_polling(false), m_fullPoll(true) {}
+
+    ~DeviceObject(void);
 
     virtual void init(const Device &, const QMap <QString, QVariant> &) = 0;
     virtual void enqueueAction(quint8, const QString &, const QVariant &) {}
@@ -63,6 +66,7 @@ public:
 
 protected:
 
+    Modbus *m_modbus;
     QString m_type, m_address;
 
     quint8 m_portId, m_slaveId;

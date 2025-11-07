@@ -1,6 +1,5 @@
 #include <QtEndian>
 #include "custom.h"
-#include "modbus.h"
 
 quint16 Custom::ItemObject::count(void)
 {
@@ -88,7 +87,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
 
         if (item->registerType() == RegisterType::coil)
         {
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, item->address(), value.toInt() ? 0xFF00 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, item->address(), value.toInt() ? 0xFF00 : 0x0000));
             return;
         }
 
@@ -126,7 +125,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
             }
         }
 
-        m_actionQueue.enqueue(count > 1 ? Modbus::makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, item->address(), count, payload) : Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, item->address(), payload[0]));
+        m_actionQueue.enqueue(count > 1 ? m_modbus->makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, item->address(), count, payload) : m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, item->address(), payload[0]));
         return;
     }
 }
@@ -151,10 +150,10 @@ QByteArray Custom::Controller::pollRequest(void)
 
         switch (item->registerType())
         {
-            case RegisterType::coil:     return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       item->address(), 1);
-            case RegisterType::discrete: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      item->address(), 1);
-            case RegisterType::holding:  return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, item->address(), item->count());
-            case RegisterType::input:    return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
+            case RegisterType::coil:     return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       item->address(), 1);
+            case RegisterType::discrete: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus,      item->address(), 1);
+            case RegisterType::holding:  return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, item->address(), item->count());
+            case RegisterType::input:    return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
         }
     }
 
@@ -180,7 +179,7 @@ void Custom::Controller::parseReply(const QByteArray &reply)
         case RegisterType::input:    function = Modbus::ReadInputRegisters; break;
     }
 
-    if (Modbus::parseReply(m_slaveId, function, reply, buffer) != Modbus::ReplyStatus::Ok)
+    if (m_modbus->parseReply(m_slaveId, function, reply, buffer) != Modbus::ReplyStatus::Ok)
         return;
 
     if (item->registerType() == RegisterType::holding || item->registerType() == RegisterType::input)

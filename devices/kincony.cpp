@@ -1,5 +1,4 @@
 #include "expose.h"
-#include "modbus.h"
 #include "kincony.h"
 
 void Kincony::KC868::init(const Device &device, const QMap <QString, QVariant> &)
@@ -119,10 +118,10 @@ void Kincony::KC868::enqueueAction(quint8 endpointId, const QString &name, const
             default: return;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
     }
     else if (name == "analogOutput" && endpointId && endpointId <= m_channels)
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, endpointId - 1, static_cast <quint16> (data.toInt() & 0xFF)));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, endpointId - 1, static_cast <quint16> (data.toInt() & 0xFF)));
 }
 
 void Kincony::KC868::startPoll(void)
@@ -138,8 +137,8 @@ QByteArray Kincony::KC868::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_channels);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_channels);
 
         case 2:
 
@@ -149,7 +148,7 @@ QByteArray Kincony::KC868::pollRequest(void)
                 return pollRequest();
             }
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 4);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 4);
 
         case 3:
 
@@ -159,7 +158,7 @@ QByteArray Kincony::KC868::pollRequest(void)
                 return pollRequest();
             }
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0000, 2);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0000, 2);
     }
 
     updateEndpoints();
@@ -177,7 +176,7 @@ void Kincony::KC868::parseReply(const QByteArray &reply)
         {
             quint16 data[128];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < m_channels; i++)
@@ -191,7 +190,7 @@ void Kincony::KC868::parseReply(const QByteArray &reply)
         {
             quint16 data[128];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < m_channels; i++)
@@ -204,7 +203,7 @@ void Kincony::KC868::parseReply(const QByteArray &reply)
         {
             quint16 data[4];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
@@ -217,7 +216,7 @@ void Kincony::KC868::parseReply(const QByteArray &reply)
         {
             quint16 data;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(1)->buffer().insert("analogOutput", data >> 8);

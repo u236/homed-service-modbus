@@ -1,5 +1,4 @@
 #include "expose.h"
-#include "modbus.h"
 #include "other.h"
 
 void Other::JTH2D1::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
@@ -32,7 +31,7 @@ void Other::JTH2D1::startPoll(void)
 QByteArray Other::JTH2D1::pollRequest(void)
 {
     if (!m_sequence)
-        return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0300, 2);
+        return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0300, 2);
 
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
@@ -49,7 +48,7 @@ void Other::JTH2D1::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("temperature", static_cast <qint16> (data[0]) / 10.0);
@@ -98,13 +97,13 @@ void Other::T13::enqueueAction(quint8, const QString &name, const QVariant &data
     {
         switch (m_modes.indexOf(data.toString()))
         {
-            case 0: m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0003, 0x0001)); break;
-            case 1: m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0003, 0x0002)); break;
-            case 2: m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0003, 0x0005)); break;
+            case 0: m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0003, 0x0001)); break;
+            case 1: m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0003, 0x0002)); break;
+            case 2: m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0003, 0x0005)); break;
         }
     }
     else if (name == "frequency")
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0002, static_cast <quint16> (data.toDouble() * 10)));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0002, static_cast <quint16> (data.toDouble() * 10)));
 }
 
 void Other::T13::startPoll(void)
@@ -120,8 +119,8 @@ QByteArray Other::T13::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0002, 2);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0008, 3);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0002, 2);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0008, 3);
     }
 
     updateEndpoints();
@@ -139,7 +138,7 @@ void Other::T13::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("frequency", data[0] / 10.0);
@@ -158,7 +157,7 @@ void Other::T13::parseReply(const QByteArray &reply)
         {
             quint16 data[3];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("voltage",     data[0] / 10.0);
@@ -215,10 +214,10 @@ void Other::M0701s::enqueueAction(quint8, const QString &name, const QVariant &d
             default: return;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA7, value ? 0x0001 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA7, value ? 0x0001 : 0x0000));
     }
     else if (name == "frequency")
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA6, static_cast <quint16> (data.toDouble() * 100)));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x9CA6, static_cast <quint16> (data.toDouble() * 100)));
 }
 
 void Other::M0701s::startPoll(void)
@@ -233,7 +232,7 @@ void Other::M0701s::startPoll(void)
 QByteArray Other::M0701s::pollRequest(void)
 {
     if (!m_sequence)
-        return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x9CF4, 6);
+        return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x9CF4, 6);
 
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
@@ -250,7 +249,7 @@ void Other::M0701s::parseReply(const QByteArray &reply)
         {
             quint16 data[6];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_status = data[0] != 1 ? true : false;

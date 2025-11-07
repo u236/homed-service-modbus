@@ -1,5 +1,4 @@
 #include "expose.h"
-#include "modbus.h"
 #include "native.h"
 
 void Native::Common::init(const Device &device, const QMap <QString, QVariant> &)
@@ -30,12 +29,12 @@ void Native::Common::enqueueAction(quint8, const QString &name, const QVariant &
     {
         case 0: // slaveId
             m_pendingSlaveId = static_cast <quint8> (data.toInt());
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0020, static_cast <quint16> (m_pendingSlaveId)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0020, static_cast <quint16> (m_pendingSlaveId)));
             break;
 
         case 1: // baudRate
             m_pendingBaudRate = static_cast <quint32> (data.toInt());
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0021, static_cast <quint16> (m_pendingBaudRate / 100)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0021, static_cast <quint16> (m_pendingBaudRate / 100)));
             break;
     }
 }
@@ -75,8 +74,8 @@ QByteArray Native::Common::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0020, 1);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0021, 1);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0020, 1);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0021, 1);
     }
 
     updateEndpoints();
@@ -94,7 +93,7 @@ void Native::Common::parseReply(const QByteArray &reply)
         {
             quint16 data;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("slaveId", data);
@@ -105,7 +104,7 @@ void Native::Common::parseReply(const QByteArray &reply)
         {
             quint16 data;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("baudRate", data * 100);
@@ -140,7 +139,7 @@ void Native::RelayController::enqueueAction(quint8 endpointId, const QString &na
 {
     if (name == "invert")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 0x0001 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
     else if (name == "status" && endpointId && endpointId <= 16)
@@ -161,7 +160,7 @@ void Native::RelayController::enqueueAction(quint8 endpointId, const QString &na
             case 2: m_pending ^=  mask; break;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0001, m_pending));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0001, m_pending));
     }
 }
 
@@ -178,8 +177,8 @@ QByteArray Native::RelayController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0001, 1);
     }
 
     updateEndpoints();
@@ -197,7 +196,7 @@ void Native::RelayController::parseReply(const QByteArray &reply)
     {
         case 0:
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert("invert", value ? true : false);
@@ -206,7 +205,7 @@ void Native::RelayController::parseReply(const QByteArray &reply)
 
         case 1:
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 16; i++)
@@ -263,7 +262,7 @@ void Native::SwitchController::enqueueAction(quint8, const QString &name, const 
 {
     if (name == "invert")
     {
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 0x0001 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0030, data.toBool() ? 0x0001 : 0x0000));
         m_fullPoll = true;
     }
 }
@@ -281,8 +280,8 @@ QByteArray Native::SwitchController::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0001, 1);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0030, 1);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0001, 1);
     }
 
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
@@ -299,7 +298,7 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
     {
         case 0:
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert("invert", value ? true : false);
@@ -309,7 +308,7 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
 
         case 1:
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (m_firstPoll)

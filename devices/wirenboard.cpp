@@ -1,7 +1,6 @@
 #include <math.h>
 #include "color.h"
 #include "expose.h"
-#include "modbus.h"
 #include "wirenboard.h"
 
 void WirenBoard::Common::init(const Device &device, const QMap <QString, QVariant> &)
@@ -36,12 +35,12 @@ void WirenBoard::Common::enqueueAction(quint8, const QString &name, const QVaria
     {
         case 0: // slaveId
             m_pendingSlaveId = static_cast <quint8> (data.toInt());
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0080, static_cast <quint16> (m_pendingSlaveId)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0080, static_cast <quint16> (m_pendingSlaveId)));
             break;
 
         case 1: // baudRate
             m_pendingBaudRate = static_cast <quint32> (data.toInt());
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x006E, static_cast <quint16> (m_pendingBaudRate / 100)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x006E, static_cast <quint16> (m_pendingBaudRate / 100)));
             break;
     }
 }
@@ -81,9 +80,9 @@ QByteArray WirenBoard::Common::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0080, 1);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x006E, 1);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x010E, 2);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0080, 1);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x006E, 1);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x010E, 2);
     }
 
     updateEndpoints();
@@ -101,7 +100,7 @@ void WirenBoard::Common::parseReply(const QByteArray &reply)
         {
             quint16 data;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("slaveId", data);
@@ -112,7 +111,7 @@ void WirenBoard::Common::parseReply(const QByteArray &reply)
         {
             quint16 data;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("baudRate", data * 100);
@@ -123,7 +122,7 @@ void WirenBoard::Common::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("serialNumber", static_cast <quint32> (data[0]) << 16 | static_cast <quint32> (data[1]));
@@ -174,7 +173,7 @@ void WirenBoard::WBM1w2::enqueueAction(quint8 endpointId, const QString &name, c
     if (!endpointId || endpointId > 2 || name != "operationMode")
         return;
 
-    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0113 + endpointId - 1, data.toString() == "input" ? 0x0001 : 0x0000));
+    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0113 + endpointId - 1, data.toString() == "input" ? 0x0001 : 0x0000));
     m_fullPoll = true;
 }
 
@@ -191,9 +190,9 @@ QByteArray WirenBoard::WBM1w2::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0113, 2);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      0x0000, 2);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0007, 2);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0113, 2);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus,      0x0000, 2);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0007, 2);
     }
 
     updateEndpoints();
@@ -211,7 +210,7 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -225,7 +224,7 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -238,7 +237,7 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -315,7 +314,7 @@ void WirenBoard::WBMs::enqueueAction(quint8 endpointId, const QString &name, con
     if (!endpointId || endpointId > 2 || name != "operationMode")
         return;
 
-    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0113 + endpointId - 1, data.toString() == "input" ? 0x0001 : 0x0000));
+    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0113 + endpointId - 1, data.toString() == "input" ? 0x0001 : 0x0000));
     m_fullPoll = true;
 }
 
@@ -332,11 +331,11 @@ QByteArray WirenBoard::WBMs::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0113, 2);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus,      0x0000, 2);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0002, 1);
-        case 3: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0004, 4);
-        case 4: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x000B, 1);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0113, 2);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus,      0x0000, 2);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0002, 1);
+        case 3: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0004, 4);
+        case 4: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x000B, 1);
     }
 
     updateEndpoints();
@@ -354,7 +353,7 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -368,7 +367,7 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -381,7 +380,7 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("illuminance", value);
@@ -393,7 +392,7 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
             quint16 data[4];
             double temperature = NAN, humidity = NAN, temperatureW1 = NAN, temperatureW2 = NAN;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (data[0] != 0x7FFF)
@@ -420,7 +419,7 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (value != 0xFFFF)
@@ -516,20 +515,20 @@ void WirenBoard::WBMsw::enqueueAction(quint8 endpointId, const QString &name, co
                 default: return;
             }
 
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId == 1 ? 0x0000 : 0x000A + endpointId - 2, value ? 0xFF00 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId == 1 ? 0x0000 : 0x000A + endpointId - 2, value ? 0xFF00 : 0x0000));
             return;
         }
 
         case 1: // blinkInterval
         case 2: // blinkDuration
         {
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, index == 1 ? 0x0061 : 0x0062, static_cast <quint16> (data.toInt())));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, index == 1 ? 0x0061 : 0x0062, static_cast <quint16> (data.toInt())));
             break;
         }
 
         case 3: // co2AutoCalibration
         {
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x005F, data.toBool() ? 0x0001 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x005F, data.toBool() ? 0x0001 : 0x0000));
             break;
         }
 
@@ -553,12 +552,12 @@ QByteArray WirenBoard::WBMsw::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x005F, 1);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0061, 2);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 1);
-        case 3: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x000A, 2);
-        case 4: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0003, 3);
-        case 5: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0008, 4);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x005F, 1);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0061, 2);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 1);
+        case 3: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x000A, 2);
+        case 4: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0003, 3);
+        case 5: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0008, 4);
     }
 
     updateEndpoints();
@@ -576,7 +575,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("co2AutoCalibration", value ? true : false);
@@ -587,7 +586,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("blinkInterval", data[0]);
@@ -599,7 +598,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(1)->buffer().insert("status", value ? "on" : "off");
@@ -611,7 +610,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
         {
             quint16 data[3];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -628,7 +627,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
             quint16 data[3];
             double noise = NAN, temperature = NAN, humidity = NAN;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (data[0] != 0xFFFF)
@@ -652,7 +651,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
             quint16 data[4];
             double co2 = NAN, illuminance = NAN, voc = NAN;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (data[0] != 0xFFFF)
@@ -875,7 +874,7 @@ void WirenBoard::WBMai6::enqueueAction(quint8 endpointId, const QString &name, c
                 if (m_types.at(i) != data.toString() || (index && !m_settings.at(i).nChannel))
                     continue;
 
-                m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, (index ? 0x0401 : 0x0400) + endpointId * 0x1000, m_settings.at(i).type));
+                m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, (index ? 0x0401 : 0x0400) + endpointId * 0x1000, m_settings.at(i).type));
                 break;
             }
 
@@ -885,7 +884,7 @@ void WirenBoard::WBMai6::enqueueAction(quint8 endpointId, const QString &name, c
         case 3: // nValueMin
         case 4: // pValueMax
         case 5: // nValueMax
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister,  0x0408 + endpointId * 0x1000 + index - 2, static_cast <quint16> (data.toInt())));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister,  0x0408 + endpointId * 0x1000 + index - 2, static_cast <quint16> (data.toInt())));
             break;
 
         default:
@@ -909,13 +908,13 @@ QByteArray WirenBoard::WBMai6::pollRequest(void)
     switch (m_sequence)
     {
         case 0 ... 5:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0400 + (m_sequence + 1) * 0x1000, 2);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0400 + (m_sequence + 1) * 0x1000, 2);
 
         case 6 ... 11:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0408 + (m_sequence - 5) * 0x1000, 4);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0408 + (m_sequence - 5) * 0x1000, 4);
 
         case 12 ... 17:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0500 + (m_sequence - 11) * 0x1000, 6);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0500 + (m_sequence - 11) * 0x1000, 6);
     }
 
     updateEndpoints();
@@ -933,7 +932,7 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (int i = 0; i < m_settings.count(); i++)
@@ -959,7 +958,7 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
         {
             quint16 data[4];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(m_sequence - 5).value()->buffer().insert("pValueMin", data[0]);
@@ -975,7 +974,7 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
             quint16 data[6];
             double pInput = NAN, nInput = NAN, pValue = NAN, nValue = NAN;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             if (data[0] != 0x7FFF && data[1] != 0xFFFF)
@@ -1055,9 +1054,9 @@ QByteArray WirenBoard::WBMap3ev::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
     }
 
     updateEndpoints();
@@ -1075,7 +1074,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
@@ -1086,7 +1085,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_VOLTAGE_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1099,7 +1098,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_ANGLE_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1194,7 +1193,7 @@ void WirenBoard::WBMap3e::enqueueAction(quint8 endpointId, const QString &name, 
     else
         return;
 
-    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, registerAddress, static_cast <quint16> (data.toInt())));
+    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, registerAddress, static_cast <quint16> (data.toInt())));
     m_fullPoll = true;
 }
 
@@ -1211,13 +1210,13 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS, WBMAP_COIL_REGISTER_COUNT);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
-        case 3: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS, WBMAP_CURRENT_REGISTER_COUNT);
-        case 4: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_POWER_REGISTER_ADDRESS, WBMAP_POWER_REGISTER_COUNT);
-        case 5: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS, WBMAP_ENERGY_REGISTER_COUNT);
-        case 6: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS, WBMAP_COIL_REGISTER_COUNT);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
+        case 3: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS, WBMAP_CURRENT_REGISTER_COUNT);
+        case 4: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_POWER_REGISTER_ADDRESS, WBMAP_POWER_REGISTER_COUNT);
+        case 5: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS, WBMAP_ENERGY_REGISTER_COUNT);
+        case 6: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
     }
 
     updateEndpoints();
@@ -1235,7 +1234,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_COIL_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1253,7 +1252,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
@@ -1264,7 +1263,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_VOLTAGE_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1277,7 +1276,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_CURRENT_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1290,7 +1289,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_POWER_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
@@ -1303,7 +1302,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_ENERGY_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
@@ -1316,7 +1315,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_ANGLE_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1408,7 +1407,7 @@ void WirenBoard::WBMap6s::enqueueAction(quint8 endpointId, const QString &name, 
     else
         return;
 
-    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, registerAddress, static_cast <quint16> (data.toInt())));
+    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, registerAddress, static_cast <quint16> (data.toInt())));
     m_fullPoll = true;
 }
 
@@ -1429,22 +1428,22 @@ QByteArray WirenBoard::WBMap6s::pollRequest(void)
     switch (m_sequence)
     {
         case 0 ... 1:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS + m_sequence * 0x1000, WBMAP_COIL_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS + m_sequence * 0x1000, WBMAP_COIL_REGISTER_COUNT);
 
         case 2:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_VOLTAGE_REGISTER_ADDRESS, 1);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_VOLTAGE_REGISTER_ADDRESS, 1);
 
         case 3:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
 
         case 4 ... 5:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS + (m_sequence - 4) * 0x1000, WBMAP_CURRENT_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS + (m_sequence - 4) * 0x1000, WBMAP_CURRENT_REGISTER_COUNT);
 
         case 6 ... 7:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_POWER_REGISTER_ADDRESS + (m_sequence - 6) * 0x1000, WBMAP6S_POWER_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_POWER_REGISTER_ADDRESS + (m_sequence - 6) * 0x1000, WBMAP6S_POWER_REGISTER_COUNT);
 
         case 8 ... 9:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_ENERGY_REGISTER_ADDRESS + (m_sequence - 8) * 0x1000, WBMAP6S_ENERGY_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_ENERGY_REGISTER_ADDRESS + (m_sequence - 8) * 0x1000, WBMAP6S_ENERGY_REGISTER_COUNT);
     }
 
     m_endpoints.find(0).value()->buffer().insert("totalPower", m_totalPower);
@@ -1466,7 +1465,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_COIL_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1484,7 +1483,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert("voltage", static_cast <double> (value) * WBMAP6S_VOLTAGE_MULTIPLIER / 1000);
@@ -1495,7 +1494,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
@@ -1506,7 +1505,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_CURRENT_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1519,7 +1518,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_POWER_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1536,7 +1535,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_ENERGY_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1653,7 +1652,7 @@ void WirenBoard::WBMap12::enqueueAction(quint8 endpointId, const QString &name, 
     else
         return;
 
-    m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, registerAddress, static_cast <quint16> (data.toInt())));
+    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, registerAddress, static_cast <quint16> (data.toInt())));
     m_fullPoll = true;
 }
 
@@ -1671,25 +1670,25 @@ QByteArray WirenBoard::WBMap12::pollRequest(void)
     switch (m_sequence)
     {
         case 0 ... 3:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS + m_sequence * 0x1000, WBMAP_COIL_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, WBMAP_COIL_REGISTER_ADDRESS + m_sequence * 0x1000, WBMAP_COIL_REGISTER_COUNT);
 
         case 4:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_FREQUENCY_REGISTER_ADDRESS, 1);
 
         case 5:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_VOLTAGE_REGISTER_ADDRESS, WBMAP_VOLTAGE_REGISTER_COUNT);
 
         case 6 ... 9:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS + (m_sequence - 6) * 0x1000, WBMAP_CURRENT_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_CURRENT_REGISTER_ADDRESS + (m_sequence - 6) * 0x1000, WBMAP_CURRENT_REGISTER_COUNT);
 
         case 10 ... 13:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_POWER_REGISTER_ADDRESS + (m_sequence - 10) * 0x1000, WBMAP_POWER_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_POWER_REGISTER_ADDRESS + (m_sequence - 10) * 0x1000, WBMAP_POWER_REGISTER_COUNT);
 
         case 14 ... 17:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS + (m_sequence - 14) * 0x1000, WBMAP_ENERGY_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ENERGY_REGISTER_ADDRESS + (m_sequence - 14) * 0x1000, WBMAP_ENERGY_REGISTER_COUNT);
 
         case 18:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP_ANGLE_REGISTER_ADDRESS, WBMAP_ANGLE_REGISTER_COUNT);
     }
 
     updateEndpoints();
@@ -1707,7 +1706,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_COIL_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1725,7 +1724,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
         {
             quint16 value;
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
@@ -1736,7 +1735,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_VOLTAGE_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1754,7 +1753,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_CURRENT_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1767,7 +1766,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_POWER_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
@@ -1787,7 +1786,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_ENERGY_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
@@ -1807,7 +1806,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
         {
             quint16 data[WBMAP_ANGLE_REGISTER_COUNT];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -1957,7 +1956,7 @@ void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, con
             default: return;
         }
 
-        m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
         return;
     }
 
@@ -1967,12 +1966,12 @@ void WirenBoard::WBMr::enqueueAction(quint8 endpointId, const QString &name, con
     switch (index)
     {
         case 1: // voltageProtection
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x06A0 + endpointId - 1, data.toBool() ? 0x0001 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x06A0 + endpointId - 1, data.toBool() ? 0x0001 : 0x0000));
             break;
 
         case 2: // voltageLow
         case 3: // voltageHigh
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, (index == 2 ? 0x06A8 : 0x06B0) + endpointId - 1, static_cast <quint16> (data.toInt() * 100)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, (index == 2 ? 0x06A8 : 0x06B0) + endpointId - 1, static_cast <quint16> (data.toInt() * 100)));
             break;
 
         default:
@@ -1996,38 +1995,38 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
     switch (m_sequence)
     {
         case 0 ... 2:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x06A0 + m_sequence * 8, 2);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x06A0 + m_sequence * 8, 2);
 
         case 3:
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, m_channels);
 
         case 4:
 
             if (!m_inputs)
                 break;
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
 
         case 5:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
 
         case 6 ... 7:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 6 ? 0x0038 : 0x0040, 2);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 6 ? 0x0038 : 0x0040, 2);
 
         case 8:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
-            return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0048, 4);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0048, 4);
     }
 
     updateEndpoints();
@@ -2045,7 +2044,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -2064,7 +2063,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
         {
             quint16 data[6];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < m_channels; i++)
@@ -2078,7 +2077,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
         {
             quint16 data[8];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < m_channels; i++)
@@ -2094,7 +2093,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -2107,7 +2106,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
         {
             quint16 data[2];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -2120,7 +2119,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
         {
             quint16 data[4];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
@@ -2257,13 +2256,13 @@ void WirenBoard::WBLed::enqueueAction(quint8 endpointId, const QString &name, co
                 default: return;
             }
 
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
             break;
         }
 
         case 1: // level
         {
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x07D0 + (endpointId <= 9 ? endpointId <= 7 ? endpointId - 1 : (endpointId - 8) * 2 + 8 : 16), static_cast <quint16> (round(data.toInt() / 2.55))));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x07D0 + (endpointId <= 9 ? endpointId <= 7 ? endpointId - 1 : (endpointId - 8) * 2 + 8 : 16), static_cast <quint16> (round(data.toInt() / 2.55))));
             break;
         }
 
@@ -2272,7 +2271,7 @@ void WirenBoard::WBLed::enqueueAction(quint8 endpointId, const QString &name, co
             if (endpointId != 8 && endpointId != 9)
                 break;
 
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x07D7 + (endpointId - 8) * 2, static_cast <quint16> ((450 - data.toInt()) / 3)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x07D7 + (endpointId - 8) * 2, static_cast <quint16> ((450 - data.toInt()) / 3)));
             break;
         }
 
@@ -2287,7 +2286,7 @@ void WirenBoard::WBLed::enqueueAction(quint8 endpointId, const QString &name, co
             value[0] = round(h * 360);
             value[1] = round(s * 100);
 
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, 0x07DE, 2, value));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteMultipleRegisters, 0x07DE, 2, value));
             break;
         }
     }
@@ -2306,9 +2305,9 @@ QByteArray WirenBoard::WBLed::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister,  0x0FA0, m_mode);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 10);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister,  0x0FA0, m_mode);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 10);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
     }
 
     updateEndpoints();
@@ -2324,7 +2323,7 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
     {
         case 0:
         {
-            if (Modbus::parseReply(m_slaveId, Modbus::WriteSingleRegister, reply) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::WriteSingleRegister, reply) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_fullPoll = false;
@@ -2335,7 +2334,7 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
         {
             quint16 data[16];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 10; i++)
@@ -2354,7 +2353,7 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
         {
             quint16 data[17];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 10; i++)
@@ -2447,13 +2446,13 @@ void WirenBoard::WBMdm::enqueueAction(quint8 endpointId, const QString &name, co
                 default: return;
             }
 
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
             return;
         }
 
         case 1: // level
         {
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, endpointId - 1, static_cast <quint16> (round(data.toInt() / 2.55))));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, endpointId - 1, static_cast <quint16> (round(data.toInt() / 2.55))));
             return;
         }
 
@@ -2464,13 +2463,13 @@ void WirenBoard::WBMdm::enqueueAction(quint8 endpointId, const QString &name, co
             if (value < 0)
                 return;
 
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0032 + endpointId - 1, static_cast <quint16> (value)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0032 + endpointId - 1, static_cast <quint16> (value)));
             break;
         }
 
         case 3: // dimmerFront
         {
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x003C + endpointId - 1, data.toString() == "trailing" ? 0x0001 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x003C + endpointId - 1, data.toString() == "trailing" ? 0x0001 : 0x0000));
             break;
         }
 
@@ -2494,10 +2493,10 @@ QByteArray WirenBoard::WBMdm::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0032, 3);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x003C, 3);
-        case 2: return Modbus::makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 3);
-        case 3: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 3);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0032, 3);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x003C, 3);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 3);
+        case 3: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 3);
     }
 
     updateEndpoints();
@@ -2515,7 +2514,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
     {
         case 0:
         {
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -2534,7 +2533,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
 
         case 1:
         {
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -2546,7 +2545,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
 
         case 2:
         {
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -2558,7 +2557,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
 
         case 3:
         {
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
@@ -2645,12 +2644,12 @@ void WirenBoard::WBUps::enqueueAction(quint8, const QString &name, const QVarian
     switch (index)
     {
         case 0: // operationMode
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0010, data.toString() == "manual" ? 0x0001 : 0x0000));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0010, data.toString() == "manual" ? 0x0001 : 0x0000));
             break;
 
         case 1: // outputVoltageLimit
         case 2: // chargeCurrentLimit
-            m_actionQueue.enqueue(Modbus::makeRequest(m_slaveId, Modbus::WriteSingleRegister, index == 1 ? 0x0011 : 0x0012, static_cast <quint16> (data.toDouble() * 1000)));
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, index == 1 ? 0x0011 : 0x0012, static_cast <quint16> (data.toDouble() * 1000)));
             break;
 
         default:
@@ -2673,8 +2672,8 @@ QByteArray WirenBoard::WBUps::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return Modbus::makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0010, 3);
-        case 1: return Modbus::makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0000, 10);
+        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0010, 3);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0000, 10);
     }
 
     updateEndpoints();
@@ -2692,7 +2691,7 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
         {
             quint16 data[3];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             m_endpoints.value(0)->buffer().insert("operationMode",      data[0] ? "manual" : "auto");
@@ -2707,7 +2706,7 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
         {
             quint16 data[10];
 
-            if (Modbus::parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             switch (data[0])

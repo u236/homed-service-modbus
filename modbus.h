@@ -39,12 +39,12 @@ public:
         Exception
     };
 
-    static QByteArray makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress = 0, quint16 registerValue = 0, quint16 *registerData = nullptr);
-    static ReplyStatus parseReply(quint8 slaveAddress, FunctionCode functionCode, const QByteArray &reply, quint16 *registerData = nullptr);
+    QByteArray makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress = 0, quint16 registerValue = 0, quint16 *registerData = nullptr);
+    ReplyStatus parseReply(quint8 slaveAddress, FunctionCode functionCode, const QByteArray &reply, quint16 *registerData = nullptr);
 
 private:
 
-    static quint16 crc16(const QByteArray &data);
+    quint16 crc16(const QByteArray &data);
 
 };
 
