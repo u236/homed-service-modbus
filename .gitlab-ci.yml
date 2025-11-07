@@ -1,6 +1,9 @@
 variables:
   NAME: homed-modbus
   PACKAGE_EXTRA: mkdir -p deploy/data/opt/homed-modbus
+  DOCKER_EXTRA: >
+    mkdir deploy/docker/share;
+    cp -r ../homed-common/deploy/data/usr/share/homed-common deploy/docker/share/homed-common;
 
 include:
 - project: 'homed/services/homed-common'
