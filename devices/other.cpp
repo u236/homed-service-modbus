@@ -252,7 +252,7 @@ void Other::M0701s::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_status = data[0] != 1 ? true : false;
+            m_status = data[0] != 1;
 
             m_endpoints.value(0)->buffer().insert("status",      m_status ? "on" : "off");
             m_endpoints.value(0)->buffer().insert("frequency",   data[1] / 100.0);
