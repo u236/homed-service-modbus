@@ -180,9 +180,12 @@ void Kincony::KC868::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < m_channels; i++)
-                m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
+            {
+                quint8 index = m_channels % 8 ? i : m_channels - 8 * (i / 8 + 1) + i % 8;
+                m_endpoints.value(index + 1)->buffer().insert("status", data[i] ? "on" : "off");
+                m_output[index] = data[i];
+            }
 
-            memcpy(m_output, data, sizeof(m_output));
             break;
         }
 
@@ -194,7 +197,10 @@ void Kincony::KC868::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < m_channels; i++)
-                m_endpoints.value(i + 1)->buffer().insert("input", data[i] ? false : true);
+            {
+                quint8 index = m_channels % 8 ? i : m_channels - 8 * (i / 8 + 1) + i % 8;
+                m_endpoints.value(index + 1)->buffer().insert("input", data[i] ? false : true);
+            }
 
             break;
         }
