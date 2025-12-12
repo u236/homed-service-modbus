@@ -323,10 +323,7 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
                 quint16 status = value & 1 << i;
 
                 if ((m_status & 1 << i) == status)
-                {
-                    m_endpoints.find(i + 1).value()->buffer().clear();
                     continue;
-                }
 
                 m_time[i] = QDateTime::currentMSecsSinceEpoch();
 
@@ -369,6 +366,8 @@ void Native::SwitchController::update(void)
         m_time[i] = 0;
 
         updateEndpoints();
+
         it.value()->status().clear();
+        it.value()->buffer().clear();
     }
 }
