@@ -288,7 +288,7 @@ void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert(m_sequence ? "outputMode" : "inputMode", value ? "high" : "low");
+            m_endpoints.value(0)->buffer().insert(m_sequence ? "outputMode" : "inputMode", value ? "high" : "low");
             m_fullPoll = false;
             break;
         }
@@ -301,7 +301,7 @@ void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < m_inputs; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("input", data[i] ? true : false);
+                m_endpoints.value(i + 1)->buffer().insert("input", data[i] ? true : false);
 
             memcpy(m_input, data, sizeof(m_input));
             break;
@@ -315,7 +315,7 @@ void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = m_inputs; i < m_inputs + m_outputs; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("status", data[i] ? "on" : "off");
+                m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
 
             memcpy(m_output, data, sizeof(m_output));
             break;

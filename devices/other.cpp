@@ -1,7 +1,7 @@
 #include "expose.h"
 #include "other.h"
 
-void Other::JTH2D1::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+void Other::JTH2d1::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     Endpoint endpoint(new EndpointObject(0, device));
     Expose temperature(new SensorObject("temperature")), humidity(new SensorObject("humidity"));
@@ -19,7 +19,7 @@ void Other::JTH2D1::init(const Device &device, const QMap <QString, QVariant> &e
     updateOptions(exposeOptions);
 }
 
-void Other::JTH2D1::startPoll(void)
+void Other::JTH2d1::startPoll(void)
 {
     if (m_polling)
         return;
@@ -28,7 +28,7 @@ void Other::JTH2D1::startPoll(void)
     m_polling = true;
 }
 
-QByteArray Other::JTH2D1::pollRequest(void)
+QByteArray Other::JTH2d1::pollRequest(void)
 {
     if (!m_sequence)
         return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0300, 2);
@@ -40,7 +40,7 @@ QByteArray Other::JTH2D1::pollRequest(void)
     return QByteArray();
 }
 
-void Other::JTH2D1::parseReply(const QByteArray &reply)
+void Other::JTH2d1::parseReply(const QByteArray &reply)
 {
     switch (m_sequence)
     {

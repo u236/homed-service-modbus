@@ -39,7 +39,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
             continue;
 
         if (!item->read())
-            m_endpoints.find(0).value()->buffer().insert(name, data);
+            m_endpoints.value(0)->buffer().insert(name, data);
 
         switch (m_types.indexOf(item->type()))
         {
@@ -53,7 +53,7 @@ void Custom::Controller::enqueueAction(quint8, const QString &name, const QVaria
                 int index = -1;
 
                 if (name.split('_').value(0) == "status" && action == "toggle")
-                    action = m_endpoints.find(0).value()->buffer().value(name).toString() == "on" ? "off" : "on";
+                    action = m_endpoints.value(0)->buffer().value(name).toString() == "on" ? "off" : "on";
 
                 switch (option.type())
                 {
@@ -214,8 +214,8 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
     switch (m_types.indexOf(item->type()))
     {
-        case 0: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
-        case 1: m_endpoints.find(0).value()->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+        case 0: m_endpoints.value(0)->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
+        case 1: m_endpoints.value(0)->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
 
         case 2: // enum
         {
@@ -223,8 +223,8 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
             switch (option.type())
             {
-                case QVariant::Map:  m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
-                case QVariant::List: m_endpoints.find(0).value()->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
+                case QVariant::Map:  m_endpoints.value(0)->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
+                case QVariant::List: m_endpoints.value(0)->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
                 default: break;
             }
 

@@ -199,7 +199,7 @@ void Native::RelayController::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("invert", value ? true : false);
+            m_endpoints.value(0)->buffer().insert("invert", value ? true : false);
             m_fullPoll = false;
             break;
 
@@ -301,7 +301,7 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("invert", value ? true : false);
+            m_endpoints.value(0)->buffer().insert("invert", value ? true : false);
             m_fullPoll = false;
             m_firstPoll = true;
             break;

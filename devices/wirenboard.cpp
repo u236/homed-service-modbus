@@ -214,7 +214,7 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("operationMode", data[i] ? "input" : "temperature");
+                m_endpoints.value(i + 1)->buffer().insert("operationMode", data[i] ? "input" : "temperature");
 
             m_fullPoll = false;
             break;
@@ -357,7 +357,7 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("operationMode", data[i] ? "input" : "temperature");
+                m_endpoints.value(i + 1)->buffer().insert("operationMode", data[i] ? "input" : "temperature");
 
             m_fullPoll = false;
             break;
@@ -931,6 +931,7 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
         case 0 ... 5:
         {
             quint16 data[2];
+            auto it = m_endpoints.find(m_sequence + 1);
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
@@ -939,13 +940,13 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
             {
                 if (m_settings.at(i).type == data[0])
                 {
-                    m_endpoints.find(m_sequence + 1).value()->buffer().insert("pSensorType", m_types.at(i));
+                    it.value()->buffer().insert("pSensorType", m_types.at(i));
                     m_pChannel[m_sequence] = m_settings.at(i);
                 }
 
                 if (m_settings.at(i).type == data[1])
                 {
-                    m_endpoints.find(m_sequence + 1).value()->buffer().insert("nSensorType", m_types.at(i));
+                    it.value()->buffer().insert("nSensorType", m_types.at(i));
                     m_nChannel[m_sequence] = m_settings.at(i);
                 }
             }
@@ -957,15 +958,15 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
         case 6 ... 11:
         {
             quint16 data[4];
+            auto it = m_endpoints.find(m_sequence - 5);
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(m_sequence - 5).value()->buffer().insert("pValueMin", data[0]);
-            m_endpoints.find(m_sequence - 5).value()->buffer().insert("nValueMin", data[1]);
-            m_endpoints.find(m_sequence - 5).value()->buffer().insert("pValueMax", data[2]);
-            m_endpoints.find(m_sequence - 5).value()->buffer().insert("nValueMax", data[3]);
-
+            it.value()->buffer().insert("pValueMin", data[0]);
+            it.value()->buffer().insert("nValueMin", data[1]);
+            it.value()->buffer().insert("pValueMax", data[2]);
+            it.value()->buffer().insert("nValueMax", data[3]);
             break;
         }
 
@@ -973,6 +974,7 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
         {
             quint16 data[6];
             double pInput = NAN, nInput = NAN, pValue = NAN, nValue = NAN;
+            auto it = m_endpoints.find(m_sequence - 11);
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
@@ -995,11 +997,10 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
                 nValue = multiplier != 0.0 ? static_cast <qint16> (data[5]) * multiplier : nInput;
             }
 
-            m_endpoints.find(m_sequence - 11).value()->buffer().insert("pInput", pInput);
-            m_endpoints.find(m_sequence - 11).value()->buffer().insert("nInput", nInput);
-            m_endpoints.find(m_sequence - 11).value()->buffer().insert("pValue", pValue);
-            m_endpoints.find(m_sequence - 11).value()->buffer().insert("nValue", nValue);
-
+            it.value()->buffer().insert("pInput", pInput);
+            it.value()->buffer().insert("nInput", nInput);
+            it.value()->buffer().insert("pValue", pValue);
+            it.value()->buffer().insert("nValue", nValue);
             break;
         }
     }
@@ -1077,7 +1078,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -1089,7 +1090,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("voltage", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("voltage", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER / 1000);
 
             break;
         }
@@ -1102,7 +1103,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("angle", static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("angle", static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000);
 
             break;
         }
@@ -1255,7 +1256,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -1267,7 +1268,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("voltage", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("voltage", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER / 1000);
 
             break;
         }
@@ -1280,7 +1281,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("current", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("current", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER / 1000);
 
             break;
         }
@@ -1293,7 +1294,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-                m_endpoints.find(i).value()->buffer().insert(i ? "power" : "totalPower", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPLIER / 1000);
+                m_endpoints.value(i)->buffer().insert(i ? "power" : "totalPower", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_POWER_MULTIPLIER / 1000);
 
             break;
         }
@@ -1306,7 +1307,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 4; i++)
-                m_endpoints.find(i).value()->buffer().insert(i ? "energy" : "totalEnergy", static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER / 1000);
+                m_endpoints.value(i)->buffer().insert(i ? "energy" : "totalEnergy", static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER / 1000);
 
             break;
         }
@@ -1319,7 +1320,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find(i + 1).value()->buffer().insert("angle", static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("angle", static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000);
 
             break;
         }
@@ -1446,8 +1447,8 @@ QByteArray WirenBoard::WBMap6s::pollRequest(void)
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   WBMAP6S_ENERGY_REGISTER_ADDRESS + (m_sequence - 8) * 0x1000, WBMAP6S_ENERGY_REGISTER_COUNT);
     }
 
-    m_endpoints.find(0).value()->buffer().insert("totalPower", m_totalPower);
-    m_endpoints.find(0).value()->buffer().insert("totalEnergy", m_totalEnergy);
+    m_endpoints.value(0)->buffer().insert("totalPower", m_totalPower);
+    m_endpoints.value(0)->buffer().insert("totalEnergy", m_totalEnergy);
 
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
@@ -1486,7 +1487,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("voltage", static_cast <double> (value) * WBMAP6S_VOLTAGE_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("voltage", static_cast <double> (value) * WBMAP6S_VOLTAGE_MULTIPLIER / 1000);
             break;
         }
 
@@ -1497,7 +1498,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -1509,7 +1510,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find((m_sequence - 4) * 3 + 3 - i).value()->buffer().insert("current", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER / 1000);
+                m_endpoints.value((m_sequence - 4) * 3 + 3 - i)->buffer().insert("current", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER / 1000);
 
             break;
         }
@@ -1524,7 +1525,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 3; i++)
             {
                 double value = static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP6S_POWER_MULTIPLIER / 1000;
-                m_endpoints.find((m_sequence - 6) * 3 + 3 - i).value()->buffer().insert("power", value);
+                m_endpoints.value((m_sequence - 6) * 3 + 3 - i)->buffer().insert("power", value);
                 m_totalPower += value;
             }
 
@@ -1541,7 +1542,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 3; i++)
             {
                 double value = static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER / 1000;
-                m_endpoints.find((m_sequence - 8) * 3 + 3 - i).value()->buffer().insert("energy", value);
+                m_endpoints.value((m_sequence - 8) * 3 + 3 - i)->buffer().insert("energy", value);
                 m_totalEnergy += value;
             }
 
@@ -1727,7 +1728,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.find(0).value()->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -1743,7 +1744,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 double value = static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_VOLTAGE_MULTIPLIER / 1000;
 
                 for (quint8 j = 0; j < 4; j++)
-                    m_endpoints.find(i + j * 3 + 1 ).value()->buffer().insert("voltage", value);
+                    m_endpoints.value(i + j * 3 + 1)->buffer().insert("voltage", value);
             }
 
             break;
@@ -1757,7 +1758,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.find((m_sequence - 6) * 3 + i + 1).value()->buffer().insert("current", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER / 1000);
+                m_endpoints.value((m_sequence - 6) * 3 + i + 1)->buffer().insert("current", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * WBMAP_CURRENT_MULTIPLIER / 1000);
 
             break;
         }
@@ -1774,9 +1775,9 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 double value = static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) * (m_model == Model::wbMap12h ? i ? WBMAP12H_CHANNEL_POWER_MULTIPLIER : WBMAP12H_TOTAL_POWER_MULTIPLIER : WBMAP_POWER_MULTIPLIER) / 1000;
 
                 if (i)
-                    m_endpoints.find((m_sequence - 10) * 3 + i).value()->buffer().insert("power", value);
+                    m_endpoints.value((m_sequence - 10) * 3 + i)->buffer().insert("power", value);
                 else
-                    m_endpoints.find(0).value()->buffer().insert(QString("totalPower_%1").arg(m_sequence - 9), value);
+                    m_endpoints.value(0)->buffer().insert(QString("totalPower_%1").arg(m_sequence - 9), value);
             }
 
             break;
@@ -1794,9 +1795,9 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 double value = static_cast <double> (static_cast <quint64> (data[i * 4 + 3]) << 48 | static_cast <quint64> (data[i * 4 + 2]) << 32 | static_cast <quint64> (data[i * 4 + 1]) << 16 | static_cast <quint64> (data[i * 4])) * WBMAP_ENERGY_MULTIPLIER / 1000;
 
                 if (i)
-                    m_endpoints.find((m_sequence - 14) * 3 + i).value()->buffer().insert("energy", value);
+                    m_endpoints.value((m_sequence - 14) * 3 + i)->buffer().insert("energy", value);
                 else
-                    m_endpoints.find(0).value()->buffer().insert(QString("totalEnergy_%1").arg(m_sequence - 13), value);
+                    m_endpoints.value(0)->buffer().insert(QString("totalEnergy_%1").arg(m_sequence - 13), value);
             }
 
             break;
@@ -1814,7 +1815,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 double value = static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000;
 
                 for (quint8 j = 0; j < 4; j++)
-                    m_endpoints.find(i + j * 3 + 1 ).value()->buffer().insert("angle", value);
+                    m_endpoints.value(i + j * 3 + 1)->buffer().insert("angle", value);
             }
 
             break;
@@ -2358,6 +2359,8 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 10; i++)
             {
+                auto it = m_endpoints.find(i + 1);
+
                 if (!m_list.contains(i + 1))
                     continue;
 
@@ -2365,22 +2368,22 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
                 {
                     case 0 ... 6:
                     {
-                        m_endpoints.value(i + 1)->buffer().insert("level", round(data[i] * 2.55));
+                        it.value()->buffer().insert("level", round(data[i] * 2.55));
                         break;
                     }
 
                     case 7 ... 8:
                     {
-                        m_endpoints.value(i + 1)->buffer().insert("level", round(data[(i - 7) * 2 + 8] * 2.55));
-                        m_endpoints.value(i + 1)->buffer().insert("colorTemperature", 450 - data[7 + (i - 7) * 2] * 3);
+                        it.value()->buffer().insert("level", round(data[(i - 7) * 2 + 8] * 2.55));
+                        it.value()->buffer().insert("colorTemperature", 450 - data[7 + (i - 7) * 2] * 3);
                         break;
                     }
 
                     case 9:
                     {
                         Color color(Color::fromHS(data[14] / 360.0, data[15] / 100.0));
-                        m_endpoints.value(i + 1)->buffer().insert("level", data[16] * 2.55);
-                        m_endpoints.value(i + 1)->buffer().insert("color", QList <QVariant> {static_cast <quint8> (color.r() * 255), static_cast <quint8> (color.g() * 255), static_cast <quint8> (color.b() * 255)});
+                        it.value()->buffer().insert("level", data[16] * 2.55);
+                        it.value()->buffer().insert("color", QList <QVariant> {static_cast <quint8> (color.r() * 255), static_cast <quint8> (color.g() * 255), static_cast <quint8> (color.b() * 255)});
                         break;
                     }
                 }

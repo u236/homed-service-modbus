@@ -5,12 +5,12 @@
 
 namespace Other
 {
-    class JTH2D1 : public DeviceObject
+    class JTH2d1 : public DeviceObject
     {
 
     public:
 
-        JTH2D1(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+        JTH2d1(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
             DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
 
         void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;

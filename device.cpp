@@ -161,7 +161,7 @@ Device DeviceList::parse(const QJsonObject &json)
         case DeviceType::kc868a64:              device = Device(new Kincony::KC868A64(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::kc868a128:             device = Device(new Kincony::KC868A128(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::neptunSmartPlus:       device = Device(new Neptun::SmartPlus(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
-        case DeviceType::jth2d1:                device = Device(new Other::JTH2D1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::jth2d1:                device = Device(new Other::JTH2d1(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::t13:                   device = Device(new Other::T13(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::m0701s:                device = Device(new Other::M0701s(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
     }
