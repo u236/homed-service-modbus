@@ -146,7 +146,8 @@ public:
         neptunSmartPlus,
         jth2d1,
         t13,
-        m0701s
+        m0701s,
+        pzem6l24
     };
 
     DeviceList(QSettings *config, QObject *parent);
