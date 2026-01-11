@@ -66,7 +66,6 @@ void Peacefair::PZEM0x4::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-
             m_endpoints.value(0)->buffer().insert("voltage",   data[0] / 10.0);
             m_endpoints.value(0)->buffer().insert("current",   static_cast <double> (static_cast <quint32> (data[1]) | static_cast <quint32> (data[2]) << 16) / 1000);
             m_endpoints.value(0)->buffer().insert("power",     static_cast <double> (static_cast <quint32> (data[3]) | static_cast <quint32> (data[4]) << 16) / 10);

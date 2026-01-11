@@ -78,8 +78,7 @@ Modbus::ReplyStatus Modbus::parseReply(quint8 slaveAddress, FunctionCode functio
     if (!m_tcp && qFromLittleEndian(*(reinterpret_cast <const quint16*> (reply.mid(reply.length() - 2).constData()))) != crc16(reply.mid(0, reply.length() - 2)))
         return BadCRC;
 
-    if (reply.at(m_tcp ? 7 : 1) & 0x80)
-    {
+    if (reply.at(m_tcp ? 7 : 1) & 0x80) {
         if (registerData)
             *registerData = reply.at(2);
 
