@@ -11,6 +11,7 @@ HEADERS += \
     devices/native.h \
     devices/neptun.h \
     devices/other.h \
+    devices/peacefair.h \
     devices/wirenboard.h \
     modbus.h \
     port.h
@@ -24,6 +25,7 @@ SOURCES += \
     devices/native.cpp \
     devices/neptun.cpp \
     devices/other.cpp \
+    devices/peacefair.cpp \
     devices/wirenboard.cpp \
     modbus.cpp \
     port.cpp

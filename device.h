@@ -143,11 +143,12 @@ public:
         kc868a32,
         kc868a64,
         kc868a128,
+        pzem0x4,
+        pzem6l24,
         neptunSmartPlus,
         jth2d1,
         t13,
-        m0701s,
-        pzem6l24
+        m0701s
     };
 
     DeviceList(QSettings *config, QObject *parent);
