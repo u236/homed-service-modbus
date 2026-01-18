@@ -10,23 +10,18 @@ void Peacefair::PZEM0x4::init(const Device &device, const QMap <QString, QVarian
     m_type = "pzem0x4";
     m_description = "Peacefair PZEM-004T, PZEM-014 or PZEM-016 Energy Meter";
 
-    voltage->setMultiple(true);
     voltage->setParent(endpoint.data());
     endpoint->exposes().append(voltage);
 
-    current->setMultiple(true);
     current->setParent(endpoint.data());
     endpoint->exposes().append(current);
 
-    power->setMultiple(true);
     power->setParent(endpoint.data());
     endpoint->exposes().append(power);
 
-    energy->setMultiple(true);
     energy->setParent(endpoint.data());
     endpoint->exposes().append(energy);
 
-    frequency->setMultiple(true);
     frequency->setParent(endpoint.data());
     endpoint->exposes().append(frequency);
 
