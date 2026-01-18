@@ -220,13 +220,13 @@ void Kincony::KC868::parseReply(const QByteArray &reply)
 
         case 3:
         {
-            quint16 data;
+            quint16 value;
 
-            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(1)->buffer().insert("analogOutput", data >> 8);
-            m_endpoints.value(2)->buffer().insert("analogOutput", data & 0x00FF);
+            m_endpoints.value(1)->buffer().insert("analogOutput", value >> 8);
+            m_endpoints.value(2)->buffer().insert("analogOutput", value & 0x00FF);
             break;
         }
     }

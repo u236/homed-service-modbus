@@ -87,27 +87,25 @@ QByteArray Native::Common::pollRequest(void)
 
 void Native::Common::parseReply(const QByteArray &reply)
 {
+    quint16 value;
+
     switch (m_sequence)
     {
         case 0:
         {
-            quint16 data;
-
-            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("slaveId", data);
+            m_endpoints.value(0)->buffer().insert("slaveId", value);
             break;
         }
 
         case 1:
         {
-            quint16 data;
-
-            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &data) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("baudRate", data * 100);
+            m_endpoints.value(0)->buffer().insert("baudRate", value * 100);
             break;
         }
     }
