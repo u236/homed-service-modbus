@@ -1,11 +1,12 @@
 #include <netinet/tcp.h>
+#include <QtEndian>
 #include <QEventLoop>
 #include <QSerialPort>
 #include "logger.h"
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_debug(debug), m_serialError(false), m_connected(false), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_connected(false), m_baudRate(0), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -52,6 +53,21 @@ void PortThread::init(void)
     }
 }
 
+void PortThread::setBaudRate(qint32 baudRate)
+{
+    QByteArray request = QByteArray::fromHex("55aa55");
+    char check = 0;
+
+    baudRate = qToBigEndian(baudRate);
+    request.append(QByteArray(reinterpret_cast <char*> (&baudRate) + 1, 3)).append(0x03);
+
+    for (int i = 3; i < request.length(); i++)
+        check += request.at(i);
+
+    m_socket->write(request.append(check));
+    m_socket->waitForBytesWritten();
+}
+
 void PortThread::sendRequest(const Device &device, const QByteArray &request)
 {
     Availability availability = device->availability();
@@ -64,8 +80,15 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     m_replyData.clear();
     m_replyTimeout = device->replyTimeout();
 
-    if (m_device == m_serial)
-        m_serial->setBaudRate(device->baudRate());
+    if (m_baudRate != device->baudRate())
+    {
+        if (m_device == m_serial)
+            m_serial->setBaudRate(device->baudRate());
+        else if (m_rfc)
+            setBaudRate(device->baudRate());
+
+        m_baudRate = device->baudRate();
+    }
 
     m_device->write(request);
     logDebug(m_debug) << this << "serial data sent:" << request.toHex(':');
