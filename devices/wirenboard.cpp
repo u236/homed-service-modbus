@@ -434,6 +434,8 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
 
 void WirenBoard::WBMsw::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
+    // TODO: add occupancy
+
     m_type = "wbMsw";
     m_description = "Wiren Board WB-MSW Wall-mounted Sensor";
 

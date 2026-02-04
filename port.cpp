@@ -6,7 +6,7 @@
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_connected(false), m_rfcMode(RFCMode::Disabled), m_baudRate(0), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_connected(false), m_rfcMode(RFCMode::Disabled), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -23,6 +23,8 @@ PortThread::~PortThread(void)
 
 void PortThread::init(void)
 {
+    m_baudRate = 0;
+
     if (m_device == m_serial)
     {
         if (m_serial->isOpen())
