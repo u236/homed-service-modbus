@@ -6,7 +6,7 @@
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_connected(false), m_baudRate(0), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_connected(false), m_rfcMode(RFCMode::Disabled), m_baudRate(0), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -53,19 +53,60 @@ void PortThread::init(void)
     }
 }
 
-void PortThread::setBaudRate(qint32 baudRate)
+void PortThread::rfcRequest(qint32 baudRate)
 {
-    QByteArray request = QByteArray::fromHex("55aa55");
-    char check = 0;
+    QSignalBlocker blocker(m_socket);
+
+    if (!baudRate)
+    {
+        QByteArray request = QByteArray::fromHex("fffd2c");
+
+        m_socket->write(request);
+        request[1] = 0xFC;
+
+        m_socket->waitForBytesWritten();
+        m_socket->waitForReadyRead(RFC_REQUEST_TIMEOUT);
+
+        m_rfcMode = m_socket->readAll().contains(request) ? RFCMode::Normal : RFCMode::Simlar;
+        return;
+    }
 
     baudRate = qToBigEndian(baudRate);
-    request.append(QByteArray(reinterpret_cast <char*> (&baudRate) + 1, 3)).append(0x03);
 
-    for (int i = 3; i < request.length(); i++)
-        check += request.at(i);
+    switch (m_rfcMode)
+    {
+        case RFCMode::Normal:
+        {
+            QByteArray request = QByteArray::fromHex("fffa2c01").append(QByteArray(reinterpret_cast <char*> (&baudRate), 4)).append(0xFF).append(0xF0);
 
-    m_socket->write(request.append(check));
-    m_socket->waitForBytesWritten();
+            m_socket->write(request);
+            request[3] = 0x65;
+
+            m_socket->waitForBytesWritten();
+            m_socket->waitForReadyRead(RFC_REQUEST_TIMEOUT);
+
+            if (m_socket->readAll() != request)
+                logDebug(m_debug) << this << "unable to set baud rate" << qFromBigEndian(baudRate);
+
+            break;
+        }
+
+        case RFCMode::Simlar:
+        {
+            QByteArray request = QByteArray::fromHex("55aa55").append(QByteArray(reinterpret_cast <char*> (&baudRate) + 1, 3)).append(0x03);
+            char check = 0;
+
+            for (int i = 3; i < request.length(); i++)
+                check += request.at(i);
+
+            m_socket->write(request.append(check));
+            m_socket->waitForBytesWritten();
+            break;
+        }
+
+        default:
+            break;
+    }
 }
 
 void PortThread::sendRequest(const Device &device, const QByteArray &request)
@@ -84,8 +125,8 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     {
         if (m_device == m_serial)
             m_serial->setBaudRate(device->baudRate());
-        else if (m_rfc)
-            setBaudRate(device->baudRate());
+        else
+            rfcRequest(device->baudRate());
 
         m_baudRate = device->baudRate();
     }
@@ -146,7 +187,7 @@ void PortThread::threadStarted(void)
         connect(m_socket, &QTcpSocket::connected, this, &PortThread::socketConnected);
     }
 
-    connect(m_device, &QSerialPort::readyRead, this, &PortThread::startTimer);
+    connect(m_device, &QIODevice::readyRead, this, &PortThread::startTimer);
     connect(m_receiveTimer, &QTimer::timeout, this, &PortThread::readyRead);
     connect(m_resetTimer, &QTimer::timeout, this, &PortThread::reset);
     connect(m_pollTimer, &QTimer::timeout, this, &PortThread::poll);
@@ -201,7 +242,10 @@ void PortThread::socketConnected(void)
     setsockopt(descriptor, SOL_TCP, TCP_KEEPCNT, &count, sizeof(count));
 
     logInfo << this << "successfully connected to" << QString("%1:%2").arg(m_adddress.toString()).arg(m_port);
-    m_socket->readAll();
+
+    if (m_rfc)
+        rfcRequest();
+
     m_pollTimer->start(1);
     m_connected = true;
 }
@@ -229,6 +273,9 @@ void PortThread::reset(void)
 void PortThread::poll(void)
 {
     QByteArray request;
+
+    if (m_device == m_serial ? !m_serial->isOpen() : !m_connected)
+        return;
 
     for (int i = 0; i < m_devices->count(); i++)
     {

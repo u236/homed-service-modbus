@@ -1,12 +1,20 @@
 #ifndef PORT_H
 #define PORT_H
 
-#define RESET_TIMEOUT   5000
+#define RESET_TIMEOUT           5000
+#define RFC_REQUEST_TIMEOUT     1000
 
 #include <QHostAddress>
 #include <QSerialPort>
 #include <QThread>
 #include "device.h"
+
+enum class RFCMode
+{
+    Disabled,
+    Normal,
+    Simlar
+};
 
 class PortThread;
 typedef QSharedPointer <PortThread> Port;
@@ -38,6 +46,7 @@ private:
     quint16 m_port;
     bool m_connected;
 
+    RFCMode m_rfcMode;
     qint32 m_baudRate;
 
     QByteArray m_replyData;
@@ -46,7 +55,7 @@ private:
     DeviceList *m_devices;
 
     void init(void);
-    void setBaudRate(qint32 baudRate);
+    void rfcRequest(qint32 baudRate = 0);
     void sendRequest(const Device &device, const QByteArray &request);
 
 private slots:
