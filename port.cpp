@@ -194,6 +194,9 @@ void PortThread::threadStarted(void)
     connect(m_resetTimer, &QTimer::timeout, this, &PortThread::reset);
     connect(m_pollTimer, &QTimer::timeout, this, &PortThread::poll);
 
+    connect(this, &QThread::finished, m_resetTimer, &QTimer::deleteLater);
+    connect(this, &QThread::finished, m_socket, &QTcpSocket::deleteLater);
+
     m_receiveTimer->setSingleShot(true);
     m_resetTimer->setSingleShot(true);
 
