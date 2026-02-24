@@ -434,8 +434,6 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
 
 void WirenBoard::WBMsw::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
-    // TODO: add occupancy
-
     m_type = "wbMsw";
     m_description = "Wiren Board WB-MSW Wall-mounted Sensor";
 
@@ -452,13 +450,16 @@ void WirenBoard::WBMsw::init(const Device &device, const QMap <QString, QVariant
         }
         else
         {
-            Expose blinkInterval(new NumberObject("blinkInterval")), blinkDuration(new NumberObject("blinkDuration")), temperature(new SensorObject("temperature")), humidity(new SensorObject("humidity")), illuminance(new SensorObject("illuminance")), noise(new SensorObject("noise")), co2(new SensorObject("co2")), co2AutoCalibration(new ToggleObject("co2AutoCalibration")), voc(new SensorObject("voc"));
+            Expose blinkInterval(new NumberObject("blinkInterval")), blinkDuration(new NumberObject("blinkDuration")), occupancy(new SensorObject("occupancy")), temperature(new SensorObject("temperature")), humidity(new SensorObject("humidity")), illuminance(new SensorObject("illuminance")), noise(new SensorObject("noise")), co2(new SensorObject("co2")), co2AutoCalibration(new ToggleObject("co2AutoCalibration")), voc(new SensorObject("voc"));
 
             blinkInterval->setParent(endpoint.data());
             endpoint->exposes().append(blinkInterval);
 
             blinkDuration->setParent(endpoint.data());
             endpoint->exposes().append(blinkDuration);
+
+            occupancy->setParent(endpoint.data());
+            endpoint->exposes().append(occupancy);
 
             temperature->setParent(endpoint.data());
             endpoint->exposes().append(temperature);
@@ -492,6 +493,10 @@ void WirenBoard::WBMsw::init(const Device &device, const QMap <QString, QVariant
     m_options.insert("blinkDuration", QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 50}, {"unit", "ms"}, {"icon", "mdi:led-on"}});
     m_options.insert("noise",         QMap <QString, QVariant> {{"type", "sensor"}, {"unit", "dB"}, {"icon", "mdi:ear-hearing"}});
 
+    m_endpoints.value(0)->buffer().insert("occupancy", false);
+
+    connect(m_timer, &QTimer::timeout, this, &WBMsw::update);
+    m_timer->start(1000);
 }
 
 void WirenBoard::WBMsw::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
@@ -560,6 +565,7 @@ QByteArray WirenBoard::WBMsw::pollRequest(void)
         case 3: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x000A, 2);
         case 4: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0003, 3);
         case 5: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0008, 4);
+        case 6: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x011B, 1);
     }
 
     updateEndpoints();
@@ -644,7 +650,6 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
             m_endpoints.value(0)->buffer().insert("noise", noise);
             m_endpoints.value(0)->buffer().insert("temperature", temperature);
             m_endpoints.value(0)->buffer().insert("humidity", humidity);
-
             break;
         }
 
@@ -668,12 +673,32 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
             m_endpoints.value(0)->buffer().insert("co2", co2);
             m_endpoints.value(0)->buffer().insert("illuminance", illuminance);
             m_endpoints.value(0)->buffer().insert("voc", voc);
+            break;
+        }
 
+        case 6:
+        {
+            quint16 value;
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || value < WBMSW_OCCUPANCY_THRESHOLD)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("occupancy", true);
+            m_time = QDateTime::currentSecsSinceEpoch();
             break;
         }
     }
 
     m_sequence++;
+}
+
+void WirenBoard::WBMsw::update(void)
+{
+    if (!m_time || m_time + WBMSW_OCCUPANCY_TIMEOUT > QDateTime::currentSecsSinceEpoch())
+        return;
+
+    m_endpoints.value(0)->buffer().insert("occupancy", false);
+    updateEndpoints();
 }
 
 void WirenBoard::WBMai6::init(const Device &device, const QMap <QString, QVariant> &)

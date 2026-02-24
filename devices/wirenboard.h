@@ -1,6 +1,9 @@
 #ifndef DEVICES_WIRENBOARD_H
 #define DEVICES_WIRENBOARD_H
 
+#define WBMSW_OCCUPANCY_THRESHOLD           200
+#define WBMSW_OCCUPANCY_TIMEOUT             60
+
 #define WBMAP_COIL_REGISTER_ADDRESS         0x1460
 #define WBMAP_COIL_REGISTER_COUNT           6
 
@@ -107,7 +110,7 @@ namespace WirenBoard
     public:
 
         WBMsw(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_timer(new QTimer(this)), m_time(0) {}
 
         void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
         void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
@@ -118,7 +121,14 @@ namespace WirenBoard
 
     private:
 
+        QTimer *m_timer;
+
         bool m_output[3];
+        qint64 m_time;
+
+    private slots:
+
+        void update(void);
 
     };
 
