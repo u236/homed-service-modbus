@@ -45,7 +45,7 @@ private:
 
     QMetaEnum m_commands, m_events;
     QString m_haPrefix, m_haStatus;
-    bool m_haEnabled;
+    bool m_haEnabled, m_haUpdate;
 
     void publishExposes(DeviceObject *device, bool remove = false);
     void publishProperties(const Device &device);
