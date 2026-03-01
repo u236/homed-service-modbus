@@ -2242,29 +2242,47 @@ void WirenBoard::WBLed::init(const Device &device, const QMap <QString, QVariant
             break;
     }
 
-    for (quint8 i = 1; i <= 10; i++)
+    for (quint8 i = 0; i <= 10; i++)
     {
         Endpoint endpoint(new EndpointObject(i, device));
-        Expose light(new LightObject);
 
-        if (!m_list.contains(i))
-            continue;
+        if (i)
+        {
+            Expose light(new LightObject);
 
-        light->setMultiple(true);
-        light->setParent(endpoint.data());
-        endpoint->exposes().append(light);
+            if (!m_list.contains(i))
+                continue;
 
-        m_options.insert(QString("light_%1").arg(i), i < 8 ? QList <QVariant> {"level"} : i < 10 ? QList <QVariant> {"level", "colorTemperature"} : QList <QVariant> {"level", "color"});
+            light->setMultiple(true);
+            light->setParent(endpoint.data());
+            endpoint->exposes().append(light);
+
+            m_options.insert(QString("light_%1").arg(i), i < 8 ? QList <QVariant> {"level"} : i < 10 ? QList <QVariant> {"level", "colorTemperature"} : QList <QVariant> {"level", "color"});
+        }
+        else
+        {
+            Expose frequencyDivider(new NumberObject("frequencyDivider"));
+            frequencyDivider->setParent(endpoint.data());
+            endpoint->exposes().append(frequencyDivider);
+        }
+
         m_endpoints.insert(i, endpoint);
     }
 
-    m_options.insert("endpointName", QMap <QString, QVariant> {{"1", "W1"}, {"2", "W2"}, {"3", "W3"}, {"4", "W4"}, {"5", "W1+W2"}, {"6", "W3+W4"}, {"7", "W1+W2+W3+W4"}, {"8", "CCT1"}, {"9", "CCT2"}, {"10", "RGB"}});
+    m_options.insert("endpointName",     QMap <QString, QVariant> {{"1", "W1"}, {"2", "W2"}, {"3", "W3"}, {"4", "W4"}, {"5", "W1+W2"}, {"6", "W3+W4"}, {"7", "W1+W2+W3+W4"}, {"8", "CCT1"}, {"9", "CCT2"}, {"10", "RGB"}});
+    m_options.insert("frequencyDivider", QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 240}, {"icon", "mdi:square-wave"}});
     m_options.insert("colorTemperature", QMap <QString, QVariant> {{"min", 150}, {"max", 450}, {"step", 3}});
 }
 
 void WirenBoard::WBLed::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
     QList <QString> actions = {"status", "level", "colorTemperature", "color"};
+
+    if (!endpointId && name == "frequencyDivider")
+    {
+        m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0009, static_cast <quint16> (data.toInt())));
+        return;
+    }
 
     if (!m_list.contains(endpointId))
         return;
@@ -2334,8 +2352,9 @@ QByteArray WirenBoard::WBLed::pollRequest(void)
     switch (m_sequence)
     {
         case 0: return m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister,  0x0FA0, m_mode);
-        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 10);
-        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
+        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0009, 1);
+        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       0x0000, 10);
+        case 3: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
     }
 
     updateEndpoints();
@@ -2360,6 +2379,17 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
 
         case 1:
         {
+            quint16 value;
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            m_endpoints.value(0)->buffer().insert("frequencyDivider", value);
+            break;
+        }
+
+        case 2:
+        {
             quint16 data[16];
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
@@ -2377,7 +2407,7 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 2:
+        case 3:
         {
             quint16 data[17];
 
