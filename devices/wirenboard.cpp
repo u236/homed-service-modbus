@@ -216,6 +216,7 @@ QByteArray WirenBoard::WBM1w2::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -234,7 +235,6 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 2; i++)
                 m_endpoints.value(i + 1)->buffer().insert("operationMode", data[i] ? "input" : "temperature");
 
-            m_fullPoll = false;
             break;
         }
 
@@ -366,6 +366,7 @@ QByteArray WirenBoard::WBMs::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -384,7 +385,6 @@ void WirenBoard::WBMs::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 2; i++)
                 m_endpoints.value(i + 1)->buffer().insert("operationMode", data[i] ? "input" : "temperature");
 
-            m_fullPoll = false;
             break;
         }
 
@@ -972,6 +972,7 @@ QByteArray WirenBoard::WBMai6::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -1003,7 +1004,6 @@ void WirenBoard::WBMai6::parseReply(const QByteArray &reply)
                 }
             }
 
-            m_fullPoll = false;
             break;
         }
 
@@ -1275,6 +1275,7 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -1297,7 +1298,6 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 it.value()->buffer().insert("delta", static_cast <qint16> (data[i + 3]));
             }
 
-            m_fullPoll = false;
             break;
         }
 
@@ -1505,6 +1505,7 @@ QByteArray WirenBoard::WBMap6s::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -1528,7 +1529,6 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
                 it.value()->buffer().insert("delta", static_cast <qint16> (data[i + 3]));
             }
 
-            m_fullPoll = false;
             break;
         }
 
@@ -1747,6 +1747,7 @@ QByteArray WirenBoard::WBMap12::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -1769,7 +1770,6 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
                 it.value()->buffer().insert("delta", static_cast <qint16> (data[i + 3]));
             }
 
-            m_fullPoll = false;
             break;
         }
 
@@ -2110,6 +2110,7 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -2133,7 +2134,6 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
                     m_endpoints.value(i + 1)->buffer().insert(m_sequence == 1 ? "voltageLow" : "voltageHigh", data[i] / 100.0);
             }
 
-            m_fullPoll = false;
             break;
         }
 
@@ -2426,6 +2426,7 @@ QByteArray WirenBoard::WBLed::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -2439,7 +2440,6 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::WriteSingleRegister, reply) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_fullPoll = false;
             break;
         }
 
@@ -2628,6 +2628,7 @@ QByteArray WirenBoard::WBMdm::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -2653,7 +2654,6 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
                 m_endpoints.value(i + 1)->buffer().insert("dimmerMode", mode);
             }
 
-            m_fullPoll = false;
             break;
         }
 
@@ -2665,7 +2665,6 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 3; i++)
                 m_endpoints.value(i + 1)->buffer().insert("dimmerFront", data[i] ? "trailing" : "leading");
 
-            m_fullPoll = false;
             break;
         }
 
@@ -2819,6 +2818,7 @@ QByteArray WirenBoard::WBUps::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -2837,8 +2837,6 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
             m_endpoints.value(0)->buffer().insert("operationMode",      data[0] ? "manual" : "auto");
             m_endpoints.value(0)->buffer().insert("outputVoltageLimit", data[1] / 1000.0);
             m_endpoints.value(0)->buffer().insert("chargeCurrentLimit", data[2] / 1000.0);
-
-            m_fullPoll = false;
             break;
         }
 

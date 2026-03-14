@@ -56,6 +56,7 @@ QByteArray Eletechsup::N4Dsa02::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -74,7 +75,6 @@ void Eletechsup::N4Dsa02::parseReply(const QByteArray &reply)
             for (quint8 i = 0; i < 2; i++)
                 m_endpoints.value(i + 1)->buffer().insert("temperatureOffset", static_cast <qint16> (data[i]) / 10.0);
 
-            m_fullPoll = false;
             break;
         }
 
@@ -273,6 +273,7 @@ QByteArray Eletechsup::R4Pin08::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -289,7 +290,6 @@ void Eletechsup::R4Pin08::parseReply(const QByteArray &reply)
                 break;
 
             m_endpoints.value(0)->buffer().insert(m_sequence ? "outputMode" : "inputMode", value ? "high" : "low");
-            m_fullPoll = false;
             break;
         }
 

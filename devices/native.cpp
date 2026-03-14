@@ -182,6 +182,7 @@ QByteArray Native::RelayController::pollRequest(void)
     updateEndpoints();
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -198,7 +199,6 @@ void Native::RelayController::parseReply(const QByteArray &reply)
                 break;
 
             m_endpoints.value(0)->buffer().insert("invert", value ? true : false);
-            m_fullPoll = false;
             break;
 
         case 1:
@@ -246,7 +246,7 @@ void Native::SwitchController::init(const Device &device, const QMap <QString, Q
     }
 
     m_options.insert("invert", QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:swap-horizontal-bold"}});
-    m_options.insert("action", QMap <QString, QVariant> {{"type", "sensor"}, {"trigger", QList <QVariant> {"singleClock", "doubleClick", "hold", "release"}}, {"icon", "mdi:gesture-double-tap"}});
+    m_options.insert("action", QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick", "hold", "release"}}, {"icon", "mdi:gesture-double-tap"}});
 
     memset(m_time, 0, sizeof(m_time));
     memset(m_count, 0, sizeof(m_count));
@@ -284,6 +284,7 @@ QByteArray Native::SwitchController::pollRequest(void)
 
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
+    m_fullPoll = false;
 
     return QByteArray();
 }
@@ -300,8 +301,6 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
                 break;
 
             m_endpoints.value(0)->buffer().insert("invert", value ? true : false);
-            m_fullPoll = false;
-            m_firstPoll = true;
             break;
 
         case 1:
@@ -309,9 +308,8 @@ void Native::SwitchController::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            if (m_firstPoll)
+            if (m_fullPoll)
             {
-                m_firstPoll = false;
                 m_status = value;
                 break;
             }
