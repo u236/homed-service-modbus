@@ -144,7 +144,7 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
 
         if (i)
         {
-            Expose temperature(new SensorObject("temperature")), input(new BinaryObject("input")), singleClick(new SensorObject("singleClick")), doubleClick(new SensorObject("doubleClick")), operationMode(new SelectObject("operationMode"));
+            Expose temperature(new SensorObject("temperature")), input(new BinaryObject("input")), action(new SensorObject("action")), operationMode(new SelectObject("operationMode"));
 
             temperature->setMultiple(true);
             temperature->setParent(endpoint.data());
@@ -154,13 +154,9 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
             input->setParent(endpoint.data());
             endpoint->exposes().append(input);
 
-            singleClick->setMultiple(true);
-            singleClick->setParent(endpoint.data());
-            endpoint->exposes().append(singleClick);
-
-            doubleClick->setMultiple(true);
-            doubleClick->setParent(endpoint.data());
-            endpoint->exposes().append(doubleClick);
+            action->setMultiple(true);
+            action->setParent(endpoint.data());
+            endpoint->exposes().append(action);
 
             operationMode->setMultiple(true);
             operationMode->setParent(endpoint.data());
@@ -173,8 +169,7 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
     updateOptions(exposeOptions);
 
     m_options.insert("input",         QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
-    m_options.insert("singleClick",   QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
-    m_options.insert("doubleClick",   QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
+    m_options.insert("action",        QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
     m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"temperature", "input"}}, {"icon", "mdi:cog"}});
 }
 
@@ -214,6 +209,10 @@ QByteArray WirenBoard::WBM1w2::pollRequest(void)
     }
 
     updateEndpoints();
+
+    for (quint8 i = 0; i < 2; i++)
+        m_endpoints.value(i + 1)->buffer().remove("action");
+
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
@@ -269,11 +268,21 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
 
         case 3 ... 4:
         {
+            quint16 *counter = m_sequence == 3 ? m_singleClick : m_doubleClick;
+
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
-                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 3 ? "singleClick" : "doubleClick", data[i]);
+            {
+                if (counter[i] == data[i])
+                    continue;
+
+                if (!m_fullPoll)
+                    m_endpoints.value(i + 1)->buffer().insert("action", m_sequence == 3 ? "singleClick" : "doubleClick");
+
+                counter[i] = data[i];
+            }
 
             break;
         }
@@ -1931,19 +1940,15 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
 
             if (m_inputs)
             {
-                Expose input(new BinaryObject("input")), singleClick(new SensorObject("singleClick")), doubleClick(new SensorObject("doubleClick"));
+                Expose input(new BinaryObject("input")), action(new SensorObject("action"));
 
                 input->setMultiple(true);
                 input->setParent(endpoint.data());
                 endpoint->exposes().append(input);
 
-                singleClick->setMultiple(true);
-                singleClick->setParent(endpoint.data());
-                endpoint->exposes().append(singleClick);
-
-                doubleClick->setMultiple(true);
-                doubleClick->setParent(endpoint.data());
-                endpoint->exposes().append(doubleClick);
+                action->setMultiple(true);
+                action->setParent(endpoint.data());
+                endpoint->exposes().append(action);
             }
 
             if (m_model == Model::wbMrwm2)
@@ -1981,16 +1986,13 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
         }
         else
         {
-            Expose input(new BinaryObject("input_0")), singleClick(new SensorObject("singleClick_0")), doubleClick(new SensorObject("doubleClick_0"));
+            Expose input(new BinaryObject("input_0")), action(new SensorObject("action_0"));
 
             input->setParent(endpoint.data());
             endpoint->exposes().append(input);
 
-            singleClick->setParent(endpoint.data());
-            endpoint->exposes().append(singleClick);
-
-            doubleClick->setParent(endpoint.data());
-            endpoint->exposes().append(doubleClick);
+            action->setParent(endpoint.data());
+            endpoint->exposes().append(action);
         }
 
         m_endpoints.insert(i, endpoint);
@@ -1999,8 +2001,7 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
     updateOptions(exposeOptions);
 
     m_options.insert("input",             QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
-    m_options.insert("singleClick",       QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
-    m_options.insert("doubleClick",       QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
+    m_options.insert("action",            QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
     m_options.insert("voltageProtection", QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("voltageLow",        QMap <QString, QVariant> {{"type", "number"}, {"min", 120}, {"max", 220}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("voltageHigh",       QMap <QString, QVariant> {{"type", "number"}, {"min", 230}, {"max", 277}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
@@ -2108,6 +2109,10 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
     }
 
     updateEndpoints();
+
+    for (quint8 i = m_inputs == 8 ? 0 : 1; i <= m_channels; i++)
+        m_endpoints.value(i)->buffer().remove(i ? "action" : "action_0");
+
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
@@ -2169,16 +2174,29 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
 
         case 5 ... 6:
         {
-            quint16 data[8];
+            quint16 data[8], *counter = m_sequence == 5 ? m_singleClick : m_doubleClick;
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
             for (quint8 i = 0; i < m_channels; i++)
-                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 5 ? "singleClick" : "doubleClick", data[i]);
+            {
+                if (counter[i] == data[i])
+                    continue;
 
-            if (m_inputs == 8)
-                m_endpoints.value(0)->buffer().insert(m_sequence == 5 ? "singleClick_0" : "doubleClick_0", data[7]);
+                if (!m_fullPoll)
+                    m_endpoints.value(i + 1)->buffer().insert("action", m_sequence == 5 ? "singleClick" : "doubleClick");
+
+                counter[i] = data[i];
+            }
+
+            if (m_inputs == 8 && counter[7] != data[7])
+            {
+                if (!m_fullPoll)
+                    m_endpoints.value(0)->buffer().insert("action_0", m_sequence == 5 ? "singleClick" : "doubleClick");
+
+                counter[7] = data[7];
+            }
 
             break;
         }
@@ -2698,7 +2716,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
 void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     Endpoint endpoint(new EndpointObject(0, device));
-    Expose battety(new SensorObject("battery")), batteryStatus(new SensorObject("batteryStatus")), temperature(new SensorObject("temperature")), temperatureStatus(new SensorObject("temperatureStatus")), singleClick(new SensorObject("singleClick")), doubleClick(new SensorObject("doubleClick")), inputVoltage(new SensorObject("inputVoltage")), outputVoltage(new SensorObject("outputVoltage")), batteryVoltage(new SensorObject("batteryVoltage")), batteryCurrent(new SensorObject("batteryCurrent")), chargeCurrent(new SensorObject("chargeCurrent")), dischargeCurrent(new SensorObject("dischargeCurrent")), operationMode(new SelectObject("operationMode")), outputVoltageLimit(new NumberObject("outputVoltageLimit")), chargeCurrentLimit(new NumberObject("chargeCurrentLimit"));
+    Expose battety(new SensorObject("battery")), batteryStatus(new SensorObject("batteryStatus")), temperature(new SensorObject("temperature")), temperatureStatus(new SensorObject("temperatureStatus")), action(new SensorObject("action")), inputVoltage(new SensorObject("inputVoltage")), outputVoltage(new SensorObject("outputVoltage")), batteryVoltage(new SensorObject("batteryVoltage")), batteryCurrent(new SensorObject("batteryCurrent")), chargeCurrent(new SensorObject("chargeCurrent")), dischargeCurrent(new SensorObject("dischargeCurrent")), operationMode(new SelectObject("operationMode")), outputVoltageLimit(new NumberObject("outputVoltageLimit")), chargeCurrentLimit(new NumberObject("chargeCurrentLimit"));
 
     m_type = "wbUps";
     m_description = "Wiren Board WB-UPS v3 Backup Power Supply";
@@ -2715,11 +2733,8 @@ void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant
     temperatureStatus->setParent(endpoint.data());
     endpoint->exposes().append(temperatureStatus);
 
-    singleClick->setParent(endpoint.data());
-    endpoint->exposes().append(singleClick);
-
-    doubleClick->setParent(endpoint.data());
-    endpoint->exposes().append(doubleClick);
+    action->setParent(endpoint.data());
+    endpoint->exposes().append(action);
 
     inputVoltage->setParent(endpoint.data());
     endpoint->exposes().append(inputVoltage);
@@ -2753,8 +2768,7 @@ void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant
 
     m_options.insert("batteryStatus",      QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:battery-charging"}});
     m_options.insert("temperatureStatus",  QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:thermometer"}});
-    m_options.insert("singleClick",        QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
-    m_options.insert("doubleClick",        QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
+    m_options.insert("action",             QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
 
     m_options.insert("inputVoltage",       exposeOptions.value("voltage"));
     m_options.insert("outputVoltage",      exposeOptions.value("voltage"));
@@ -2816,6 +2830,8 @@ QByteArray WirenBoard::WBUps::pollRequest(void)
     }
 
     updateEndpoints();
+    m_endpoints.value(0)->buffer().remove("action");
+
     m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
@@ -2878,12 +2894,15 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
 
         case 2 ... 3:
         {
-            quint16 value;
+            quint16 value, &counter = m_sequence == 2 ? m_singleClick : m_doubleClick;
 
-            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || counter == value)
                 break;
 
-            m_endpoints.value(0)->buffer().insert(m_sequence == 2 ? "singleClick" : "doubleClick", value);
+            if (!m_fullPoll)
+                m_endpoints.value(0)->buffer().insert("action", m_sequence == 2 ? "singleClick" : "doubleClick");
+
+            counter = value;
             break;
         }
     }

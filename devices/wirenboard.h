@@ -85,6 +85,10 @@ namespace WirenBoard
         QByteArray pollRequest(void) override;
         void parseReply(const QByteArray &reply) override;
 
+    private:
+
+        quint16 m_singleClick[2], m_doubleClick[2];
+
     };
 
     class WBMs : public DeviceObject
@@ -283,7 +287,7 @@ namespace WirenBoard
 
         Model m_model;
         quint8 m_channels, m_inputs;
-        quint16 m_output[6];
+        quint16 m_output[6], m_singleClick[8], m_doubleClick[8];
 
     };
 
@@ -508,6 +512,10 @@ namespace WirenBoard
 
         QByteArray pollRequest(void) override;
         void parseReply(const QByteArray &reply) override;
+
+    private:
+
+        quint16 m_singleClick, m_doubleClick;
 
     };
 }
