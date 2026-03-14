@@ -2382,6 +2382,7 @@ void WirenBoard::WBLed::enqueueAction(quint8 endpointId, const QString &name, co
     if (!endpointId && name == "frequencyDivider")
     {
         m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0009, static_cast <quint16> (data.toInt())));
+        m_fullPoll = true;
         return;
     }
 
@@ -2444,7 +2445,7 @@ void WirenBoard::WBLed::startPoll(void)
     if (m_polling)
         return;
 
-    m_sequence = m_fullPoll ? 0 : 1;
+    m_sequence = m_fullPoll ? 0 : 2;
     m_polling = true;
 }
 

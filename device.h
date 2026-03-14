@@ -62,7 +62,9 @@ public:
     inline void increaseErrorCount(void) { m_errorCount++; }
     inline void resetErrorCount(void) { m_errorCount = 0; }
 
+    inline bool fullPoll(void) { return m_fullPoll; }
     inline void resetPoll(void) { m_polling = false; m_fullPoll = true; }
+
     inline QQueue <QByteArray> &actionQueue(void) { return m_actionQueue; }
 
 protected:

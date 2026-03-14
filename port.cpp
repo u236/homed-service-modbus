@@ -295,7 +295,7 @@ void PortThread::poll(void)
 
         if (!device->actionQueue().isEmpty())
         {
-            QByteArray request = device->actionQueue().dequeue();
+            request = device->actionQueue().dequeue();
 
             while (device->availability() != Availability::Offline)
             {
@@ -309,6 +309,10 @@ void PortThread::poll(void)
 
             device->actionFinished();
             device->resetPollTime();
+
+            if (device->fullPoll())
+                device->resetPoll();
+
             continue;
         }
 
