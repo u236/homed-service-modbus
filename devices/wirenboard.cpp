@@ -144,7 +144,7 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
 
         if (i)
         {
-            Expose temperature(new SensorObject("temperature")), input(new BinaryObject("input")), operationMode(new SelectObject("operationMode"));
+            Expose temperature(new SensorObject("temperature")), input(new BinaryObject("input")), singleClick(new SensorObject("singleClick")), doubleClick(new SensorObject("doubleClick")), operationMode(new SelectObject("operationMode"));
 
             temperature->setMultiple(true);
             temperature->setParent(endpoint.data());
@@ -153,6 +153,14 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
             input->setMultiple(true);
             input->setParent(endpoint.data());
             endpoint->exposes().append(input);
+
+            singleClick->setMultiple(true);
+            singleClick->setParent(endpoint.data());
+            endpoint->exposes().append(singleClick);
+
+            doubleClick->setMultiple(true);
+            doubleClick->setParent(endpoint.data());
+            endpoint->exposes().append(doubleClick);
 
             operationMode->setMultiple(true);
             operationMode->setParent(endpoint.data());
@@ -165,6 +173,8 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
     updateOptions(exposeOptions);
 
     m_options.insert("input",         QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
+    m_options.insert("singleClick",   QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
+    m_options.insert("doubleClick",   QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
     m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"temperature", "input"}}, {"icon", "mdi:cog"}});
 }
 
@@ -190,9 +200,17 @@ QByteArray WirenBoard::WBM1w2::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0113, 2);
-        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus,      0x0000, 2);
-        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0007, 2);
+        case 0:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0113, 2);
+
+        case 1:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 2);
+
+        case 2:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0007, 2);
+
+        case 3 ... 4:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 3 ? 0x01D0 : 0x01F0, 2);
     }
 
     updateEndpoints();
@@ -204,12 +222,12 @@ QByteArray WirenBoard::WBM1w2::pollRequest(void)
 
 void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
 {
+    quint16 data[2];
+
     switch (m_sequence)
     {
         case 0:
         {
-            quint16 data[2];
-
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
@@ -222,8 +240,6 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
 
         case 1:
         {
-            quint16 data[2];
-
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
@@ -235,8 +251,6 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
 
         case 2:
         {
-            quint16 data[2];
-
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
@@ -249,6 +263,17 @@ void WirenBoard::WBM1w2::parseReply(const QByteArray &reply)
 
                 m_endpoints.value(i + 1)->buffer().insert("temperature", temperature);
             }
+
+            break;
+        }
+
+        case 3 ... 4:
+        {
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 3 ? "singleClick" : "doubleClick", data[i]);
 
             break;
         }
@@ -1906,10 +1931,19 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
 
             if (m_inputs)
             {
-                Expose input(new BinaryObject("input"));
+                Expose input(new BinaryObject("input")), singleClick(new SensorObject("singleClick")), doubleClick(new SensorObject("doubleClick"));
+
                 input->setMultiple(true);
                 input->setParent(endpoint.data());
                 endpoint->exposes().append(input);
+
+                singleClick->setMultiple(true);
+                singleClick->setParent(endpoint.data());
+                endpoint->exposes().append(singleClick);
+
+                doubleClick->setMultiple(true);
+                doubleClick->setParent(endpoint.data());
+                endpoint->exposes().append(doubleClick);
             }
 
             if (m_model == Model::wbMrwm2)
@@ -1947,9 +1981,16 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
         }
         else
         {
-            Expose input(new BinaryObject("input_0"));
+            Expose input(new BinaryObject("input_0")), singleClick(new SensorObject("singleClick_0")), doubleClick(new SensorObject("doubleClick_0"));
+
             input->setParent(endpoint.data());
             endpoint->exposes().append(input);
+
+            singleClick->setParent(endpoint.data());
+            endpoint->exposes().append(singleClick);
+
+            doubleClick->setParent(endpoint.data());
+            endpoint->exposes().append(doubleClick);
         }
 
         m_endpoints.insert(i, endpoint);
@@ -1958,6 +1999,8 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
     updateOptions(exposeOptions);
 
     m_options.insert("input",             QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
+    m_options.insert("singleClick",       QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
+    m_options.insert("doubleClick",       QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
     m_options.insert("voltageProtection", QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("voltageLow",        QMap <QString, QVariant> {{"type", "number"}, {"min", 120}, {"max", 220}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("voltageHigh",       QMap <QString, QVariant> {{"type", "number"}, {"min", 230}, {"max", 277}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
@@ -2035,21 +2078,28 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
 
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
 
-        case 5:
+        case 5 ... 6:
+
+            if (!m_inputs)
+                break;
+
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 5 ? 0x01D0 : 0x01F0, m_inputs);
+
+        case 7:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
 
-        case 6 ... 7:
+        case 8 ... 9:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 6 ? 0x0038 : 0x0040, 2);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 8 ? 0x0038 : 0x0040, 2);
 
-        case 8:
+        case 10:
 
             if (m_model != Model::wbMrwm2)
                 break;
@@ -2117,7 +2167,23 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 5:
+        case 5 ... 6:
+        {
+            quint16 data[8];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < m_channels; i++)
+                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 5 ? "singleClick" : "doubleClick", data[i]);
+
+            if (m_inputs == 8)
+                m_endpoints.value(0)->buffer().insert(m_sequence == 5 ? "singleClick_0" : "doubleClick_0", data[7]);
+
+            break;
+        }
+
+        case 7:
         {
             quint16 data[2];
 
@@ -2130,7 +2196,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 6 ... 7:
+        case 8 ... 9:
         {
             quint16 data[2];
 
@@ -2138,12 +2204,12 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
-                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 6 ? "voltage" : "power", data[i] / (m_sequence == 6 ? 100.0 : 10.0));
+                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 8 ? "voltage" : "power", data[i] / (m_sequence == 8 ? 100.0 : 10.0));
 
             break;
         }
 
-        case 8:
+        case 10:
         {
             quint16 data[4];
 
@@ -2633,7 +2699,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
 void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     Endpoint endpoint(new EndpointObject(0, device));
-    Expose battety(new SensorObject("battery")), batteryStatus(new SensorObject("batteryStatus")), temperature(new SensorObject("temperature")), temperatureStatus(new SensorObject("temperatureStatus")), buttonCount(new SensorObject("buttonCount")), inputVoltage(new SensorObject("inputVoltage")), outputVoltage(new SensorObject("outputVoltage")), batteryVoltage(new SensorObject("batteryVoltage")), batteryCurrent(new SensorObject("batteryCurrent")), chargeCurrent(new SensorObject("chargeCurrent")), dischargeCurrent(new SensorObject("dischargeCurrent")), operationMode(new SelectObject("operationMode")), outputVoltageLimit(new NumberObject("outputVoltageLimit")), chargeCurrentLimit(new NumberObject("chargeCurrentLimit"));
+    Expose battety(new SensorObject("battery")), batteryStatus(new SensorObject("batteryStatus")), temperature(new SensorObject("temperature")), temperatureStatus(new SensorObject("temperatureStatus")), singleClick(new SensorObject("singleClick")), doubleClick(new SensorObject("doubleClick")), inputVoltage(new SensorObject("inputVoltage")), outputVoltage(new SensorObject("outputVoltage")), batteryVoltage(new SensorObject("batteryVoltage")), batteryCurrent(new SensorObject("batteryCurrent")), chargeCurrent(new SensorObject("chargeCurrent")), dischargeCurrent(new SensorObject("dischargeCurrent")), operationMode(new SelectObject("operationMode")), outputVoltageLimit(new NumberObject("outputVoltageLimit")), chargeCurrentLimit(new NumberObject("chargeCurrentLimit"));
 
     m_type = "wbUps";
     m_description = "Wiren Board WB-UPS v3 Backup Power Supply";
@@ -2650,8 +2716,11 @@ void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant
     temperatureStatus->setParent(endpoint.data());
     endpoint->exposes().append(temperatureStatus);
 
-    buttonCount->setParent(endpoint.data());
-    endpoint->exposes().append(buttonCount);
+    singleClick->setParent(endpoint.data());
+    endpoint->exposes().append(singleClick);
+
+    doubleClick->setParent(endpoint.data());
+    endpoint->exposes().append(doubleClick);
 
     inputVoltage->setParent(endpoint.data());
     endpoint->exposes().append(inputVoltage);
@@ -2685,7 +2754,8 @@ void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant
 
     m_options.insert("batteryStatus",      QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:battery-charging"}});
     m_options.insert("temperatureStatus",  QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:thermometer"}});
-    m_options.insert("buttonCount",        QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
+    m_options.insert("singleClick",        QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
+    m_options.insert("doubleClick",        QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:counter"}});
 
     m_options.insert("inputVoltage",       exposeOptions.value("voltage"));
     m_options.insert("outputVoltage",      exposeOptions.value("voltage"));
@@ -2736,9 +2806,14 @@ QByteArray WirenBoard::WBUps::pollRequest(void)
 {
     switch (m_sequence)
     {
-        case 0: return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0010, 3);
-        case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0000, 10);
-        case 2: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x01D0, 1);
+        case 0:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0010, 3);
+
+        case 1:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0000, 10);
+
+        case 2 ... 3:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 2 ? 0x01D0 : 0x01F0, 1);
     }
 
     updateEndpoints();
@@ -2803,14 +2878,14 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 2:
+        case 2 ... 3:
         {
             quint16 value;
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("buttonCount", value);
+            m_endpoints.value(0)->buffer().insert(m_sequence == 2 ? "singleClick" : "doubleClick", value);
             break;
         }
     }
