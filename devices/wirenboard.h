@@ -361,7 +361,7 @@ namespace WirenBoard
     private:
 
         Model m_model;
-        quint16 m_mode, m_output[10];
+        quint16 m_mode, m_output[10], m_singleClick[4], m_doubleClick[4];
         QList <quint8> m_list;
 
     };
@@ -494,7 +494,7 @@ namespace WirenBoard
     private:
 
         QList <QString> m_modes;
-        quint16 m_output[3];
+        quint16 m_output[3], m_singleClick[6], m_doubleClick[6];
 
     };
 
