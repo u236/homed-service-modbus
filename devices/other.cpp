@@ -173,13 +173,13 @@ void Other::T13::parseReply(const QByteArray &reply)
 void Other::M0701s::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
 {
     Endpoint endpoint(new EndpointObject(0, device));
-    Expose status(new SwitchObject), frequency(new NumberObject("frequency")), voltage(new SensorObject("voltage")), current(new SensorObject("current")), temperature(new SensorObject("temperature"));
+    Expose output(new SwitchObject), frequency(new NumberObject("frequency")), voltage(new SensorObject("voltage")), current(new SensorObject("current")), temperature(new SensorObject("temperature"));
 
     m_type = "m0701s";
     m_description = "VFC-M0701S Frequency Converter";
 
-    status->setParent(endpoint.data());
-    endpoint->exposes().append(status);
+    output->setParent(endpoint.data());
+    endpoint->exposes().append(output);
 
     frequency->setParent(endpoint.data());
     endpoint->exposes().append(frequency);

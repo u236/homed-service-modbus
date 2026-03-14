@@ -13,7 +13,11 @@ HEADERS += \
     devices/neptun.h \
     devices/other.h \
     devices/peacefair.h \
-    devices/wirenboard.h \
+    devices/wb-common.h \
+    devices/wb-dimmer.h \
+    devices/wb-map.h \
+    devices/wb-relay.h \
+    devices/wb-sensor.h \
     modbus.h \
     port.h
 
@@ -27,7 +31,11 @@ SOURCES += \
     devices/neptun.cpp \
     devices/other.cpp \
     devices/peacefair.cpp \
-    devices/wirenboard.cpp \
+    devices/wb-common.cpp \
+    devices/wb-dimmer.cpp \
+    devices/wb-map.cpp \
+    devices/wb-relay.cpp \
+    devices/wb-sensor.cpp \
     modbus.cpp \
     port.cpp
 
