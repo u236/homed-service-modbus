@@ -40,7 +40,7 @@ private:
 
     quint8 m_portId;
     QString m_portName;
-    bool m_tcp, m_rfc, m_debug, m_serialError;
+    bool m_tcp, m_rfc, m_debug, m_serialError, m_busy;
 
     QHostAddress m_adddress;
     quint16 m_port;

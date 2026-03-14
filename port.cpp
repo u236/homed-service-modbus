@@ -6,7 +6,7 @@
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_connected(false), m_rfcMode(RFCMode::Disabled), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_busy(false), m_connected(false), m_rfcMode(RFCMode::Disabled), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -279,8 +279,10 @@ void PortThread::poll(void)
 {
     QByteArray request;
 
-    if (m_device == m_serial ? !m_serial->isOpen() : !m_connected)
+    if (m_busy || (m_device == m_serial ? !m_serial->isOpen() : !m_connected))
         return;
+
+    m_busy = true;
 
     for (int i = 0; i < m_devices->count(); i++)
     {
@@ -326,4 +328,6 @@ void PortThread::poll(void)
 
         device->parseReply(m_replyData);
     }
+
+    m_busy = false;
 }
