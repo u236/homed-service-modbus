@@ -132,6 +132,7 @@ public:
         wbLed512,
         wbMdm,
         wbUps,
+        wbMwac,
         n4dsa02,
         r4pin08m0,
         r4pin08m1,

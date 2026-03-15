@@ -327,3 +327,228 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
 
     m_sequence++;
 }
+
+void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+{
+    m_type = "wbMwac";
+    m_description = "Wiren Board WB-MWAC v2 Water Leak Detector";
+
+    for (quint8 i = 0; i <= 2; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose lock(new LockObject), volume(new SensorObject("volume")), pulseCount(new SensorObject("pulseCount")), pulseWeight(new SensorObject("pulseWeight"));
+
+            lock->setMultiple(true);
+            lock->setParent(endpoint.data());
+            endpoint->exposes().append(lock);
+
+            volume->setMultiple(true);
+            volume->setParent(endpoint.data());
+            endpoint->exposes().append(volume);
+
+            pulseCount->setMultiple(true);
+            pulseCount->setParent(endpoint.data());
+            endpoint->exposes().append(pulseCount);
+
+            pulseWeight->setMultiple(true);
+            pulseWeight->setParent(endpoint.data());
+            endpoint->exposes().append(pulseWeight);
+        }
+        else
+        {
+            Expose battery(new SensorObject("battery")), alarm(new ToggleObject("alarm")), beeper(new ToggleObject("beeper")), cleaningMode(new ToggleObject("cleaningMode"));
+
+            battery->setParent(endpoint.data());
+            endpoint->exposes().append(battery);
+
+            alarm->setParent(endpoint.data());
+            endpoint->exposes().append(alarm);
+
+            beeper->setParent(endpoint.data());
+            endpoint->exposes().append(beeper);
+
+            cleaningMode->setParent(endpoint.data());
+            endpoint->exposes().append(cleaningMode);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    for (quint8 i = 11; i <= 16; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+        Expose input(new SensorObject("input")), action(new SensorObject("action")), operationMode(new SelectObject("operationMode"));
+
+        input->setMultiple(true);
+        input->setParent(endpoint.data());
+        endpoint->exposes().append(input);
+
+        action->setMultiple(true);
+        action->setParent(endpoint.data());
+        endpoint->exposes().append(action);
+
+        operationMode->setMultiple(true);
+        operationMode->setParent(endpoint.data());
+        endpoint->exposes().append(operationMode);
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    updateOptions(exposeOptions);
+}
+
+void WirenBoard::WBMwac::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    Q_UNUSED(endpointId)
+    Q_UNUSED(name)
+    Q_UNUSED(data)
+}
+
+void WirenBoard::WBMwac::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 2;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBMwac::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0009, 6);
+
+        case 1:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x042A, 2);
+
+        case 2:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 6);
+
+        case 3:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 5);
+
+        case 4 ... 5:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 4 ? 0x01D0 : 0x01F0, 6);
+
+        case 6:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0426, 4);
+
+        case 7:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x042C, 8);
+    }
+
+    updateEndpoints();
+
+    for (quint8 i = 0; i < 6; i++)
+        m_endpoints.value(i + 11)->buffer().remove("action");
+
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+    m_fullPoll = false;
+
+    return QByteArray();
+}
+
+void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data[6];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            // TODO
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[2];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("pulseWeight", data[i]);
+
+            break;
+        }
+
+        case 2:
+        {
+            quint16 data[6];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 6; i++)
+                m_endpoints.value(i + 11)->buffer().insert("input", data[i] ? true : false);
+
+            break;
+        }
+
+        case 3:
+        {
+            quint16 data[5];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            // TODO
+            break;
+        }
+
+        case 4 ... 5:
+        {
+            quint16 data[6], *counter = m_sequence == 4 ? m_singleClick : m_doubleClick;
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 6; i++)
+            {
+                if (counter[i] == data[i])
+                    continue;
+
+                if (!m_fullPoll)
+                    m_endpoints.value(i + 11)->buffer().insert("action", m_sequence == 4 ? "singleClick" : "doubleClick");
+
+                counter[i] = data[i];
+            }
+
+            break;
+        }
+
+        case 6:
+        {
+            quint16 data[4];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            // TODO
+            break;
+        }
+
+        case 7:
+        {
+            quint16 data[8];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            // TODO
+            break;
+        }
+    }
+
+    m_sequence++;
+}
