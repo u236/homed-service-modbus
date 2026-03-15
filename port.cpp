@@ -286,7 +286,7 @@ void PortThread::poll(void)
 
     for (int i = 0; i < m_devices->count(); i++)
     {
-        const Device &device = m_devices->at(i);
+        Device device = m_devices->at(i);
 
         if (device->portId() != m_portId || !device->active())
             continue;
