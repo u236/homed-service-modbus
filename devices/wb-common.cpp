@@ -359,10 +359,10 @@ void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVarian
         }
         else
         {
-            Expose battery(new SensorObject("battery")), alarm(new ToggleObject("alarm")), beeper(new ToggleObject("beeper")), cleaningMode(new ToggleObject("cleaningMode"));
+            Expose batteryStatus(new SensorObject("batteryStatus")), alarm(new ToggleObject("alarm")), beeper(new ToggleObject("beeper")), cleaningMode(new ToggleObject("cleaningMode"));
 
-            battery->setParent(endpoint.data());
-            endpoint->exposes().append(battery);
+            batteryStatus->setParent(endpoint.data());
+            endpoint->exposes().append(batteryStatus);
 
             alarm->setParent(endpoint.data());
             endpoint->exposes().append(alarm);
@@ -436,9 +436,12 @@ QByteArray WirenBoard::WBMwac::pollRequest(void)
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 4 ? 0x01D0 : 0x01F0, 6);
 
         case 6:
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0426, 4);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x03CB, 1);
 
         case 7:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0426, 4);
+
+        case 8:
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x042C, 8);
     }
 
@@ -465,7 +468,19 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            // TODO
+            for (quint8 i = 0; i < 6; i++)
+            {
+                auto it = m_endpoints.find(i + 11);
+
+                switch (data[i])
+                {
+                    case 3: it.value()->buffer().insert("operationMode", "disabled"); break;
+                    case 4: it.value()->buffer().insert("operationMode", "edge"); break;
+                    case 5: it.value()->buffer().insert("operationMode", "sensor"); break;
+                    case 6: it.value()->buffer().insert("operationMode", "input"); break;
+                }
+            }
+
             break;
         }
 
@@ -502,7 +517,13 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            // TODO
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
+
+            m_endpoints.value(0)->buffer().insert("alarm",          data[2] ? true : false);
+            m_endpoints.value(0)->buffer().insert("cleaningMode",   data[3] ? true : false);
+            m_endpoints.value(0)->buffer().insert("beeper",         data[4] ? true : false);
+
             break;
         }
 
@@ -529,23 +550,44 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
 
         case 6:
         {
+            quint16 value;
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            switch (value)
+            {
+                case 0: m_endpoints.value(0)->buffer().insert("batteryStatus", "low"); break;
+                case 1: m_endpoints.value(0)->buffer().insert("batteryStatus", "middle"); break;
+                case 2: m_endpoints.value(0)->buffer().insert("batteryStatus", "high"); break;
+            }
+
+            break;
+        }
+
+        case 7:
+        {
             quint16 data[4];
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            // TODO
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("pulseCount", Modbus::toUInt32LE(data + i * 2));
+
             break;
         }
 
-        case 7:
+        case 8:
         {
             quint16 data[8];
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            // TODO
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("volume", Modbus::toUInt64LE(data + i * 4) / 1000.0);
+
             break;
         }
     }
