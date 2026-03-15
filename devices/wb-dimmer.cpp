@@ -48,7 +48,7 @@ void WirenBoard::WBMdm::init(const Device &device, const QMap <QString, QVariant
     m_options.insert("light",        QList <QVariant> {"level"});
 
     m_options.insert("endpointName", QMap <QString, QVariant> {{"1", "CH1"}, {"2", "CH2"}, {"3", "O3"}, {"11", "IN1"}, {"12", "IN2"}, {"13", "IN3"}, {"14", "IN4"}, {"15", "IN5"}, {"16", "IN6"}});
-    m_options.insert("dimmerMode",   QMap <QString, QVariant> {{"type", "select"}, {"enum", QVariant(m_modes)}, {"icon", "mdi:cog"}});
+    m_options.insert("dimmerMode",   QMap <QString, QVariant> {{"type", "select"}, {"enum", m_modes}, {"icon", "mdi:cog"}});
     m_options.insert("dimmerFront",  QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"leading", "trailing"}}, {"icon", "mdi:cog"}});
     m_options.insert("input",        QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
     m_options.insert("action",       QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
@@ -168,7 +168,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 3; i++)
             {
-                QString mode = m_modes.value(data[i]);
+                QString mode = m_modes.value(data[i]).toString();
 
                 if (mode.isEmpty())
                     continue;

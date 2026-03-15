@@ -87,7 +87,7 @@ void Other::T13::init(const Device &device, const QMap <QString, QVariant> &expo
     m_endpoints.insert(0, endpoint);
     updateOptions(exposeOptions);
 
-    m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", QVariant(m_modes)}, {"control", true}, {"icon", "mdi:sync"}});
+    m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", m_modes}, {"control", true}, {"icon", "mdi:sync"}});
     m_options.insert("frequency",     QMap <QString, QVariant> {{"type", "number"}, {"min", 0}, {"max", 50}, {"step", 0.1}, {"unit", "Hz"}, {"control", true}, {"icon", "mdi:sine-wave"}});
 }
 

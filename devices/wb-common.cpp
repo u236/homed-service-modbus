@@ -327,3 +327,350 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
 
     m_sequence++;
 }
+
+void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVariant> &exposeOptions)
+{
+    m_type = "wbMwac";
+    m_description = "Wiren Board WB-MWAC v2 Water Leak Detector";
+    m_modes = {"disabled", "edge", "sensor", "input"};
+
+    for (quint8 i = 0; i <= 2; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+
+        if (i)
+        {
+            Expose lock(new LockObject), volume(new SensorObject("volume")), pulseCount(new SensorObject("pulseCount")), pulseVolume(new NumberObject("pulseVolume"));
+
+            lock->setMultiple(true);
+            lock->setParent(endpoint.data());
+            endpoint->exposes().append(lock);
+
+            volume->setMultiple(true);
+            volume->setParent(endpoint.data());
+            endpoint->exposes().append(volume);
+
+            pulseCount->setMultiple(true);
+            pulseCount->setParent(endpoint.data());
+            endpoint->exposes().append(pulseCount);
+
+            pulseVolume->setMultiple(true);
+            pulseVolume->setParent(endpoint.data());
+            endpoint->exposes().append(pulseVolume);
+        }
+        else
+        {
+            Expose batteryStatus(new SensorObject("batteryStatus")), alarm(new BinaryObject("alarm")), resetAlarm(new ButtonObject("resetAlarm")), beeper(new ToggleObject("beeper")), cleaningMode(new ToggleObject("cleaningMode"));
+
+            batteryStatus->setParent(endpoint.data());
+            endpoint->exposes().append(batteryStatus);
+
+            alarm->setParent(endpoint.data());
+            endpoint->exposes().append(alarm);
+
+            resetAlarm->setParent(endpoint.data());
+            endpoint->exposes().append(resetAlarm);
+
+            beeper->setParent(endpoint.data());
+            endpoint->exposes().append(beeper);
+
+            cleaningMode->setParent(endpoint.data());
+            endpoint->exposes().append(cleaningMode);
+        }
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    for (quint8 i = 11; i <= 16; i++)
+    {
+        Endpoint endpoint(new EndpointObject(i, device));
+        Expose input(new SensorObject("input")), action(new SensorObject("action")), operationMode(new SelectObject("operationMode"));
+
+        input->setMultiple(true);
+        input->setParent(endpoint.data());
+        endpoint->exposes().append(input);
+
+        action->setMultiple(true);
+        action->setParent(endpoint.data());
+        endpoint->exposes().append(action);
+
+        operationMode->setMultiple(true);
+        operationMode->setParent(endpoint.data());
+        endpoint->exposes().append(operationMode);
+
+        m_endpoints.insert(i, endpoint);
+    }
+
+    updateOptions(exposeOptions);
+
+    m_options.insert("endpointName",  QMap <QString, QVariant> {{"1", "K1"}, {"2", "K2"}, {"11", "F1"}, {"12", "F2"}, {"13", "F3"}, {"14", "F4"}, {"15", "F5"}, {"16", "S6"}});
+    m_options.insert("pulseCount",    QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:pulse"}});
+    m_options.insert("pulseVolume",   QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 10000}, {"unit", "L"}, {"icon", "mdi:water"}});
+    m_options.insert("input",         QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
+    m_options.insert("action",        QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
+    m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", m_modes}, {"icon", "mdi:cog"}});
+    m_options.insert("resetAlarm",    QMap <QString, QVariant> {{"type", "button"}, {"control", true}});
+    m_options.insert("beeper",        QMap <QString, QVariant> {{"type", "toggle"}, {"control", true}, {"icon", "mdi:volume-high"}});
+    m_options.insert("cleaningMode",  QMap <QString, QVariant> {{"type", "toggle"}, {"control", true}, {"icon", "mdi:vacuum"}});
+
+    m_options.insert("lock",          "valve");
+}
+
+void WirenBoard::WBMwac::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
+{
+    QList <QString> actions = {"status", "pulseVolume", "operationMode", "resetAlarm", "beeper", "cleaningMode"};
+    int index = actions.indexOf(name);
+
+    switch (index)
+    {
+        case 0: // status
+        {
+            QList <QString> list = {"on", "off", "toggle"};
+            bool value;
+
+            if (!endpointId || endpointId > 2)
+                return;
+
+            switch (list.indexOf(data.toString()))
+            {
+                case 0:  value = true; break;
+                case 1:  value = false; break;
+                case 2:  value = m_output[endpointId - 1] ? false : true; break;
+                default: return;
+            }
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+            return;
+        }
+
+        case 1: // pulseVolume
+        {
+            if (!endpointId || endpointId > 2)
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x042A + endpointId - 1, static_cast <quint16> (data.toInt())));
+            break;
+        }
+
+        case 2: // operationMode
+        {
+            int value = m_modes.indexOf(data.toString());
+
+            if (endpointId < 11 || endpointId > 16 || value < 0)
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0009 + endpointId - 11, static_cast <quint16> (value + 3)));
+            break;
+        }
+
+        case 3: // resetAlarm
+        {
+            if (endpointId || !data.toBool())
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, 0x0002, 0x0000));
+            break;
+        }
+
+        case 4: // beeper
+        case 5: // cleaningMode
+        {
+            if (endpointId)
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, index == 4 ? 0x0004 : 0x0003, data.toBool() ? 0xFF00 : 0x0000));
+            break;
+        }
+
+        default:
+            return;
+    }
+
+    m_fullPoll = true;
+}
+
+void WirenBoard::WBMwac::startPoll(void)
+{
+    if (m_polling)
+        return;
+
+    m_sequence = m_fullPoll ? 0 : 2;
+    m_polling = true;
+}
+
+QByteArray WirenBoard::WBMwac::pollRequest(void)
+{
+    switch (m_sequence)
+    {
+        case 0:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0009, 6);
+
+        case 1:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x042A, 2);
+
+        case 2:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, 6);
+
+        case 3:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 5);
+
+        case 4 ... 5:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 4 ? 0x01D0 : 0x01F0, 6);
+
+        case 6:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x03CB, 1);
+
+        case 7:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0426, 4);
+
+        case 8:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x042C, 8);
+    }
+
+    updateEndpoints();
+
+    for (quint8 i = 0; i < 6; i++)
+        m_endpoints.value(i + 11)->buffer().remove("action");
+
+    m_pollTime = QDateTime::currentMSecsSinceEpoch();
+    m_polling = false;
+    m_fullPoll = false;
+
+    return QByteArray();
+}
+
+void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
+{
+    switch (m_sequence)
+    {
+        case 0:
+        {
+            quint16 data[6];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 6; i++)
+            {
+                QString mode = m_modes.value(data[i] - 3).toString();
+
+                if (mode.isEmpty())
+                    continue;
+
+                m_endpoints.value(i + 11)->buffer().insert("operationMode", mode);
+            }
+
+            break;
+        }
+
+        case 1:
+        {
+            quint16 data[2];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadHoldingRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("pulseVolume", data[i]);
+
+            break;
+        }
+
+        case 2:
+        {
+            quint16 data[6];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 6; i++)
+                m_endpoints.value(i + 11)->buffer().insert("input", data[i] ? true : false);
+
+            break;
+        }
+
+        case 3:
+        {
+            quint16 data[5];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadCoilStatus, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("status", data[i] ? "on" : "off");
+
+            m_endpoints.value(0)->buffer().insert("alarm",          data[2] ? true : false);
+            m_endpoints.value(0)->buffer().insert("cleaningMode",   data[3] ? true : false);
+            m_endpoints.value(0)->buffer().insert("beeper",         data[4] ? true : false);
+
+            memcpy(m_output, data, sizeof(m_output));
+            break;
+        }
+
+        case 4 ... 5:
+        {
+            quint16 data[6], *counter = m_sequence == 4 ? m_singleClick : m_doubleClick;
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 6; i++)
+            {
+                if (counter[i] == data[i])
+                    continue;
+
+                if (!m_fullPoll)
+                    m_endpoints.value(i + 11)->buffer().insert("action", m_sequence == 4 ? "singleClick" : "doubleClick");
+
+                counter[i] = data[i];
+            }
+
+            break;
+        }
+
+        case 6:
+        {
+            quint16 value;
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
+                break;
+
+            switch (value)
+            {
+                case 0: m_endpoints.value(0)->buffer().insert("batteryStatus", "low"); break;
+                case 1: m_endpoints.value(0)->buffer().insert("batteryStatus", "medium"); break;
+                case 2: m_endpoints.value(0)->buffer().insert("batteryStatus", "high"); break;
+            }
+
+            break;
+        }
+
+        case 7:
+        {
+            quint16 data[4];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("pulseCount", Modbus::toUInt32BE(data + i * 2));
+
+            break;
+        }
+
+        case 8:
+        {
+            quint16 data[8];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (quint8 i = 0; i < 2; i++)
+                m_endpoints.value(i + 1)->buffer().insert("volume", Modbus::toUInt64BE(data + i * 4));
+
+            break;
+        }
+    }
+
+    m_sequence++;
+}

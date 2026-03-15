@@ -128,6 +128,7 @@ Device DeviceList::parse(const QJsonObject &json)
         case DeviceType::homedSwitchController: device = Device(new Native::SwitchController(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbCommon:              device = Device(new WirenBoard::Common(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbUps:                 device = Device(new WirenBoard::WBUps(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
+        case DeviceType::wbMwac:                device = Device(new WirenBoard::WBMwac(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbM1w2:                device = Device(new WirenBoard::WBM1w2(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbMs:                  device = Device(new WirenBoard::WBMs(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;
         case DeviceType::wbMsw:                 device = Device(new WirenBoard::WBMsw(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name)); break;

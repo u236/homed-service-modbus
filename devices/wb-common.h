@@ -48,6 +48,28 @@ namespace WirenBoard
         quint16 m_singleClick, m_doubleClick;
 
     };
+
+    class WBMwac : public DeviceObject
+    {
+
+    public:
+
+        WBMwac(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
+
+        void init(const Device &device, const QMap <QString, QVariant> &exposeOptions) override;
+        void enqueueAction(quint8 endpointId, const QString &name, const QVariant &data) override;
+        void startPoll(void) override;
+
+        QByteArray pollRequest(void) override;
+        void parseReply(const QByteArray &reply) override;
+
+    private:
+
+        quint16 m_output[2], m_singleClick[6], m_doubleClick[6];
+        QList <QVariant> m_modes;
+
+    };
 }
 
 #endif

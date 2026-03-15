@@ -38,7 +38,7 @@ namespace Other
 
     private:
 
-        QList <QString> m_modes;
+        QList <QVariant> m_modes;
 
     };
 
