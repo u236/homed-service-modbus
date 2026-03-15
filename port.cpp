@@ -179,7 +179,13 @@ void PortThread::threadStarted(void)
     }
     else
     {
+        int descriptor = m_socket->socketDescriptor(), keepAlive = 1, interval = 10, count = 3;
         QList <QString> list = QString(m_portName).remove("tcp://").split(':');
+
+        setsockopt(descriptor, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(keepAlive));
+        setsockopt(descriptor, SOL_TCP, TCP_KEEPIDLE, &interval, sizeof(interval));
+        setsockopt(descriptor, SOL_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
+        setsockopt(descriptor, SOL_TCP, TCP_KEEPCNT, &count, sizeof(count));
 
         m_device = m_socket;
         m_adddress = QHostAddress(list.value(0));
@@ -239,13 +245,6 @@ void PortThread::socketError(QAbstractSocket::SocketError error)
 
 void PortThread::socketConnected(void)
 {
-    int descriptor = m_socket->socketDescriptor(), keepAlive = 1, interval = 10, count = 3;
-
-    setsockopt(descriptor, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(keepAlive));
-    setsockopt(descriptor, SOL_TCP, TCP_KEEPIDLE, &interval, sizeof(interval));
-    setsockopt(descriptor, SOL_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
-    setsockopt(descriptor, SOL_TCP, TCP_KEEPCNT, &count, sizeof(count));
-
     logInfo << this << "successfully connected to" << QString("%1:%2").arg(m_adddress.toString()).arg(m_port);
 
     if (m_rfc)
