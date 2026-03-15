@@ -66,7 +66,7 @@ namespace WirenBoard
 
     private:
 
-        quint16 m_singleClick[6], m_doubleClick[6];
+        quint16 m_output[2], m_singleClick[6], m_doubleClick[6];
 
     };
 }

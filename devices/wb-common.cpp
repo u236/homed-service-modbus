@@ -359,13 +359,16 @@ void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVarian
         }
         else
         {
-            Expose batteryStatus(new SensorObject("batteryStatus")), alarm(new ToggleObject("alarm")), beeper(new ToggleObject("beeper")), cleaningMode(new ToggleObject("cleaningMode"));
+            Expose batteryStatus(new SensorObject("batteryStatus")), alarm(new BinaryObject("alarm")), resetAlarm(new ButtonObject("resetAlarm")), beeper(new ToggleObject("beeper")), cleaningMode(new ToggleObject("cleaningMode"));
 
             batteryStatus->setParent(endpoint.data());
             endpoint->exposes().append(batteryStatus);
 
             alarm->setParent(endpoint.data());
             endpoint->exposes().append(alarm);
+
+            resetAlarm->setParent(endpoint.data());
+            endpoint->exposes().append(resetAlarm);
 
             beeper->setParent(endpoint.data());
             endpoint->exposes().append(beeper);
@@ -398,13 +401,82 @@ void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVarian
     }
 
     updateOptions(exposeOptions);
+
+    m_options.insert("endpointName", QMap <QString, QVariant> {{"1", "K1"}, {"2", "K2"}, {"11", "F1"}, {"12", "F2"}, {"13", "F3"}, {"14", "F4"}, {"15", "F5"}, {"16", "S6"}});
 }
 
 void WirenBoard::WBMwac::enqueueAction(quint8 endpointId, const QString &name, const QVariant &data)
 {
-    Q_UNUSED(endpointId)
-    Q_UNUSED(name)
-    Q_UNUSED(data)
+    QList <QString> actions = {"status", "pulseWeight", "operationMode", "resetAlarm", "beeper", "cleaningMode"};
+    int index = actions.indexOf(name);
+
+    switch (index)
+    {
+        case 0: // status
+        {
+            QList <QString> list = {"on", "off", "toggle"};
+            bool value;
+
+            if (!endpointId || endpointId > 2)
+                return;
+
+            switch (list.indexOf(data.toString()))
+            {
+                case 0:  value = true; break;
+                case 1:  value = false; break;
+                case 2:  value = m_output[endpointId - 1] ? false : true; break;
+                default: return;
+            }
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, endpointId - 1, value ? 0xFF00 : 0x0000));
+            return;
+        }
+
+        case 1: // pulseWeight
+        {
+            if (endpointId < 11 || endpointId > 16)
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x042A + endpointId - 1, static_cast <quint16> (data.toInt())));
+            break;
+        }
+
+        case 2: // operationMode
+        {
+            QList <QString> list = {"disabled", "edge", "sensor", "input"};
+            int value = list.indexOf(data.toString());
+
+            if (endpointId < 11 || endpointId > 16 || value < 0)
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0009 + endpointId - 11, static_cast <quint16> (value + 3)));
+            break;
+        }
+
+        case 3: // resetAlarm
+        {
+            if (endpointId || !data.toBool())
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, 0x0002, 0x0000));
+            break;
+        }
+
+        case 4: // beeper
+        case 5: // cleaningMode
+        {
+            if (endpointId)
+                return;
+
+            m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleCoil, index == 4 ? 0x0004 : 0x0003, data.toBool() ? 0xFF00 : 0x0000));
+            break;
+        }
+
+        default:
+            return;
+    }
+
+    m_fullPoll = true;
 }
 
 void WirenBoard::WBMwac::startPoll(void)
@@ -524,6 +596,7 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
             m_endpoints.value(0)->buffer().insert("cleaningMode",   data[3] ? true : false);
             m_endpoints.value(0)->buffer().insert("beeper",         data[4] ? true : false);
 
+            memcpy(m_output, data, sizeof(m_output));
             break;
         }
 
