@@ -45,6 +45,11 @@ public:
 
     inline void setTcp(bool value) { m_tcp = value; }
 
+    static quint32 toUInt32BE(const quint16 *data);
+    static quint32 toUInt32LE(const quint16 *data);
+    static quint64 toUInt64BE(const quint16 *data);
+    static quint64 toUInt64LE(const quint16 *data);
+
     QByteArray makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress = 0, quint16 registerValue = 0, quint16 *registerData = nullptr);
     ReplyStatus parseReply(quint8 slaveAddress, FunctionCode functionCode, const QByteArray &reply, quint16 *registerData = nullptr);
 

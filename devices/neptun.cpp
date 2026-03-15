@@ -263,7 +263,7 @@ void Neptun::SmartPlus::parseReply(const QByteArray &reply)
                     case 7: endpointId = 42; break;
                 }
 
-                m_endpoints.value(endpointId)->buffer().insert("volume", static_cast <quint32> (data[i * 2] << 16 | data[i * 2 + 1]));
+                m_endpoints.value(endpointId)->buffer().insert("volume", Modbus::toUInt32BE(data + i * 2));
             }
         }
     }
