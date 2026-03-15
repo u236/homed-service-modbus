@@ -179,10 +179,13 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             case Command::removeDevice:
             {
                 int index = -1;
-                const Device &device = m_devices->byName(json.value("device").toString(), &index);
+                Device device = m_devices->byName(json.value("device").toString(), &index);
 
                 if (index >= 0)
                 {
+                    disconnect(device.data(), &DeviceObject::deviceUpdated, this, &Controller::deviceUpdated);
+                    disconnect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
+
                     m_devices->removeAt(index);
                     logInfo << device << "removed";
                     deviceEvent(device.data(), Event::removed);
