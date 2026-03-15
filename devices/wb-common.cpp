@@ -123,7 +123,7 @@ void WirenBoard::Common::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("serialNumber", static_cast <quint32> (data[0]) << 16 | static_cast <quint32> (data[1]));
+            m_endpoints.value(0)->buffer().insert("serialNumber", Modbus::toUInt32BE(data));
             break;
         }
     }

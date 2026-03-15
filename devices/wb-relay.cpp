@@ -350,7 +350,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
-                m_endpoints.value(i + 1)->buffer().insert("energy", static_cast <double> (static_cast <quint32> (data[i * 2]) << 16 | static_cast <quint32> (data[i * 2 + 1])) / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("energy", Modbus::toUInt32BE(data + i * 2) / 1000.0);
 
             break;
         }

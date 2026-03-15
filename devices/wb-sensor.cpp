@@ -568,7 +568,7 @@ void WirenBoard::WBMsw::parseReply(const QByteArray &reply)
                 co2 = data[0];
 
             if (data[1] != 0xFFFF || data[2] != 0xFFFF)
-                illuminance = static_cast <double> (static_cast <quint32> (data[1]) << 16 | static_cast <quint32> (data[2])) / 100;
+                illuminance = Modbus::toUInt32BE(data + 1) / 100.0;
 
             if (data[3] != 0xFFFF)
                 voc = data[3];

@@ -21,6 +21,26 @@ static const quint16 crcTable[] =
     0x4400, 0x84C1, 0x8581, 0x4540, 0x8701, 0x47C0, 0x4680, 0x8641, 0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
 
+quint32 Modbus::toUInt32BE(const quint16 *data)
+{
+    return static_cast <quint32> (data[0]) << 16 | static_cast <quint32> (data[1]);
+}
+
+quint32 Modbus::toUInt32LE(const quint16 *data)
+{
+    return static_cast <quint32> (data[1]) << 16 | static_cast <quint32> (data[0]);
+}
+
+quint64 Modbus::toUInt64BE(const quint16 *data)
+{
+    return static_cast <quint64> (data[0]) << 48 | static_cast <quint64> (data[1]) << 32 | static_cast <quint64> (data[2]) << 16 | static_cast <quint64> (data[3]);
+}
+
+quint64 Modbus::toUInt64LE(const quint16 *data)
+{
+    return static_cast <quint64> (data[3]) << 48 | static_cast <quint64> (data[2]) << 32 | static_cast <quint64> (data[1]) << 16 | static_cast <quint64> (data[0]);
+}
+
 QByteArray Modbus::makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress, quint16 registerValue, quint16 *registerData)
 {
     QByteArray request;    
