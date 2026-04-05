@@ -50,6 +50,11 @@ public:
     static quint64 toUInt64BE(const quint16 *data);
     static quint64 toUInt64LE(const quint16 *data);
 
+    static qint32 toInt32BE(const quint16 *data);
+    static qint32 toInt32LE(const quint16 *data);
+    static qint64 toInt64BE(const quint16 *data);
+    static qint64 toInt64LE(const quint16 *data);
+
     QByteArray makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress = 0, quint16 registerValue = 0, quint16 *registerData = nullptr);
     ReplyStatus parseReply(quint8 slaveAddress, FunctionCode functionCode, const QByteArray &reply, quint16 *registerData = nullptr);
 

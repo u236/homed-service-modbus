@@ -41,6 +41,26 @@ quint64 Modbus::toUInt64LE(const quint16 *data)
     return static_cast <quint64> (data[3]) << 48 | static_cast <quint64> (data[2]) << 32 | static_cast <quint64> (data[1]) << 16 | static_cast <quint64> (data[0]);
 }
 
+qint32 Modbus::toInt32BE(const quint16 *data)
+{
+    return static_cast <qint32> (toUInt32BE(data));
+}
+
+qint32 Modbus::toInt32LE(const quint16 *data)
+{
+    return static_cast <qint32> (toUInt32LE(data));
+}
+
+qint64 Modbus::toInt64BE(const quint16 *data)
+{
+    return static_cast <qint64> (toUInt64BE(data));
+}
+
+qint64 Modbus::toInt64LE(const quint16 *data)
+{
+    return static_cast <qint64> (toUInt64LE(data));
+}
+
 QByteArray Modbus::makeRequest(quint8 slaveAddress, FunctionCode functionCode, quint16 registerAddress, quint16 registerValue, quint16 *registerData)
 {
     QByteArray request;    

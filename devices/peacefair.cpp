@@ -63,7 +63,7 @@ void Peacefair::PZEM0x4::parseReply(const QByteArray &reply)
 
             m_endpoints.value(0)->buffer().insert("voltage",   data[0] / 10.0);
             m_endpoints.value(0)->buffer().insert("current",   Modbus::toUInt32LE(data + 1) / 1000.0);
-            m_endpoints.value(0)->buffer().insert("power",     Modbus::toUInt32LE(data + 3) / 10.0);
+            m_endpoints.value(0)->buffer().insert("power",     Modbus::toInt32LE(data + 3) / 10.0);
             m_endpoints.value(0)->buffer().insert("energy",    Modbus::toUInt32LE(data + 5) / 1000.0);
             m_endpoints.value(0)->buffer().insert("frequency", data[7] / 10.0);
             break;
@@ -183,6 +183,21 @@ void Peacefair::PZEM6l24::parseReply(const QByteArray &reply)
         }
 
         case 1:
+        {
+            quint16 data[6];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (int i = 0; i < 6; i++)
+                data[i] = qbswap(data[i]);
+
+            for (int i = 0; i < 3; i++)
+                m_endpoints.value(i + 1)->buffer().insert("power", Modbus::toInt32LE(data + i * 2) / 10.0);
+
+            break;
+        }
+
         case 2:
         {
             quint16 data[6];
@@ -194,12 +209,25 @@ void Peacefair::PZEM6l24::parseReply(const QByteArray &reply)
                 data[i] = qbswap(data[i]);
 
             for (int i = 0; i < 3; i++)
-                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 1 ? "power" : "energy", Modbus::toUInt32LE(data + i * 2) / 10.0);
+                m_endpoints.value(i + 1)->buffer().insert("energy", Modbus::toUInt32LE(data + i * 2) / 10.0);
 
             break;
         }
 
         case 3:
+        {
+            quint16 data[2];
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
+                break;
+
+            for (int i = 0; i < 2; i++)
+                data[i] = qbswap(data[i]);
+
+            m_endpoints.value(0)->buffer().insert("totalPower", Modbus::toInt32LE(data) / 10.0);
+            break;
+        }
+
         case 4:
         {
             quint16 data[2];
@@ -210,7 +238,7 @@ void Peacefair::PZEM6l24::parseReply(const QByteArray &reply)
             for (int i = 0; i < 2; i++)
                 data[i] = qbswap(data[i]);
 
-            m_endpoints.value(0)->buffer().insert(m_sequence == 3 ? "totalPower" : "totalEnergy", Modbus::toUInt32LE(data) / 10.0);
+            m_endpoints.value(0)->buffer().insert("totalEnergy", Modbus::toUInt32LE(data) / 10.0);
             break;
         }
     }
