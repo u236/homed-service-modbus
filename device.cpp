@@ -50,7 +50,7 @@ void DeviceObject::updateEndpoints(void)
 
 DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_timer(new QTimer(this)), m_deviceTypes(QMetaEnum::fromType <DeviceType> ()), m_registerTypes(QMetaEnum::fromType <Custom::RegisterType> ()), m_dataTypes(QMetaEnum::fromType <Custom::DataType> ()), m_byteOrders(QMetaEnum::fromType <Custom::ByteOrder> ()), m_sync(false)
 {
-    QFile file(config->value("device/expose", "/usr/share/homed-common/expose.json").toString());
+    QFile file(config->value("device/expose", reinterpret_cast <HOMEd*> (parent)->basePath().append("share/homed-common/expose.json")).toString());
 
     ExposeObject::registerMetaTypes();
 
@@ -342,7 +342,7 @@ void DeviceList::writeDatabase(void)
     json.remove("names");
     m_sync = false;
 
-    if (reinterpret_cast <Controller*> (parent())->writeFile(m_file, QJsonDocument(json).toJson(QJsonDocument::Compact)))
+    if (reinterpret_cast <HOMEd*> (parent())->writeFile(m_file, QJsonDocument(json).toJson(QJsonDocument::Compact)))
         return;
 
     logWarning << "Database not stored";
