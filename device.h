@@ -186,10 +186,6 @@ private slots:
 
     void writeDatabase(void);
 
-signals:
-
-    void statusUpdated(const QJsonObject &json);
-
 };
 
 inline QDebug operator << (QDebug debug, DeviceObject *device) { return debug << "device" << device->name(); }

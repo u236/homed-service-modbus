@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#define SERVICE_VERSION             "2.2.0"
+#define SERVICE_VERSION             "2.2.1"
 #define UPDATE_PROPERTIES_DELAY     1000
 
 #include <QMetaEnum>
@@ -62,8 +62,6 @@ private slots:
 
     void deviceUpdated(DeviceObject *device);
     void endpointUpdated(DeviceObject *device, quint8 endpointId);
-
-    void statusUpdated(const QJsonObject &json);
 
 };
 

@@ -12,8 +12,6 @@ Controller::Controller(const QString &configFile) : HOMEd(SERVICE_VERSION, confi
     m_haUpdate = getConfig()->value("homeassistant/update", false).toBool();
 
     connect(m_timer, &QTimer::timeout, this, &Controller::updateProperties);
-    connect(m_devices, &DeviceList::statusUpdated, this, &Controller::statusUpdated);
-
     m_timer->setSingleShot(true);
 
     m_devices->setNames(getConfig()->value("mqtt/names", false).toBool());
@@ -110,7 +108,7 @@ void Controller::mqttConnected(void)
         updateAvailability(m_devices->at(i).data());
 
     m_devices->store();
-    mqttPublishStatus();
+    mqttPublishService();
 }
 
 void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &topic)
@@ -263,9 +261,4 @@ void Controller::endpointUpdated(DeviceObject *device, quint8 endpointId)
 
         mqttPublish(topic, QJsonObject::fromVariantMap(endpoint->status()));
     }
-}
-
-void Controller::statusUpdated(const QJsonObject &json)
-{
-    mqttPublish(mqttTopic("status/%1").arg(serviceTopic()), json, true);
 }

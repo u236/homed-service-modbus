@@ -332,9 +332,10 @@ QJsonArray DeviceList::serialize(void)
 
 void DeviceList::writeDatabase(void)
 {
+    HOMEd *homed = reinterpret_cast <HOMEd*> (parent());
     QJsonObject json = {{"devices", serialize()}, {"names", m_names}, {"timestamp", QDateTime::currentSecsSinceEpoch()}, {"version", SERVICE_VERSION}};
 
-    emit statusUpdated(json);
+    homed->mqttPublishStatus(json);
 
     if (!m_sync)
         return;
@@ -342,7 +343,7 @@ void DeviceList::writeDatabase(void)
     json.remove("names");
     m_sync = false;
 
-    if (reinterpret_cast <HOMEd*> (parent())->writeFile(m_file, QJsonDocument(json).toJson(QJsonDocument::Compact)))
+    if (homed->writeFile(m_file, QJsonDocument(json).toJson(QJsonDocument::Compact)))
         return;
 
     logWarning << "Database not stored";
