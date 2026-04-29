@@ -158,7 +158,6 @@ public:
     ~DeviceList(void);
 
     inline bool names(void) { return m_names; }
-    inline void setNames(bool value) { m_names = value; }
 
     void init(void);
     void store(bool sync = false);

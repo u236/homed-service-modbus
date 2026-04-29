@@ -12,9 +12,8 @@ Controller::Controller(const QString &configFile) : HOMEd(SERVICE_VERSION, confi
     m_haUpdate = getConfig()->value("homeassistant/update", false).toBool();
 
     connect(m_timer, &QTimer::timeout, this, &Controller::updateProperties);
-    m_timer->setSingleShot(true);
 
-    m_devices->setNames(getConfig()->value("mqtt/names", false).toBool());
+    m_timer->setSingleShot(true);
     m_devices->init();
 
     for (int i = 0; i < m_devices->count(); i++)
