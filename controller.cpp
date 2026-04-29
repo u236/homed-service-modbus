@@ -90,6 +90,18 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
     publishEvent(device->name(), event);
 }
 
+void Controller::quit(void)
+{
+    for (auto it = m_ports.begin(); it != m_ports.end(); it++)
+    {
+        it.value()->quit();
+        it.value()->wait();
+    }
+
+    delete m_devices;
+    HOMEd::quit();
+}
+
 void Controller::mqttConnected(void)
 {
     mqttSubscribe(mqttTopic("command/%1").arg(serviceTopic()));

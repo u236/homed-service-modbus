@@ -52,6 +52,10 @@ private:
     void publishEvent(const QString &name, Event event);
     void deviceEvent(DeviceObject *device, Event event);
 
+public slots:
+
+    void quit(void) override;
+
 private slots:
 
     void mqttConnected(void) override;
