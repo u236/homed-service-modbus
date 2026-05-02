@@ -47,10 +47,10 @@ void Controller::publishExposes(DeviceObject *device, bool remove)
     m_timer->start(UPDATE_PROPERTIES_DELAY);
 }
 
-void Controller::publishProperties(const Device &device)
+void Controller::publishProperties(DeviceObject *device)
 {
     for (auto it = device->endpoints().begin(); it != device->endpoints().end(); it++)
-        endpointUpdated(device.data(), it.key());
+        endpointUpdated(device, it.key());
 }
 
 void Controller::publishEvent(const QString &name, Event event)
@@ -209,7 +209,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                 Device device = m_devices->byName(json.value("device").toString());
 
                 if (!device.isNull())
-                    publishProperties(device);
+                    publishProperties(device.data());
 
                 break;
             }
@@ -250,7 +250,14 @@ void Controller::updateAvailability(DeviceObject *device)
 void Controller::updateProperties(void)
 {
     for (int i = 0; i < m_devices->count(); i++)
-        publishProperties(m_devices->at(i));
+    {
+        const Device &device = m_devices->at(i);
+
+        if (!device->active())
+            continue;
+
+        publishProperties(device.data());
+    }
 }
 
 void Controller::deviceUpdated(DeviceObject *device)

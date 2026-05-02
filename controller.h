@@ -48,7 +48,7 @@ private:
     bool m_haEnabled, m_haUpdate;
 
     void publishExposes(DeviceObject *device, bool remove = false);
-    void publishProperties(const Device &device);
+    void publishProperties(DeviceObject *device);
     void publishEvent(const QString &name, Event event);
     void deviceEvent(DeviceObject *device, Event event);
 
