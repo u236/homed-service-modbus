@@ -186,7 +186,7 @@ void WirenBoard::WBUps::init(const Device &device, const QMap <QString, QVariant
 
     m_options.insert("batteryStatus",      QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:battery-charging"}});
     m_options.insert("temperatureStatus",  QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:thermometer"}});
-    m_options.insert("action",             QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
+    m_options.insert("action",             QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick", "hold"}}, {"icon", "mdi:gesture-double-tap"}});
 
     m_options.insert("inputVoltage",       exposeOptions.value("voltage"));
     m_options.insert("outputVoltage",      exposeOptions.value("voltage"));
@@ -243,8 +243,8 @@ QByteArray WirenBoard::WBUps::pollRequest(void)
         case 1:
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0000, 10);
 
-        case 2 ... 3:
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 2 ? 0x01D0 : 0x01F0, 1);
+        case 2 ... 4:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x01D0 + (m_sequence - 2) * 0x10, 1);
     }
 
     updateEndpoints();
@@ -310,17 +310,36 @@ void WirenBoard::WBUps::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 2 ... 3:
+        case 2 ... 4:
         {
-            quint16 value, &counter = m_sequence == 2 ? m_singleClick : m_doubleClick;
+            quint16 value, *counter;
+            QString action;
 
-            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || counter == value)
+            switch (m_sequence)
+            {
+                case 2:
+                    counter = &m_singleClick;
+                    action = "singleClick";
+                    break;
+
+                case 3:
+                    counter = &m_hold;
+                    action = "hold";
+                    break;
+
+                case 4:
+                    counter = &m_doubleClick;
+                    action = "doubleClick";
+                    break;
+            }
+
+            if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok || *counter == value)
                 break;
 
             if (!m_fullPoll)
-                m_endpoints.value(0)->buffer().insert("action", m_sequence == 2 ? "singleClick" : "doubleClick");
+                m_endpoints.value(0)->buffer().insert("action", action);
 
-            counter = value;
+            *counter = value;
             break;
         }
     }
@@ -407,7 +426,7 @@ void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVarian
     m_options.insert("pulseCount",    QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:pulse"}});
     m_options.insert("pulseVolume",   QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 10000}, {"unit", "L"}, {"icon", "mdi:water"}});
     m_options.insert("input",         QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
-    m_options.insert("action",        QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
+    m_options.insert("action",        QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick", "hold"}}, {"icon", "mdi:gesture-double-tap"}});
     m_options.insert("operationMode", QMap <QString, QVariant> {{"type", "select"}, {"enum", m_modes}, {"icon", "mdi:cog"}});
     m_options.insert("resetAlarm",    QMap <QString, QVariant> {{"type", "button"}, {"control", true}});
     m_options.insert("beeper",        QMap <QString, QVariant> {{"type", "toggle"}, {"control", true}, {"icon", "mdi:volume-high"}});
@@ -514,16 +533,16 @@ QByteArray WirenBoard::WBMwac::pollRequest(void)
         case 3:
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus, 0x0000, 5);
 
-        case 4 ... 5:
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 4 ? 0x01D0 : 0x01F0, 6);
-
-        case 6:
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x03CB, 1);
+        case 4 ... 6:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x01D0 + (m_sequence - 4) * 0x10, 6);
 
         case 7:
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0426, 4);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x03CB, 1);
 
         case 8:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0426, 4);
+
+        case 9:
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x042C, 8);
     }
 
@@ -607,9 +626,28 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 4 ... 5:
+        case 4 ... 6:
         {
-            quint16 data[6], *counter = m_sequence == 4 ? m_singleClick : m_doubleClick;
+            quint16 data[6], *counter;
+            QString action;
+
+            switch (m_sequence)
+            {
+                case 4:
+                    counter = m_singleClick;
+                    action = "singleClick";
+                    break;
+
+                case 5:
+                    counter = m_hold;
+                    action = "hold";
+                    break;
+
+                case 6:
+                    counter = m_doubleClick;
+                    action = "doubleClick";
+                    break;
+            }
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
@@ -620,7 +658,7 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
                     continue;
 
                 if (!m_fullPoll)
-                    m_endpoints.value(i + 11)->buffer().insert("action", m_sequence == 4 ? "singleClick" : "doubleClick");
+                    m_endpoints.value(i + 11)->buffer().insert("action", action);
 
                 counter[i] = data[i];
             }
@@ -628,7 +666,7 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 6:
+        case 7:
         {
             quint16 value;
 
@@ -645,7 +683,7 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 7:
+        case 8:
         {
             quint16 data[4];
 
@@ -658,7 +696,7 @@ void WirenBoard::WBMwac::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 8:
+        case 9:
         {
             quint16 data[8];
 

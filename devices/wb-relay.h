@@ -26,7 +26,7 @@ namespace WirenBoard
 
         Model m_model;
         quint8 m_channels, m_inputs;
-        quint16 m_output[6], m_singleClick[8], m_doubleClick[8];
+        quint16 m_output[6], m_singleClick[8], m_hold[8], m_doubleClick[8];
 
     };
 

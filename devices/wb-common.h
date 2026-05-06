@@ -45,7 +45,7 @@ namespace WirenBoard
 
     private:
 
-        quint16 m_singleClick, m_doubleClick;
+        quint16 m_singleClick, m_hold, m_doubleClick;
 
     };
 
@@ -66,7 +66,7 @@ namespace WirenBoard
 
     private:
 
-        quint16 m_output[2], m_singleClick[6], m_doubleClick[6];
+        quint16 m_output[2], m_singleClick[6], m_hold[6], m_doubleClick[6];
         QList <QVariant> m_modes;
 
     };

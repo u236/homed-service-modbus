@@ -48,7 +48,7 @@ void DeviceObject::updateEndpoints(void)
     }
 }
 
-DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_timer(new QTimer(this)), m_deviceTypes(QMetaEnum::fromType <DeviceType> ()), m_registerTypes(QMetaEnum::fromType <Custom::RegisterType> ()), m_dataTypes(QMetaEnum::fromType <Custom::DataType> ()), m_sync(false)
+DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_timer(new QTimer(this)), m_deviceTypes(QMetaEnum::fromType <DeviceType> ()), m_registerTypes(QMetaEnum::fromType <Custom::RegisterType> ()), m_dataTypes(QMetaEnum::fromType <Custom::DataType> ()), m_byteOrders(QMetaEnum::fromType <Custom::ByteOrder> ()), m_sync(false)
 {
     QFile file(config->value("device/expose", reinterpret_cast <HOMEd*> (parent)->basePath().append("share/homed-common/expose.json")).toString());
 
