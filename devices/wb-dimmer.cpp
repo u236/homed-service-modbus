@@ -51,7 +51,7 @@ void WirenBoard::WBMdm::init(const Device &device, const QMap <QString, QVariant
     m_options.insert("dimmerMode",   QMap <QString, QVariant> {{"type", "select"}, {"enum", m_modes}, {"icon", "mdi:cog"}});
     m_options.insert("dimmerFront",  QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"leading", "trailing"}}, {"icon", "mdi:cog"}});
     m_options.insert("input",        QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
-    m_options.insert("action",       QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
+    m_options.insert("action",       QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick", "hold"}}, {"icon", "mdi:gesture-double-tap"}});
 
 }
 
@@ -139,8 +139,8 @@ QByteArray WirenBoard::WBMdm::pollRequest(void)
         case 4:
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x0000, 3);
 
-        case 5 ... 6:
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 5 ? 0x01D0 : 0x01F0, 6);
+        case 5 ... 7:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x01D0 + (m_sequence - 5) * 0x10, 6);
     }
 
     updateEndpoints();
@@ -226,9 +226,28 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 5 ... 6:
+        case 5 ... 7:
         {
-            quint16 data[6], *counter = m_sequence == 5 ? m_singleClick : m_doubleClick;
+            quint16 data[6], *counter;
+            QString action;
+
+            switch (m_sequence)
+            {
+                case 5:
+                    counter = m_singleClick;
+                    action = "singleClick";
+                    break;
+
+                case 6:
+                    counter = m_hold;
+                    action = "hold";
+                    break;
+
+                case 7:
+                    counter = m_doubleClick;
+                    action = "doubleClick";
+                    break;
+            }
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
@@ -239,7 +258,7 @@ void WirenBoard::WBMdm::parseReply(const QByteArray &reply)
                     continue;
 
                 if (!m_fullPoll)
-                    m_endpoints.value(i + 11)->buffer().insert("action", m_sequence == 5 ? "singleClick" : "doubleClick");
+                    m_endpoints.value(i + 11)->buffer().insert("action", action);
 
                 counter[i] = data[i];
             }
@@ -378,7 +397,7 @@ void WirenBoard::WBLed::init(const Device &device, const QMap <QString, QVariant
     m_options.insert("endpointName",     QMap <QString, QVariant> {{"1", "W1"}, {"2", "W2"}, {"3", "W3"}, {"4", "W4"}, {"5", "W1+W2"}, {"6", "W3+W4"}, {"7", "W1+W2+W3+W4"}, {"8", "CCT1"}, {"9", "CCT2"}, {"10", "RGB"}, {"11", "IN1"}, {"12", "IN2"}, {"13", "IN3"}, {"14", "IN4"}});
     m_options.insert("colorTemperature", QMap <QString, QVariant> {{"min", 150}, {"max", 450}, {"step", 3}});
     m_options.insert("input",            QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
-    m_options.insert("action",           QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
+    m_options.insert("action",           QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick", "hold"}}, {"icon", "mdi:gesture-double-tap"}});
     m_options.insert("frequencyDivider", QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 240}, {"icon", "mdi:square-wave"}});
 }
 
@@ -475,8 +494,8 @@ QByteArray WirenBoard::WBLed::pollRequest(void)
         case 4:
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x07D0, 17);
 
-        case 5 ... 6:
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 5 ? 0x01D0 : 0x01F0, 4);
+        case 5 ... 7:
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x01D0 + (m_sequence - 5) * 0x10, 4);
     }
 
     updateEndpoints();
@@ -588,9 +607,28 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 5 ... 6:
+        case 5 ... 7:
         {
-            quint16 data[4], *counter = m_sequence == 5 ? m_singleClick : m_doubleClick;
+            quint16 data[4], *counter;
+            QString action;
+
+            switch (m_sequence)
+            {
+                case 5:
+                    counter = m_singleClick;
+                    action = "singleClick";
+                    break;
+
+                case 6:
+                    counter = m_hold;
+                    action = "hold";
+                    break;
+
+                case 7:
+                    counter = m_doubleClick;
+                    action = "doubleClick";
+                    break;
+            }
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
@@ -601,7 +639,7 @@ void WirenBoard::WBLed::parseReply(const QByteArray &reply)
                     continue;
 
                 if (!m_fullPoll)
-                    m_endpoints.value(i + 11)->buffer().insert("action", m_sequence == 5 ? "singleClick" : "doubleClick");
+                    m_endpoints.value(i + 11)->buffer().insert("action", action);
 
                 counter[i] = data[i];
             }

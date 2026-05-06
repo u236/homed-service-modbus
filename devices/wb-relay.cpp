@@ -116,7 +116,7 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
     updateOptions(exposeOptions);
 
     m_options.insert("input",             QMap <QString, QVariant> {{"type", "sensor"}, {"icon", "mdi:import"}});
-    m_options.insert("action",            QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick"}}, {"icon", "mdi:gesture-double-tap"}});
+    m_options.insert("action",            QMap <QString, QVariant> {{"type", "sensor"}, {"enum", QList <QVariant> {"singleClick", "doubleClick", "hold"}}, {"icon", "mdi:gesture-double-tap"}});
     m_options.insert("voltageProtection", QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("voltageLow",        QMap <QString, QVariant> {{"type", "number"}, {"min", 120}, {"max", 220}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
     m_options.insert("voltageHigh",       QMap <QString, QVariant> {{"type", "number"}, {"min", 230}, {"max", 277}, {"unit", "V"}, {"icon", "mdi:sine-wave"}});
@@ -194,28 +194,28 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
 
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0000, m_inputs);
 
-        case 5 ... 6:
+        case 5 ... 7:
 
             if (!m_inputs)
                 break;
 
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 5 ? 0x01D0 : 0x01F0, m_inputs);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x01D0 + (m_sequence - 5) * 0x10, m_inputs);
 
-        case 7:
+        case 8:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
             return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus, 0x0050, 2);
 
-        case 8 ... 9:
+        case 9 ... 10:
 
             if (m_model != Model::wbMrwm2)
                 break;
 
-            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 8 ? 0x0038 : 0x0040, 2);
+            return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, m_sequence == 9 ? 0x0038 : 0x0040, 2);
 
-        case 10:
+        case 11:
 
             if (m_model != Model::wbMrwm2)
                 break;
@@ -287,9 +287,28 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 5 ... 6:
+        case 5 ... 7:
         {
-            quint16 data[8], *counter = m_sequence == 5 ? m_singleClick : m_doubleClick;
+            quint16 data[8], *counter;
+            QString action;
+
+            switch (m_sequence)
+            {
+                case 5:
+                    counter = m_singleClick;
+                    action = "singleClick";
+                    break;
+
+                case 6:
+                    counter = m_hold;
+                    action = "hold";
+                    break;
+
+                case 7:
+                    counter = m_doubleClick;
+                    action = "doubleClick";
+                    break;
+            }
 
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, data) != Modbus::ReplyStatus::Ok)
                 break;
@@ -300,7 +319,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
                     continue;
 
                 if (!m_fullPoll)
-                    m_endpoints.value(i + 1)->buffer().insert("action", m_sequence == 5 ? "singleClick" : "doubleClick");
+                    m_endpoints.value(i + 1)->buffer().insert("action", action);
 
                 counter[i] = data[i];
             }
@@ -308,7 +327,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             if (m_inputs == 8 && counter[7] != data[7])
             {
                 if (!m_fullPoll)
-                    m_endpoints.value(0)->buffer().insert("action_0", m_sequence == 5 ? "singleClick" : "doubleClick");
+                    m_endpoints.value(0)->buffer().insert("action_0", action);
 
                 counter[7] = data[7];
             }
@@ -316,7 +335,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 7:
+        case 8:
         {
             quint16 data[2];
 
@@ -329,7 +348,7 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
             break;
         }
 
-        case 8 ... 9:
+        case 9 ... 10:
         {
             quint16 data[2];
 
@@ -337,12 +356,12 @@ void WirenBoard::WBMr::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 2; i++)
-                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 8 ? "voltage" : "power", data[i] / (m_sequence == 8 ? 100.0 : 10.0));
+                m_endpoints.value(i + 1)->buffer().insert(m_sequence == 9 ? "voltage" : "power", data[i] / (m_sequence == 9 ? 100.0 : 10.0));
 
             break;
         }
 
-        case 10:
+        case 11:
         {
             quint16 data[4];
 
