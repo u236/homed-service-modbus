@@ -17,8 +17,8 @@ void Native::Common::init(const Device &device, const QMap <QString, QVariant> &
 
     m_endpoints.insert(0, endpoint);
 
-    m_options.insert("slaveId",      QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 247}, {"collapse", "true"}, {"icon", "mdi:cog"}});
-    m_options.insert("baudRate",     QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"}}, {"collapse", "true"}, {"icon", "mdi:cog"}});
+    m_options.insert("slaveId",      QMap <QString, QVariant> {{"type", "number"}, {"min", 1}, {"max", 247}, {"collapse", true}, {"icon", "mdi:cog"}});
+    m_options.insert("baudRate",     QMap <QString, QVariant> {{"type", "select"}, {"enum", QList <QVariant> {"1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"}}, {"collapse", true}, {"icon", "mdi:cog"}});
 }
 
 void Native::Common::enqueueAction(quint8, const QString &name, const QVariant &data)
