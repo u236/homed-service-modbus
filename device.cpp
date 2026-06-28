@@ -199,6 +199,7 @@ Device DeviceList::parse(const QJsonObject &json)
 
             controller->options() = json.value("options").toObject().toVariantMap();
             controller->endpoints().insert(endpoint->id(), endpoint);
+            controller->setMaxRegisters(static_cast <quint8> (json.value("maxRegisters").toInt()));
 
             for (auto it = items.begin(); it != items.end(); it++)
             {
@@ -228,6 +229,8 @@ Device DeviceList::parse(const QJsonObject &json)
                 controller->items().append(Custom::Item(new Custom::ItemObject(exposeName, item.value("type").toString("value"), static_cast <quint16> (item.value("address").toInt()), static_cast <Custom::RegisterType> (m_registerTypes.keyToValue(item.value("registerType").toString("input").toUtf8().constData())), static_cast <Custom::DataType> (m_dataTypes.keyToValue(item.value("dataType").toString("u16").toUtf8().constData())), static_cast <Custom::ByteOrder> (m_byteOrders.keyToValue(item.value("byteOrder").toString("be").toUtf8().constData())), item.value("divider").toDouble(1), item.value("read").toBool(true))));
                 endpoint->exposes().append(expose);
             }
+
+            controller->arrangeBlocks();
         }
     }
 
@@ -320,6 +323,9 @@ QJsonArray DeviceList::serialize(void)
 
             if (!options.isEmpty())
                 json.insert("options", options);
+
+            if (controller->maxRegisters() != MAX_REGISTERS)
+                json.insert("maxRegisters", controller->maxRegisters());
         }
 
         if (!device->note().isEmpty())

@@ -141,20 +141,20 @@ void Custom::Controller::startPoll(void)
 
 QByteArray Custom::Controller::pollRequest(void)
 {
-    while (m_sequence < m_items.count() && !m_items.at(m_sequence)->read())
-        m_sequence++;
-
-    if (m_sequence < m_items.count())
+    if (m_sequence < m_blocks.count())
     {
-        const Item &item = m_items.at(m_sequence);
+        const Block &block = m_blocks.at(m_sequence);
+        Modbus::FunctionCode function;
 
-        switch (item->registerType())
+        switch (block.registerType)
         {
-            case RegisterType::coil:     return m_modbus->makeRequest(m_slaveId, Modbus::ReadCoilStatus,       item->address(), 1);
-            case RegisterType::discrete: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputStatus,      item->address(), 1);
-            case RegisterType::holding:  return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, item->address(), item->count());
-            case RegisterType::input:    return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   item->address(), item->count());
+            case RegisterType::coil:     function = Modbus::ReadCoilStatus; break;
+            case RegisterType::discrete: function = Modbus::ReadInputStatus; break;
+            case RegisterType::holding:  function = Modbus::ReadHoldingRegisters; break;
+            case RegisterType::input:    function = Modbus::ReadInputRegisters; break;
         }
+
+        return m_modbus->makeRequest(m_slaveId, function, block.address, block.count);
     }
 
     updateEndpoints();
@@ -166,12 +166,11 @@ QByteArray Custom::Controller::pollRequest(void)
 
 void Custom::Controller::parseReply(const QByteArray &reply)
 {
-    const Item &item = m_items.at(m_sequence++);
+    const Block &block = m_blocks.at(m_sequence++);
     Modbus::FunctionCode function;
-    quint16 count = item->count(), buffer[8], payload[4];
-    QVariant value;
+    quint16 buffer[MAX_REGISTERS * 2];
 
-    switch (item->registerType())
+    switch (block.registerType)
     {
         case RegisterType::coil:     function = Modbus::ReadCoilStatus; break;
         case RegisterType::discrete: function = Modbus::ReadInputStatus; break;
@@ -182,53 +181,96 @@ void Custom::Controller::parseReply(const QByteArray &reply)
     if (m_modbus->parseReply(m_slaveId, function, reply, buffer) != Modbus::ReplyStatus::Ok)
         return;
 
-    if (item->registerType() == RegisterType::holding || item->registerType() == RegisterType::input)
+    for (int i = 0; i < block.items.count(); i++)
     {
-        for (int i = 0; i < count; i++)
+        const Item &item = block.items.at(i);
+        quint16 *data = buffer + item->address() - block.address, count = item->count(), payload[4];
+        QVariant value;
+
+        if (item->registerType() == RegisterType::holding || item->registerType() == RegisterType::input)
         {
-            switch (item->byteOrder())
+            for (int j = 0; j < count; j++)
             {
-                case ByteOrder::be:    payload[i] = qToBigEndian(buffer[i]); break;
-                case ByteOrder::le:    payload[i] = qToLittleEndian(buffer[count - i - 1]); break;
-                case ByteOrder::mixed: payload[i] = qToBigEndian(buffer[count - i - 1]); break;
+                switch (item->byteOrder())
+                {
+                    case ByteOrder::be:    payload[j] = qToBigEndian(data[j]); break;
+                    case ByteOrder::le:    payload[j] = qToLittleEndian(data[count - j - 1]); break;
+                    case ByteOrder::mixed: payload[j] = qToBigEndian(data[count - j - 1]); break;
+                }
+            }
+
+            switch (item->dataType())
+            {
+                case DataType::i16: value = qFromBigEndian <qint16>  (*(reinterpret_cast <qint16*>  (payload))); break;
+                case DataType::u16: value = qFromBigEndian <quint16> (*(reinterpret_cast <quint16*> (payload))); break;
+                case DataType::i32: value = qFromBigEndian <qint32>  (*(reinterpret_cast <qint32*>  (payload))); break;
+                case DataType::u32: value = qFromBigEndian <quint32> (*(reinterpret_cast <quint32*> (payload))); break;
+                case DataType::i64: value = qFromBigEndian <qint64>  (*(reinterpret_cast <qint64*>  (payload))); break;
+                case DataType::u64: value = qFromBigEndian <quint64> (*(reinterpret_cast <quint64*> (payload))); break;
+                case DataType::f32: value = qFromBigEndian <float>   (*(reinterpret_cast <float*>   (payload))); break;
+                case DataType::f64: value = qFromBigEndian <double>  (*(reinterpret_cast <double*>  (payload))); break;
             }
         }
+        else
+            value = data[0];
 
-        switch (item->dataType())
+        if (!value.isValid())
+            continue;
+
+        switch (m_types.indexOf(item->type()))
         {
-            case DataType::i16: value = qFromBigEndian <qint16>  (*(reinterpret_cast <qint16*>  (payload))); break;
-            case DataType::u16: value = qFromBigEndian <quint16> (*(reinterpret_cast <quint16*> (payload))); break;
-            case DataType::i32: value = qFromBigEndian <qint32>  (*(reinterpret_cast <qint32*>  (payload))); break;
-            case DataType::u32: value = qFromBigEndian <quint32> (*(reinterpret_cast <quint32*> (payload))); break;
-            case DataType::i64: value = qFromBigEndian <qint64>  (*(reinterpret_cast <qint64*>  (payload))); break;
-            case DataType::u64: value = qFromBigEndian <quint64> (*(reinterpret_cast <quint64*> (payload))); break;
-            case DataType::f32: value = qFromBigEndian <float>   (*(reinterpret_cast <float*>   (payload))); break;
-            case DataType::f64: value = qFromBigEndian <double>  (*(reinterpret_cast <double*>  (payload))); break;
+            case 0: m_endpoints.value(0)->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
+            case 1: m_endpoints.value(0)->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+
+            case 2: // enum
+            {
+                QVariant option = m_options.value(item->expose()).toMap().value("enum");
+
+                switch (option.type())
+                {
+                    case QVariant::Map:  m_endpoints.value(0)->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
+                    case QVariant::List: m_endpoints.value(0)->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
+                    default: break;
+                }
+
+                break;
+            }
         }
     }
-    else
-        value = buffer[0];
+}
 
-    if (!value.isValid())
-        return;
+void Custom::Controller::arrangeBlocks(void)
+{
+    QList <Item> list;
 
-    switch (m_types.indexOf(item->type()))
+    m_blocks.clear();
+
+    for (int i = 0; i < m_items.count(); i++)
+        if (m_items.at(i)->read())
+            list.append(m_items.at(i));
+
+    std::sort(list.begin(), list.end(), [] (const Item &a, const Item &b) { return a->registerType() != b->registerType() ? a->registerType() < b->registerType() : a->address() < b->address(); });
+
+    for (int i = 0; i < list.count(); i++)
     {
-        case 0: m_endpoints.value(0)->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
-        case 1: m_endpoints.value(0)->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+        const Item &item = list.at(i);
+        quint32 end = item->address() + item->count();
 
-        case 2: // enum
+        if (!m_blocks.isEmpty())
         {
-            QVariant option = m_options.value(item->expose()).toMap().value("enum");
+            Block &block = m_blocks.last();
+            quint32 last = block.address + block.count, span = (end > last ? end : last) - block.address;
 
-            switch (option.type())
+            if (block.registerType == item->registerType() && item->address() <= last && span <= m_maxRegisters)
             {
-                case QVariant::Map:  m_endpoints.value(0)->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
-                case QVariant::List: m_endpoints.value(0)->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
-                default: break;
-            }
+                if (end > last)
+                    block.count = end - block.address;
 
-            break;
+                block.items.append(item);
+                continue;
+            }
         }
+
+        m_blocks.append({item->registerType(), item->address(), item->count(), {item}});
     }
 }

@@ -1,6 +1,8 @@
 #ifndef DEVICES_CUSTOM_H
 #define DEVICES_CUSTOM_H
 
+#define MAX_REGISTERS   125
+
 #include "device.h"
 
 namespace Custom
@@ -36,6 +38,13 @@ namespace Custom
 
     class ItemObject;
     typedef QSharedPointer <ItemObject> Item;
+
+    struct Block
+    {
+        RegisterType registerType;
+        quint16 address, count;
+        QList <Item> items;
+    };
 
     class ItemObject
     {
@@ -74,7 +83,10 @@ namespace Custom
     public:
 
         Controller(quint8 portId, quint8 slaveId, quint32 baudRate, quint32 pollInterval, quint32 requestTimeout, quint32 replyTimeout, const QString &name) :
-            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name) {}
+            DeviceObject(portId, slaveId, baudRate, pollInterval, requestTimeout, replyTimeout, name), m_maxRegisters(MAX_REGISTERS) {}
+
+        inline quint8 maxRegisters(void) { return m_maxRegisters; }
+        inline void setMaxRegisters(quint8 value) { m_maxRegisters = value && value <= MAX_REGISTERS ? value : MAX_REGISTERS; }
 
         inline QList <Item> &items(void) { return m_items; }
 
@@ -85,10 +97,15 @@ namespace Custom
         QByteArray pollRequest(void) override;
         void parseReply(const QByteArray &reply) override;
 
+        void arrangeBlocks(void);
+
     private:
+
+        quint8 m_maxRegisters;
 
         QList <QString> m_types;
         QList <Item> m_items;
+        QList <Block> m_blocks;
 
     };
 
