@@ -89,7 +89,7 @@ void Neptun::SmartPlus::init(const Device &device, const QMap <QString, QVariant
 
     updateOptions(exposeOptions);
 
-    m_options.insert("volume",         QMap <QString, QVariant> {{"type", "number"}, {"class", "volume"}, {"state", "total_increasing"}, {"min", 0}, {"max", 1000000000}, {"unit", "L"}});
+    m_options.insert("volume",         QMap <QString, QVariant> {{"type", "number"}, {"class", "volume"}, {"state", "increasing"}, {"min", 0}, {"max", 1000000000}, {"unit", "L"}});
     m_options.insert("enableGroups",   QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:source-branch"}});
     m_options.insert("lostProtection", QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:leak-off"}});
     m_options.insert("pairingMode",    QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:leak"}});
