@@ -49,7 +49,6 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
         {
             Expose output(new SwitchObject);
 
-            output->setMultiple(true);
             output->setParent(endpoint.data());
             endpoint->exposes().append(output);
 
@@ -57,11 +56,9 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
             {
                 Expose input(new BinaryObject("input")), action(new SensorObject("action"));
 
-                input->setMultiple(true);
                 input->setParent(endpoint.data());
                 endpoint->exposes().append(input);
 
-                action->setMultiple(true);
                 action->setParent(endpoint.data());
                 endpoint->exposes().append(action);
             }
@@ -70,31 +67,24 @@ void WirenBoard::WBMr::init(const Device &device, const QMap <QString, QVariant>
             {
                 Expose voltage(new SensorObject("voltage")), power(new SensorObject("power")), energy(new SensorObject("energy")), alarm(new BinaryObject("alarm")), voltageProtection(new ToggleObject("voltageProtection")), voltageLow(new NumberObject("voltageLow")), voltageHigh(new NumberObject("voltageHigh"));
 
-                voltage->setMultiple(true);
                 voltage->setParent(endpoint.data());
                 endpoint->exposes().append(voltage);
 
-                power->setMultiple(true);
                 power->setParent(endpoint.data());
                 endpoint->exposes().append(power);
 
-                energy->setMultiple(true);
                 energy->setParent(endpoint.data());
                 endpoint->exposes().append(energy);
 
-                alarm->setMultiple(true);
                 alarm->setParent(endpoint.data());
                 endpoint->exposes().append(alarm);
 
-                voltageProtection->setMultiple(true);
                 voltageProtection->setParent(endpoint.data());
                 endpoint->exposes().append(voltageProtection);
 
-                voltageLow->setMultiple(true);
                 voltageLow->setParent(endpoint.data());
                 endpoint->exposes().append(voltageLow);
 
-                voltageHigh->setMultiple(true);
                 voltageHigh->setParent(endpoint.data());
                 endpoint->exposes().append(voltageHigh);
             }

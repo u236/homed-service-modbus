@@ -123,7 +123,6 @@ void Native::RelayController::init(const Device &device, const QMap <QString, QV
         Expose expose = i ? Expose(new SwitchObject) : Expose(new ToggleObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));
 
-        expose->setMultiple(i ? true : false);
         expose->setParent(endpoint.data());
 
         endpoint->exposes().append(expose);
@@ -238,7 +237,6 @@ void Native::SwitchController::init(const Device &device, const QMap <QString, Q
         Expose expose = i ? Expose(new SensorObject("action")) : Expose(new ToggleObject("invert"));
         Endpoint endpoint(new EndpointObject(i, device));
 
-        expose->setMultiple(i ? true : false);
         expose->setParent(endpoint.data());
 
         endpoint->exposes().append(expose);

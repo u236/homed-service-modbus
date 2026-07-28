@@ -361,19 +361,15 @@ void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVarian
         {
             Expose lock(new LockObject), volume(new SensorObject("volume")), pulseCount(new SensorObject("pulseCount")), pulseVolume(new NumberObject("pulseVolume"));
 
-            lock->setMultiple(true);
             lock->setParent(endpoint.data());
             endpoint->exposes().append(lock);
 
-            volume->setMultiple(true);
             volume->setParent(endpoint.data());
             endpoint->exposes().append(volume);
 
-            pulseCount->setMultiple(true);
             pulseCount->setParent(endpoint.data());
             endpoint->exposes().append(pulseCount);
 
-            pulseVolume->setMultiple(true);
             pulseVolume->setParent(endpoint.data());
             endpoint->exposes().append(pulseVolume);
         }
@@ -405,15 +401,12 @@ void WirenBoard::WBMwac::init(const Device &device, const QMap <QString, QVarian
         Endpoint endpoint(new EndpointObject(i, device));
         Expose input(new SensorObject("input")), action(new SensorObject("action")), operationMode(new SelectObject("operationMode"));
 
-        input->setMultiple(true);
         input->setParent(endpoint.data());
         endpoint->exposes().append(input);
 
-        action->setMultiple(true);
         action->setParent(endpoint.data());
         endpoint->exposes().append(action);
 
-        operationMode->setMultiple(true);
         operationMode->setParent(endpoint.data());
         endpoint->exposes().append(operationMode);
 

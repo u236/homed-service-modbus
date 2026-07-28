@@ -14,11 +14,9 @@ void WirenBoard::WBMap3ev::init(const Device &device, const QMap <QString, QVari
         {
             Expose voltage(new SensorObject("voltage")), angle(new SensorObject("angle"));
 
-            voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
             endpoint->exposes().append(voltage);
 
-            angle->setMultiple(true);
             angle->setParent(endpoint.data());
             endpoint->exposes().append(angle);
         }
@@ -118,31 +116,24 @@ void WirenBoard::WBMap3e::init(const Device &device, const QMap <QString, QVaria
         {
             Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), angle(new SensorObject("angle")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
-            voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
             endpoint->exposes().append(voltage);
 
-            current->setMultiple(true);
             current->setParent(endpoint.data());
             endpoint->exposes().append(current);
 
-            power->setMultiple(true);
             power->setParent(endpoint.data());
             endpoint->exposes().append(power);
 
-            energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
 
-            angle->setMultiple(true);
             angle->setParent(endpoint.data());
             endpoint->exposes().append(angle);
 
-            ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
             endpoint->exposes().append(ratio);
 
-            delta->setMultiple(true);
             delta->setParent(endpoint.data());
             endpoint->exposes().append(delta);
         }
@@ -335,23 +326,18 @@ void WirenBoard::WBMap6s::init(const Device &device, const QMap <QString, QVaria
         {
             Expose current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
-            current->setMultiple(true);
             current->setParent(endpoint.data());
             endpoint->exposes().append(current);
 
-            power->setMultiple(true);
             power->setParent(endpoint.data());
             endpoint->exposes().append(power);
 
-            energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
 
-            ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
             endpoint->exposes().append(ratio);
 
-            delta->setMultiple(true);
             delta->setParent(endpoint.data());
             endpoint->exposes().append(delta);
         }
@@ -568,31 +554,24 @@ void WirenBoard::WBMap12::init(const Device &device, const QMap <QString, QVaria
         {
             Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), angle(new SensorObject("angle")), ratio(new NumberObject("ratio")), delta(new NumberObject("delta"));
 
-            voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
             endpoint->exposes().append(voltage);
 
-            current->setMultiple(true);
             current->setParent(endpoint.data());
             endpoint->exposes().append(current);
 
-            power->setMultiple(true);
             power->setParent(endpoint.data());
             endpoint->exposes().append(power);
 
-            energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
 
-            angle->setMultiple(true);
             angle->setParent(endpoint.data());
             endpoint->exposes().append(angle);
 
-            ratio->setMultiple(true);
             ratio->setParent(endpoint.data());
             endpoint->exposes().append(ratio);
 
-            delta->setMultiple(true);
             delta->setParent(endpoint.data());
             endpoint->exposes().append(delta);
         }

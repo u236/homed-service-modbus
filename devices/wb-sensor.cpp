@@ -15,19 +15,15 @@ void WirenBoard::WBM1w2::init(const Device &device, const QMap <QString, QVarian
         {
             Expose temperature(new SensorObject("temperature")), input(new BinaryObject("input")), action(new SensorObject("action")), operationMode(new SelectObject("operationMode"));
 
-            temperature->setMultiple(true);
             temperature->setParent(endpoint.data());
             endpoint->exposes().append(temperature);
 
-            input->setMultiple(true);
             input->setParent(endpoint.data());
             endpoint->exposes().append(input);
 
-            action->setMultiple(true);
             action->setParent(endpoint.data());
             endpoint->exposes().append(action);
 
-            operationMode->setMultiple(true);
             operationMode->setParent(endpoint.data());
             endpoint->exposes().append(operationMode);
         }
@@ -192,15 +188,12 @@ void WirenBoard::WBMs::init(const Device &device, const QMap <QString, QVariant>
         {
             Expose temperature(new SensorObject("temperature")), input(new BinaryObject("input")), operationMode(new SelectObject("operationMode"));
 
-            temperature->setMultiple(true);
             temperature->setParent(endpoint.data());
             endpoint->exposes().append(temperature);
 
-            input->setMultiple(true);
             input->setParent(endpoint.data());
             endpoint->exposes().append(input);
 
-            operationMode->setMultiple(true);
             operationMode->setParent(endpoint.data());
             endpoint->exposes().append(operationMode);
         }
@@ -366,7 +359,6 @@ void WirenBoard::WBMsw::init(const Device &device, const QMap <QString, QVariant
         if (i)
         {
             Expose output(new SwitchObject);
-            output->setMultiple(true);
             output->setParent(endpoint.data());
             endpoint->exposes().append(output);
         }
@@ -748,43 +740,33 @@ void WirenBoard::WBMai6::init(const Device &device, const QMap <QString, QVarian
         {
             Expose pSensorType(new SelectObject("pSensorType")), pValueMin(new NumberObject("pValueMin")), pValueMax(new NumberObject("pValueMax")), pInput(new SensorObject("pInput")), pValue(new SensorObject("pValue")), nSensorType(new SelectObject("nSensorType")), nValueMin(new NumberObject("nValueMin")), nValueMax(new NumberObject("nValueMax")), nInput(new SensorObject("nInput")), nValue(new SensorObject("nValue"));
 
-            pSensorType->setMultiple(true);
             pSensorType->setParent(endpoint.data());
             endpoint->exposes().append(pSensorType);
 
-            pValueMin->setMultiple(true);
             pValueMin->setParent(endpoint.data());
             endpoint->exposes().append(pValueMin);
 
-            pValueMax->setMultiple(true);
             pValueMax->setParent(endpoint.data());
             endpoint->exposes().append(pValueMax);
 
-            pInput->setMultiple(true);
             pInput->setParent(endpoint.data());
             endpoint->exposes().append(pInput);
 
-            pValue->setMultiple(true);
             pValue->setParent(endpoint.data());
             endpoint->exposes().append(pValue);
 
-            nSensorType->setMultiple(true);
             nSensorType->setParent(endpoint.data());
             endpoint->exposes().append(nSensorType);
 
-            nValueMin->setMultiple(true);
             nValueMin->setParent(endpoint.data());
             endpoint->exposes().append(nValueMin);
 
-            nValueMax->setMultiple(true);
             nValueMax->setParent(endpoint.data());
             endpoint->exposes().append(nValueMax);
 
-            nInput->setMultiple(true);
             nInput->setParent(endpoint.data());
             endpoint->exposes().append(nInput);
 
-            nValue->setMultiple(true);
             nValue->setParent(endpoint.data());
             endpoint->exposes().append(nValue);
         }

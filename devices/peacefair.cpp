@@ -86,27 +86,21 @@ void Peacefair::PZEM6l24::init(const Device &device, const QMap <QString, QVaria
         {
             Expose voltage(new SensorObject("voltage")), current(new SensorObject("current")), power(new SensorObject("power")), energy(new SensorObject("energy")), angle(new SensorObject("angle")), frequency(new SensorObject("frequency"));
 
-            voltage->setMultiple(true);
             voltage->setParent(endpoint.data());
             endpoint->exposes().append(voltage);
 
-            current->setMultiple(true);
             current->setParent(endpoint.data());
             endpoint->exposes().append(current);
 
-            power->setMultiple(true);
             power->setParent(endpoint.data());
             endpoint->exposes().append(power);
 
-            energy->setMultiple(true);
             energy->setParent(endpoint.data());
             endpoint->exposes().append(energy);
 
-            angle->setMultiple(true);
             angle->setParent(endpoint.data());
             endpoint->exposes().append(angle);
 
-            frequency->setMultiple(true);
             frequency->setParent(endpoint.data());
             endpoint->exposes().append(frequency);
         }

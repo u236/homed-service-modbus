@@ -67,19 +67,15 @@ void Neptun::SmartPlus::init(const Device &device, const QMap <QString, QVariant
         {
             Expose lock(new LockObject), waterLeak(new BinaryObject("waterLeak"));
 
-            lock->setMultiple(true);
             lock->setParent(endpoint.data());
             endpoint->exposes().append(lock);
 
-            waterLeak->setMultiple(true);
             waterLeak->setParent(endpoint.data());
             endpoint->exposes().append(waterLeak);
         }
         else
         {
             Expose volume(new NumberObject("volume"));
-
-            volume->setMultiple(true);
             volume->setParent(endpoint.data());
             endpoint->exposes().append(volume);
         }

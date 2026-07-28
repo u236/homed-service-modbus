@@ -12,11 +12,9 @@ void Eletechsup::N4Dsa02::init(const Device &device, const QMap <QString, QVaria
         Endpoint endpoint(new EndpointObject(i, device));
         Expose temperature(new SensorObject("temperature")), temperatureOffset(new NumberObject("temperatureOffset"));
 
-        temperature->setMultiple(true);
         temperature->setParent(endpoint.data());
         endpoint->exposes().append(temperature);
 
-        temperatureOffset->setMultiple(true);
         temperatureOffset->setParent(endpoint.data());
         endpoint->exposes().append(temperatureOffset);
 
@@ -150,7 +148,6 @@ void Eletechsup::R4Pin08::init(const Device &device, const QMap <QString, QVaria
         if (i)
         {
             Expose expose = i < m_inputs + 1 ? Expose(new BinaryObject("input")) : Expose(new SwitchObject);
-            expose->setMultiple(true);
             expose->setParent(endpoint.data());
             endpoint->exposes().append(expose);
         }

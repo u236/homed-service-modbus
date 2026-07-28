@@ -14,15 +14,12 @@ void WirenBoard::WBMdm::init(const Device &device, const QMap <QString, QVariant
         Endpoint endpoint(new EndpointObject(i, device));
         Expose light(new LightObject), dimmerMode(new SelectObject("dimmerMode")), dimmerFront(new SelectObject("dimmerFront"));
 
-        light->setMultiple(true);
         light->setParent(endpoint.data());
         endpoint->exposes().append(light);
 
-        dimmerMode->setMultiple(true);
         dimmerMode->setParent(endpoint.data());
         endpoint->exposes().append(dimmerMode);
 
-        dimmerFront->setMultiple(true);
         dimmerFront->setParent(endpoint.data());
         endpoint->exposes().append(dimmerFront);
 
@@ -34,11 +31,9 @@ void WirenBoard::WBMdm::init(const Device &device, const QMap <QString, QVariant
         Endpoint endpoint(new EndpointObject(i, device));
         Expose input(new BinaryObject("input")), action(new SensorObject("action"));
 
-        input->setMultiple(true);
         input->setParent(endpoint.data());
         endpoint->exposes().append(input);
 
-        action->setMultiple(true);
         action->setParent(endpoint.data());
         endpoint->exposes().append(action);
 
@@ -365,7 +360,6 @@ void WirenBoard::WBLed::init(const Device &device, const QMap <QString, QVariant
                 if (!m_list.contains(i))
                     continue;
 
-                light->setMultiple(true);
                 light->setParent(endpoint.data());
                 endpoint->exposes().append(light);
 
@@ -375,11 +369,9 @@ void WirenBoard::WBLed::init(const Device &device, const QMap <QString, QVariant
             {
                 Expose input(new BinaryObject("input")), action(new SensorObject("action"));
 
-                input->setMultiple(true);
                 input->setParent(endpoint.data());
                 endpoint->exposes().append(input);
 
-                action->setMultiple(true);
                 action->setParent(endpoint.data());
                 endpoint->exposes().append(action);
             }

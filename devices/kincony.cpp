@@ -67,18 +67,15 @@ void Kincony::KC868::init(const Device &device, const QMap <QString, QVariant> &
         Endpoint endpoint(new EndpointObject(i, device));
         Expose output(new SwitchObject), input(new BinaryObject("input"));
 
-        output->setMultiple(true);
         output->setParent(endpoint.data());
         endpoint->exposes().append(output);
 
-        input->setMultiple(true);
         input->setParent(endpoint.data());
         endpoint->exposes().append(input);
 
         if (m_adc && i <= 4)
         {
             Expose analogInput(new SensorObject("analogInput"));
-            analogInput->setMultiple(true);
             analogInput->setParent(endpoint.data());
             endpoint->exposes().append(analogInput);
         }
@@ -86,7 +83,6 @@ void Kincony::KC868::init(const Device &device, const QMap <QString, QVariant> &
         if (m_dac && i <= 2)
         {
             Expose analogOutput(new SensorObject("analogOutput"));
-            analogOutput->setMultiple(true);
             analogOutput->setParent(endpoint.data());
             endpoint->exposes().append(analogOutput);
         }

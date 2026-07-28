@@ -232,6 +232,15 @@ Device DeviceList::parse(const QJsonObject &json)
 
             controller->arrangeBlocks();
         }
+
+        for (auto it = device->endpoints().begin(); it != device->endpoints().end(); it++)
+        {
+            if (!it.value()->id())
+                continue;
+
+            for (int i = 0; i < it.value()->exposes().count(); i++)
+                it.value()->exposes().at(i)->setMultiple(true);
+        }
     }
 
     return device;
