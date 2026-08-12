@@ -63,8 +63,6 @@ DeviceList::DeviceList(QSettings *config, QObject *parent) : QObject(parent), m_
         file.close();
     }
 
-    m_specialExposes = {"switch", "lock", "light", "cover", "thermostat"};
-
     connect(m_timer, &QTimer::timeout, this, &DeviceList::writeDatabase);
     m_timer->setSingleShot(true);
 }
@@ -220,7 +218,7 @@ Device DeviceList::parse(const QJsonObject &json)
                 if (!option.isEmpty())
                     controller->options().insert(exposeName, option);
 
-                type = QMetaType::type(QString(m_specialExposes.contains(itemName) ? itemName : option.value("type").toString()).append("Expose").toUtf8());
+                type = QMetaType::type(QString(ExposeObject::special().contains(itemName) ? itemName : option.value("type").toString()).append("Expose").toUtf8());
 
                 expose = Expose(type ? reinterpret_cast <ExposeObject*> (QMetaType::create(type)) : new ExposeObject(exposeName));
                 expose->setName(exposeName);

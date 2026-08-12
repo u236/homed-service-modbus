@@ -176,7 +176,6 @@ private:
     bool m_names, m_sync;
 
     QMap <QString, QVariant> m_exposeOptions;
-    QList <QString> m_specialExposes;
 
     void unserialize(const QJsonArray &devices);
     QJsonArray serialize(void);
