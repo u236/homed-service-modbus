@@ -246,8 +246,6 @@ Device DeviceList::parse(const QJsonObject &json)
 
 void DeviceList::unserialize(const QJsonArray &devices)
 {
-    quint16 count = 0;
-
     for (auto it = devices.begin(); it != devices.end(); it++)
     {
         QJsonObject json = it->toObject();
@@ -262,11 +260,12 @@ void DeviceList::unserialize(const QJsonArray &devices)
             continue;
 
         append(device);
-        count++;
     }
 
-    if (count)
-        logInfo << count << "devices loaded";
+    if (!count())
+        return;
+
+    logInfo << count() << "devices loaded";
 }
 
 QJsonArray DeviceList::serialize(void)
