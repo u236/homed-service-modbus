@@ -89,7 +89,7 @@ void Neptun::SmartPlus::init(const Device &device, const QMap <QString, QVariant
     m_options.insert("enableGroups",   QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:source-branch"}});
     m_options.insert("lostProtection", QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:leak-off"}});
     m_options.insert("pairingMode",    QMap <QString, QVariant> {{"type", "toggle"}, {"icon", "mdi:leak"}});
-    m_options.insert("cleaningMode",   QMap <QString, QVariant> {{"type", "toggle"}, {"control", true}, {"icon", "mdi:vacuum"}});
+    m_options.insert("cleaningMode",   QMap <QString, QVariant> {{"type", "toggle"}, {"control", true}, {"icon", "mdi:broom"}});
 
     m_options.insert("lock",           "valve");
 }
