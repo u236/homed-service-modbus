@@ -47,6 +47,7 @@ private:
     QString m_haPrefix, m_haStatus;
     bool m_haEnabled, m_haUpdate;
 
+    void lockPorts(bool lock);
     void publishExposes(DeviceObject *device, bool remove = false);
     void publishProperties(DeviceObject *device);
     void publishEvent(const QString &name, Event event);

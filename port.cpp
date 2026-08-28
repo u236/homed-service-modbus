@@ -6,7 +6,7 @@
 #include "device.h"
 #include "port.h"
 
-PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_busy(false), m_connected(false), m_rfcMode(RFCMode::Disabled), m_devices(devices)
+PortThread::PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices) : QThread(nullptr), m_mutex(new QMutex), m_portId(portId), m_portName(portName), m_tcp(tcp), m_rfc(rfc), m_debug(debug), m_serialError(false), m_connected(false), m_rfcMode(RFCMode::Disabled), m_devices(devices)
 {
     connect(this, &PortThread::started, this, &PortThread::threadStarted);
     connect(this, &PortThread::finished, this, &PortThread::threadFinished);
@@ -19,6 +19,7 @@ PortThread::~PortThread(void)
 {
     quit();
     wait();
+    delete m_mutex;
 }
 
 void PortThread::init(void)
@@ -159,12 +160,12 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
 
 void PortThread::threadStarted(void)
 {
-    m_serial = new QSerialPort(this);
-    m_socket = new QTcpSocket(this);
-
     m_receiveTimer = new QTimer(this);
     m_resetTimer = new QTimer(this);
     m_pollTimer = new QTimer(this);
+
+    m_serial = new QSerialPort(this);
+    m_socket = new QTcpSocket(this);
 
     if (!m_portName.startsWith("tcp://"))
     {
@@ -279,10 +280,8 @@ void PortThread::poll(void)
 {
     QByteArray request;
 
-    if (m_busy || (m_device == m_serial ? !m_serial->isOpen() : !m_connected))
+    if ((m_device == m_serial ? !m_serial->isOpen() : !m_connected) || !m_mutex->tryLock())
         return;
-
-    m_busy = true;
 
     for (int i = 0; i < m_devices->count(); i++)
     {
@@ -333,5 +332,5 @@ void PortThread::poll(void)
         device->parseReply(m_replyData);
     }
 
-    m_busy = false;
+    m_mutex->unlock();
 }

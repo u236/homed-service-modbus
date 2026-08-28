@@ -37,6 +37,20 @@ Controller::Controller(const QString &configFile) : HOMEd(SERVICE_VERSION, confi
     }
 }
 
+void Controller::lockPorts(bool lock)
+{
+    for (auto it = m_ports.begin(); it != m_ports.end(); it++)
+    {
+        if (!lock)
+        {
+            it.value()->mutex()->unlock();
+            continue;
+        }
+
+        it.value()->mutex()->lock();
+    }
+}
+
 void Controller::publishExposes(DeviceObject *device, bool remove)
 {
     device->publishExposes(this, device->address(), QString("%1_%2").arg(uniqueId(), device->address().replace('.', '_')), m_haPrefix, m_haEnabled, m_haUpdate, m_devices->names(), remove);
@@ -165,6 +179,8 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                     break;
                 }
 
+                lockPorts(true);
+
                 if (index >= 0)
                 {
                     m_devices->replace(index, device);
@@ -182,6 +198,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
                 connect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
 
                 m_devices->store(true);
+                lockPorts(false);
                 break;
             }
 
@@ -192,13 +209,12 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 
                 if (index >= 0)
                 {
-                    disconnect(device.data(), &DeviceObject::deviceUpdated, this, &Controller::deviceUpdated);
-                    disconnect(device.data(), &DeviceObject::endpointUpdated, this, &Controller::endpointUpdated);
-
+                    lockPorts(true);
                     m_devices->removeAt(index);
                     logInfo << device << "removed";
                     deviceEvent(device.data(), Event::removed);
                     m_devices->store(true);
+                    lockPorts(false);
                 }
 
                 break;
@@ -242,9 +258,18 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
 
 void Controller::updateAvailability(DeviceObject *device)
 {
-    QString status = device->availability() == Availability::Online ? "online" : "offline";
-    mqttPublish(mqttTopic("device/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address()), {{"status", status}}, true);
-    logInfo << "Device" << device->name() << "is" << status;
+    QString status;
+
+    for (int i = 0; i < m_devices->count(); i++)
+    {
+        if (m_devices->at(i).data() != device)
+            continue;
+
+        status = device->availability() == Availability::Online ? "online" : "offline";
+        mqttPublish(mqttTopic("device/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address()), {{"status", status}}, true);
+        logInfo << "Device" << device->name() << "is" << status;
+        break;
+    }
 }
 
 void Controller::updateProperties(void)

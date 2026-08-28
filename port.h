@@ -5,6 +5,7 @@
 #define RFC_REQUEST_TIMEOUT     1000
 
 #include <QHostAddress>
+#include <QMutex>
 #include <QSerialPort>
 #include <QThread>
 #include "device.h"
@@ -28,11 +29,13 @@ public:
     PortThread(quint8 portId, const QString &portName, bool tcp, bool rfc, bool debug, DeviceList *devices);
     ~PortThread(void);
 
+    inline QMutex *mutex(void) { return m_mutex; }
     inline quint8 portId(void) { return m_portId; }
 
 private:
 
     QTimer *m_receiveTimer, *m_resetTimer, *m_pollTimer;
+    QMutex *m_mutex;
 
     QSerialPort *m_serial;
     QTcpSocket *m_socket;
@@ -40,7 +43,7 @@ private:
 
     quint8 m_portId;
     QString m_portName;
-    bool m_tcp, m_rfc, m_debug, m_serialError, m_busy;
+    bool m_tcp, m_rfc, m_debug, m_serialError;
 
     QHostAddress m_adddress;
     quint16 m_port;
