@@ -30,7 +30,7 @@ void Eletechsup::N4Dsa02::enqueueAction(quint8 endpointId, const QString &name, 
     if (!endpointId || endpointId > 2 || name != "temperatureOffset")
         return;
 
-    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0004 + endpointId - 1, static_cast <quint16> (static_cast <qint16> (data.toDouble() * 10))));
+    m_actionQueue.enqueue(m_modbus->makeRequest(m_slaveId, Modbus::WriteSingleRegister, 0x0004 + endpointId - 1, static_cast <qint16> (data.toDouble() * 10)));
     m_fullPoll = true;
 }
 

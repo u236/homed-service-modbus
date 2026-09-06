@@ -69,7 +69,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", value * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -94,7 +94,7 @@ void WirenBoard::WBMap3ev::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.value(i + 1)->buffer().insert("angle", static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("angle", static_cast <qint16> (data[i]) * WBMAP_ANGLE_MULTIPLIER / 1000);
 
             break;
         }
@@ -240,7 +240,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", value * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -304,7 +304,7 @@ void WirenBoard::WBMap3e::parseReply(const QByteArray &reply)
                 break;
 
             for (quint8 i = 0; i < 3; i++)
-                m_endpoints.value(i + 1)->buffer().insert("angle", static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000);
+                m_endpoints.value(i + 1)->buffer().insert("angle", static_cast <qint16> (data[i]) * WBMAP_ANGLE_MULTIPLIER / 1000);
 
             break;
         }
@@ -465,7 +465,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("voltage", static_cast <double> (value) * WBMAP6S_VOLTAGE_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("voltage", value * WBMAP6S_VOLTAGE_MULTIPLIER / 1000);
             break;
         }
 
@@ -476,7 +476,7 @@ void WirenBoard::WBMap6s::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", value * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -699,7 +699,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
             if (m_modbus->parseReply(m_slaveId, Modbus::ReadInputRegisters, reply, &value) != Modbus::ReplyStatus::Ok)
                 break;
 
-            m_endpoints.value(0)->buffer().insert("frequency", static_cast <double> (value) * WBMAP_FREQUENCY_MULTIPLIER / 1000);
+            m_endpoints.value(0)->buffer().insert("frequency", value * WBMAP_FREQUENCY_MULTIPLIER / 1000);
             break;
         }
 
@@ -783,7 +783,7 @@ void WirenBoard::WBMap12::parseReply(const QByteArray &reply)
 
             for (quint8 i = 0; i < 3; i++)
             {
-                double value = static_cast <double> (static_cast <qint16> (data[i])) * WBMAP_ANGLE_MULTIPLIER / 1000;
+                double value = static_cast <qint16> (data[i]) * WBMAP_ANGLE_MULTIPLIER / 1000;
 
                 for (quint8 j = 0; j < 4; j++)
                     m_endpoints.value(i + j * 3 + 1)->buffer().insert("angle", value);
