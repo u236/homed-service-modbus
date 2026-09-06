@@ -112,10 +112,10 @@ Modbus::ReplyStatus Modbus::parseReply(quint8 slaveAddress, FunctionCode functio
     if (functionCode != static_cast <FunctionCode> (reply.at(m_tcp ? 7 : 1) & 0x7F))
         return WrongFunctionCode;
 
-    if (m_tcp && qFromBigEndian(*(reinterpret_cast <const quint16*> (reply.constData()))) != m_sequence)
+    if (m_tcp && qFromBigEndian <quint16> (reply.constData()) != m_sequence)
         return BadSequence;
 
-    if (!m_tcp && qFromLittleEndian(*(reinterpret_cast <const quint16*> (reply.mid(reply.length() - 2).constData()))) != crc16(reply.mid(0, reply.length() - 2)))
+    if (!m_tcp && qFromLittleEndian <quint16> (reply.constData() + reply.length() - 2) != crc16(reply.mid(0, reply.length() - 2)))
         return BadCRC;
 
     if (reply.at(m_tcp ? 7 : 1) & 0x80)
@@ -150,7 +150,7 @@ Modbus::ReplyStatus Modbus::parseReply(quint8 slaveAddress, FunctionCode functio
             bool check = functionCode == ReadCoilStatus || functionCode == ReadInputStatus;
 
             for (int i = 0; i < (check ? data.length() * 8 : data.length() / 2); i++)
-                registerData[i] = check ? data.at(i / 8) & 1 << i % 8 ? 1 : 0 : qFromBigEndian <quint16> (*(reinterpret_cast <const quint16*> (data.constData() + i * 2)));
+                registerData[i] = check ? data.at(i / 8) & 1 << i % 8 ? 1 : 0 : qFromBigEndian <quint16> (data.constData() + i * 2);
         }
         else
             memcpy(registerData, data.constData(), data.length());

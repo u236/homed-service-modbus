@@ -201,14 +201,14 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
             switch (item->dataType())
             {
-                case DataType::i16: value = qFromBigEndian <qint16>  (*(reinterpret_cast <qint16*>  (payload))); break;
-                case DataType::u16: value = qFromBigEndian <quint16> (*(reinterpret_cast <quint16*> (payload))); break;
-                case DataType::i32: value = qFromBigEndian <qint32>  (*(reinterpret_cast <qint32*>  (payload))); break;
-                case DataType::u32: value = qFromBigEndian <quint32> (*(reinterpret_cast <quint32*> (payload))); break;
-                case DataType::i64: value = qFromBigEndian <qint64>  (*(reinterpret_cast <qint64*>  (payload))); break;
-                case DataType::u64: value = qFromBigEndian <quint64> (*(reinterpret_cast <quint64*> (payload))); break;
-                case DataType::f32: value = qFromBigEndian <float>   (*(reinterpret_cast <float*>   (payload))); break;
-                case DataType::f64: value = qFromBigEndian <double>  (*(reinterpret_cast <double*>  (payload))); break;
+                case DataType::i16: value = qFromBigEndian <qint16>  (payload); break;
+                case DataType::u16: value = qFromBigEndian <quint16> (payload); break;
+                case DataType::i32: value = qFromBigEndian <qint32>  (payload); break;
+                case DataType::u32: value = qFromBigEndian <quint32> (payload); break;
+                case DataType::i64: value = qFromBigEndian <qint64>  (payload); break;
+                case DataType::u64: value = qFromBigEndian <quint64> (payload); break;
+                case DataType::f32: value = qFromBigEndian <float>   (payload); break;
+                case DataType::f64: value = qFromBigEndian <double>  (payload); break;
             }
         }
         else
