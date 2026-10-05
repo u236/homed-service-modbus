@@ -1,0 +1,5 @@
+#!/bin/sh
+
+/etc/init.d/homed-modbus restart
+
+exit 0
