@@ -52,9 +52,10 @@ namespace Custom
     public:
 
         ItemObject(const QString &expose, const QString &type, quint16 address, RegisterType registerType, DataType dataType, ByteOrder order, double divider, bool read) :
-            m_expose(expose), m_type(type), m_address(address), m_registerType(registerType), m_dataType(dataType), m_order(order), m_divider(divider > 0 ? divider : 1), m_read(read) {}
+            m_expose(expose), m_property(expose.split('_').value(0) == "switch" ? QString(expose).replace("switch", "status") : expose), m_type(type), m_address(address), m_registerType(registerType), m_dataType(dataType), m_order(order), m_divider(divider > 0 ? divider : 1), m_read(read) {}
 
         inline QString expose(void) { return m_expose; };
+        inline QString property(void) { return m_property; };
         inline QString type(void) { return m_type; };
         inline quint16 address(void) { return m_address; };
         inline RegisterType registerType(void) { return m_registerType; };
@@ -67,7 +68,7 @@ namespace Custom
 
     private:
 
-        QString m_expose, m_type;
+        QString m_expose, m_property, m_type;
         quint16 m_address;
         RegisterType m_registerType;
         DataType m_dataType;

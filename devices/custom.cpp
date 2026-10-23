@@ -29,31 +29,33 @@ void Custom::Controller::init(const Device &, const QMap <QString, QVariant> &)
 
 void Custom::Controller::enqueueAction(quint8, const QString &name, const QVariant &data)
 {
+    QString action = data.toString();
+    bool check = name.split('_').value(0) == "status";
+
+    if (check && action == "toggle")
+        action = m_endpoints.value(0)->buffer().value(name).toString() == "on" ? "off" : "on";
+
     for (int i = 0; i < m_items.count(); i++)
     {
         const Item &item = m_items.at(i);
         quint16 count = item->count(), buffer[4], payload[4];
         QVariant value;
 
-        if (item->expose() != name || (item->registerType() != RegisterType::coil && item->registerType() != RegisterType::holding))
+        if (item->property() != name || (item->registerType() != RegisterType::coil && item->registerType() != RegisterType::holding))
             continue;
 
         if (!item->read())
-            m_endpoints.value(0)->buffer().insert(name, data);
+            m_endpoints.value(0)->buffer().insert(name, check ? QVariant(action) : data);
 
         switch (m_types.indexOf(item->type()))
         {
-            case 0: value = data.toBool() ? 0x01 : 0x00; break; // bool
+            case 0: value = check ? action == "on" : data.toBool(); break; // bool
             case 1: value = data.toDouble() * item->divider(); break; // value
 
             case 2: // enum
             {
-                QString action = data.toString();
                 QVariant option = m_options.value(item->expose()).toMap().value("enum");
                 int index = -1;
-
-                if (name.split('_').value(0) == "status" && action == "toggle")
-                    action = m_endpoints.value(0)->buffer().value(name).toString() == "on" ? "off" : "on";
 
                 switch (option.type())
                 {
@@ -219,8 +221,18 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
         switch (m_types.indexOf(item->type()))
         {
-            case 0: m_endpoints.value(0)->buffer().insert(item->expose(), value.toInt() ? true : false); break; // bool
-            case 1: m_endpoints.value(0)->buffer().insert(item->expose(), value.toDouble() / item->divider()); break; // value
+            case 0: // bool
+            {
+                bool check = value.toInt() ? true : false;
+                m_endpoints.value(0)->buffer().insert(item->property(), item->property().split('_').value(0) == "status" ? QVariant(check ? "on" : "off") : check);
+                break;
+            }
+
+            case 1: // value
+            {
+                m_endpoints.value(0)->buffer().insert(item->property(), value.toDouble() / item->divider());
+                break;
+            }
 
             case 2: // enum
             {
@@ -228,8 +240,8 @@ void Custom::Controller::parseReply(const QByteArray &reply)
 
                 switch (option.type())
                 {
-                    case QVariant::Map:  m_endpoints.value(0)->buffer().insert(item->expose(), option.toMap().value(QString::number(value.toInt()))); break;
-                    case QVariant::List: m_endpoints.value(0)->buffer().insert(item->expose(), option.toList().value(value.toInt())); break;
+                    case QVariant::Map:  m_endpoints.value(0)->buffer().insert(item->property(), option.toMap().value(QString::number(value.toInt()))); break;
+                    case QVariant::List: m_endpoints.value(0)->buffer().insert(item->property(), option.toList().value(value.toInt())); break;
                     default: break;
                 }
 
