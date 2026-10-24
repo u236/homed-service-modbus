@@ -69,6 +69,7 @@ private slots:
     void serialError(QSerialPort::SerialPortError error);
     void socketError(QTcpSocket::SocketError error);
     void socketConnected(void);
+    void socketDisconnected(void);
 
     void startTimer(void);
     void readyRead(void);

@@ -49,8 +49,11 @@ void PortThread::init(void)
             return;
         }
 
-        if (m_connected)
-            m_socket->disconnectFromHost();
+        if (m_socket->state() != QAbstractSocket::UnconnectedState)
+        {
+            m_socket->abort();
+            m_connected = false;
+        }
 
         m_socket->connectToHost(m_adddress, m_port);
     }
@@ -188,6 +191,7 @@ void PortThread::threadStarted(void)
 
         connect(m_socket, &QTcpSocket::errorOccurred, this, &PortThread::socketError);
         connect(m_socket, &QTcpSocket::connected, this, &PortThread::socketConnected);
+        connect(m_socket, &QTcpSocket::disconnected, this, &PortThread::socketDisconnected);
     }
 
     connect(m_device, &QIODevice::readyRead, this, &PortThread::startTimer);
@@ -251,8 +255,17 @@ void PortThread::socketConnected(void)
     if (m_rfc)
         rfcRequest();
 
+    m_resetTimer->stop();
     m_pollTimer->start(1);
     m_connected = true;
+}
+
+void PortThread::socketDisconnected(void)
+{
+    logWarning << this << "disconnected";
+    m_resetTimer->start(RESET_TIMEOUT);
+    m_pollTimer->stop();
+    m_connected = false;
 }
 
 void PortThread::startTimer(void)
