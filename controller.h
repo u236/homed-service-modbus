@@ -68,6 +68,10 @@ private slots:
     void deviceUpdated(DeviceObject *device);
     void endpointUpdated(DeviceObject *device, quint8 endpointId);
 
+signals:
+
+    void startPoll(void);
+
 };
 
 #endif
