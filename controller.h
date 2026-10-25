@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#define SERVICE_VERSION             "2.3.1"
+#define SERVICE_VERSION             "2.4.0"
 #define UPDATE_PROPERTIES_DELAY     1000
 
 #include <QMetaEnum>
@@ -67,6 +67,10 @@ private slots:
 
     void deviceUpdated(DeviceObject *device);
     void endpointUpdated(DeviceObject *device, quint8 endpointId);
+
+signals:
+
+    void startPoll(void);
 
 };
 

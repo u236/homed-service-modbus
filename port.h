@@ -61,12 +61,17 @@ private:
     void rfcRequest(qint32 baudRate = 0);
     void sendRequest(const Device &device, const QByteArray &request);
 
+public slots:
+
+    void startPoll(void);
+
 private slots:
 
     void threadStarted(void);
     void threadFinished(void);
 
     void serialError(QSerialPort::SerialPortError error);
+
     void socketError(QTcpSocket::SocketError error);
     void socketConnected(void);
     void socketDisconnected(void);

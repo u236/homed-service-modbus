@@ -249,7 +249,7 @@ void Native::SwitchController::init(const Device &device, const QMap <QString, Q
     memset(m_hold, 0, sizeof(m_hold));
 
     connect(m_timer, &QTimer::timeout, this, &SwitchController::update);
-    m_timer->start(1);
+    m_timer->start(10);
 }
 
 void Native::SwitchController::enqueueAction(quint8, const QString &name, const QVariant &data)

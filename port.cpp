@@ -39,7 +39,7 @@ void PortThread::init(void)
 
         logInfo << this << "serial port" << m_serial->portName() << "opened successfully";
         m_serial->clear();
-        m_pollTimer->start(1);
+        m_pollTimer->start(0);
     }
     else
     {
@@ -161,6 +161,11 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     emit updateAvailability(device.data());
 }
 
+void PortThread::startPoll(void)
+{
+    m_pollTimer->start(0);
+}
+
 void PortThread::threadStarted(void)
 {
     m_receiveTimer = new QTimer(this);
@@ -204,6 +209,7 @@ void PortThread::threadStarted(void)
 
     m_receiveTimer->setSingleShot(true);
     m_resetTimer->setSingleShot(true);
+    m_pollTimer->setSingleShot(true);
 
     init();
 }
@@ -256,7 +262,7 @@ void PortThread::socketConnected(void)
         rfcRequest();
 
     m_resetTimer->stop();
-    m_pollTimer->start(1);
+    m_pollTimer->start(0);
     m_connected = true;
 }
 
@@ -291,13 +297,14 @@ void PortThread::reset(void)
 void PortThread::poll(void)
 {
     QByteArray request;
+    qint64 nextPoll = -1;
 
     if ((m_device == m_serial ? !m_serial->isOpen() : !m_connected) || !m_mutex->tryLock())
         return;
 
     for (int i = 0; i < m_devices->count(); i++)
     {
-        Device device = m_devices->at(i);
+        const Device &device = m_devices->at(i);
 
         if (device->portId() != m_portId || !device->active())
             continue;
@@ -356,5 +363,27 @@ void PortThread::poll(void)
         device->parseReply(m_replyData);
     }
 
+    for (int i = 0; i < m_devices->count(); i++)
+    {
+        const Device &device = m_devices->at(i);
+        qint64 time;
+
+        if (device->portId() != m_portId || !device->active())
+            continue;
+
+        time = device->polling() || !device->actionQueue().isEmpty() ? 0 : device->pollTime() + device->pollInterval();
+
+        if (nextPoll >= 0 && nextPoll <= time)
+            continue;
+
+        nextPoll = time;
+    }
+
     m_mutex->unlock();
+
+    if (nextPoll >= 0)
+    {
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+        m_pollTimer->start(nextPoll > now ? nextPoll - now : 0);
+    }
 }
