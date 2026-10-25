@@ -52,7 +52,6 @@ QByteArray Eletechsup::N4Dsa02::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 
@@ -268,7 +267,6 @@ QByteArray Eletechsup::R4Pin08::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 

@@ -218,7 +218,6 @@ QByteArray WirenBoard::WBMr::pollRequest(void)
     for (quint8 i = m_inputs == 8 ? 0 : 1; i <= m_channels; i++)
         m_endpoints.value(i)->buffer().remove(i ? "action" : "action_0");
 
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 

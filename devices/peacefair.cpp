@@ -44,7 +44,6 @@ QByteArray Peacefair::PZEM0x4::pollRequest(void)
         return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0000, 8);
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();
@@ -147,7 +146,6 @@ QByteArray Peacefair::PZEM6l24::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();

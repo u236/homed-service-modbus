@@ -78,7 +78,6 @@ QByteArray WirenBoard::WBM1w2::pollRequest(void)
     for (quint8 i = 0; i < 2; i++)
         m_endpoints.value(i + 1)->buffer().remove("action");
 
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 
@@ -254,7 +253,6 @@ QByteArray WirenBoard::WBMs::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 
@@ -483,7 +481,6 @@ QByteArray WirenBoard::WBMsw::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();
@@ -849,7 +846,6 @@ QByteArray WirenBoard::WBMai6::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 

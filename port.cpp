@@ -319,7 +319,7 @@ void PortThread::poll(void)
             }
 
             device->actionFinished();
-            device->resetPollTime();
+            device->setPollTime(0);
 
             if (device->fullPoll())
                 device->resetPoll();
@@ -327,10 +327,17 @@ void PortThread::poll(void)
             continue;
         }
 
-        if (device->pollTime() + device->pollInterval() > QDateTime::currentMSecsSinceEpoch())
-            continue;
+        if (!device->polling())
+        {
+            qint64 now = QDateTime::currentMSecsSinceEpoch();
 
-        device->startPoll();
+            if (device->pollTime() + device->pollInterval() > now)
+                continue;
+
+            device->setPollTime(now);
+            device->startPoll();
+        }
+
         request = device->pollRequest();
 
         if (request.isEmpty())
@@ -339,7 +346,12 @@ void PortThread::poll(void)
         sendRequest(device, request);
 
         if (device->errorCount())
+        {
+            if (device->availability() == Availability::Offline)
+                device->resetPoll();
+
             continue;
+        }
 
         device->parseReply(m_replyData);
     }

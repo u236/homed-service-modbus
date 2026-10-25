@@ -56,12 +56,13 @@ public:
     inline qint32 replyTimeout(void) { return m_replyTimeout; }
 
     inline qint64 pollTime(void) { return m_pollTime; }
-    inline void resetPollTime(void) { m_pollTime = 0; }
+    inline void setPollTime(qint64 value) { m_pollTime = value; }
 
     inline quint32 errorCount(void) { return m_errorCount; }
     inline void increaseErrorCount(void) { m_errorCount++; }
     inline void resetErrorCount(void) { m_errorCount = 0; }
 
+    inline bool polling(void) { return m_polling; }
     inline bool fullPoll(void) { return m_fullPoll; }
     inline void resetPoll(void) { m_polling = false; m_fullPoll = true; }
 

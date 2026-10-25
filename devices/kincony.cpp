@@ -158,7 +158,6 @@ QByteArray Kincony::KC868::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();

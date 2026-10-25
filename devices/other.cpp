@@ -34,7 +34,6 @@ QByteArray Other::JTH2d1::pollRequest(void)
         return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters, 0x0300, 2);
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();
@@ -124,7 +123,6 @@ QByteArray Other::T13::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();
@@ -235,7 +233,6 @@ QByteArray Other::M0701s::pollRequest(void)
         return m_modbus->makeRequest(m_slaveId, Modbus::ReadHoldingRegisters, 0x9CF4, 6);
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();

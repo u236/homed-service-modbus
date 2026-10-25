@@ -52,7 +52,6 @@ QByteArray WirenBoard::WBMap3ev::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();
@@ -205,7 +204,6 @@ QByteArray WirenBoard::WBMap3e::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 
@@ -430,7 +428,6 @@ QByteArray WirenBoard::WBMap6s::pollRequest(void)
     m_endpoints.value(0)->buffer().insert("totalEnergy", m_totalEnergy);
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 
@@ -664,7 +661,6 @@ QByteArray WirenBoard::WBMap12::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 

@@ -79,7 +79,6 @@ QByteArray Native::Common::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
 
     return QByteArray();
@@ -179,7 +178,6 @@ QByteArray Native::RelayController::pollRequest(void)
     }
 
     updateEndpoints();
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 
@@ -280,7 +278,6 @@ QByteArray Native::SwitchController::pollRequest(void)
         case 1: return m_modbus->makeRequest(m_slaveId, Modbus::ReadInputRegisters,   0x0001, 1);
     }
 
-    m_pollTime = QDateTime::currentMSecsSinceEpoch();
     m_polling = false;
     m_fullPoll = false;
 
