@@ -94,10 +94,7 @@ void Controller::deviceEvent(DeviceObject *device, Event event)
 
         case Event::added:
         case Event::updated:
-
-            if (device->availability() != Availability::Unknown)
-                mqttPublish(mqttTopic("device/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address()), {{"status", device->availability() == Availability::Online ? "online" : "offline"}}, true);
-
+            mqttPublish(mqttTopic("device/%1/%2").arg(serviceTopic(), m_devices->names() ? device->name() : device->address()), {{"status", "offline"}}, true);
             break;
 
         default:
@@ -213,7 +210,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
             case Command::removeDevice:
             {
                 int index = -1;
-                Device device = m_devices->byName(json.value("device").toString(), &index);
+                const Device device = m_devices->byName(json.value("device").toString(), &index);
 
                 if (index >= 0)
                 {
@@ -242,7 +239,7 @@ void Controller::mqttReceived(const QByteArray &message, const QMqttTopicName &t
     else if (subTopic.startsWith(QString("td/%1/").arg(serviceTopic())))
     {
         QList <QString> list = subTopic.remove(QString("td/%1/").arg(serviceTopic())).split('/');
-        Device device = m_devices->byName(list.value(0));
+        const Device &device = m_devices->byName(list.value(0));
 
         if (device.isNull() || !device->active())
             return;
@@ -285,14 +282,7 @@ void Controller::updateAvailability(DeviceObject *device)
 void Controller::updateProperties(void)
 {
     for (int i = 0; i < m_devices->count(); i++)
-    {
-        const Device &device = m_devices->at(i);
-
-        if (!device->active())
-            continue;
-
-        publishProperties(device.data());
-    }
+        publishProperties(m_devices->at(i).data());
 }
 
 void Controller::deviceUpdated(DeviceObject *device)

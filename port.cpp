@@ -150,7 +150,7 @@ void PortThread::sendRequest(const Device &device, const QByteArray &request)
     else
         device->resetErrorCount();
 
-    device->setAvailability(device->errorCount() > 2 ? Availability::Offline : Availability::Online);
+    device->setAvailability(!device->errorCount() ? Availability::Online : device->errorCount() > 2 ? Availability::Offline : availability);
 
     if (availability == device->availability())
         return;

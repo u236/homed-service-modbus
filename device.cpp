@@ -186,6 +186,9 @@ Device DeviceList::parse(const QJsonObject &json)
         if (json.contains("cloud"))
             device->setCloud(json.value("cloud").toBool());
 
+        if (!device->active())
+            device->setAvailability(Availability::Offline);
+
         device->setNote(json.value("note").toString());
         device->init(device, m_exposeOptions);
 
@@ -275,7 +278,7 @@ QJsonArray DeviceList::serialize(void)
     for (int i = 0; i < count(); i++)
     {
         const Device &device = at(i);
-        QJsonObject json = {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"requestTimeout", device->requestTimeout()}, {"replyTimeout", device->replyTimeout()}, {"name", device->name()}, {"active", device->active()}, {"cloud", device->cloud()}, {"discovery", device->discovery()}};
+        QJsonObject json = {{"type", device->type()}, {"portId", device->portId()}, {"slaveId", device->slaveId()}, {"baudRate", device->baudRate()}, {"pollInterval", device->pollInterval()}, {"requestTimeout", device->requestTimeout()}, {"replyTimeout", device->replyTimeout()}, {"name", device->name()}, {"active", device->active()}, {"discovery", device->discovery()}, {"cloud", device->cloud()}};
 
         if (device->type() == "customController")
         {
